@@ -1,113 +1,51 @@
-# BattleLuck Publishing Checklist
+# BattleLuck publishing checklist
 
-Use this before publishing to GitHub, Thunderstore, or a release zip.
+Use this checklist before publishing a GitHub release, Thunderstore package, or release zip.
 
-## Package Contents
+## Package root
 
-Required for Thunderstore-style release:
+The package zip must contain these files at its root:
 
 - `BattleLuck.dll`
 - `manifest.json`
 - `README.md`
-- `icon.png` at 256x256 PNG
+- `icon.png` (exactly 256x256 PNG)
 - `CHANGELOG.md`
 - `LICENSE`
 - `THIRD_PARTY_NOTICES.md`
 
-Do not include:
+Never package secrets or server state: `.env`, credentials, model weights, logs, snapshots, backups, `.bak` files, or build folders.
 
-- `.env`
-- `BepInEx/config/BattleLuck/*.bak`
-- `BepInEx/config/BattleLuck/ai_operations.log`
-- `node_modules`
-- `.llm-chat-history`, `.qwen`, `.claude`, `.vscode`, `.idea`, `.vs`
-- model files such as `.gguf`, `.safetensors`, `.bin`
-- server player snapshots or live logs
+## Release defaults
 
-## AI Release Defaults
+- AI provider: local `llama` endpoint (`http://127.0.0.1:11434`).
+- Cloud providers and Discord AI logging: disabled unless the server owner opts in.
+- Conversation history: disabled by default.
+- Event authoring: enabled; risky live actions require approval.
+- Keep package configuration free of tokens, webhooks, and personal data.
 
-Published configs should be safe by default:
-
-- Provider: `llama`
-- Local endpoint: `http://127.0.0.1:11434`
-- Cloudflare/Google providers: disabled
-- Discord AI logger: disabled
-- Conversation history: disabled
-- Event authoring: enabled
-- Max event actions: `1000`
-- Risky live actions: approval-gated
-
-## Build
+## Validate
 
 ```powershell
 dotnet restore .\BattleLuck.sln
 dotnet build .\BattleLuck.sln --no-restore /p:GenerateReadme=false /p:DeployToServer=false
+Get-Content .\manifest.json | ConvertFrom-Json | Out-Null
 ```
 
-## Secret Scan
+Run a secret scan before upload:
 
 ```powershell
-rg -n "cfat[_]" .
-rg -n "cfut[_]" .
-rg -n "discord[.]com/api/webhooks" .
-rg -n "CLOUDFLARE_AI_API_TOKEN\\s*=\\s*[^\\s#]+"
-rg -n "GOOGLE_AI_API_KEY\\s*=\\s*[^\\s#]+"
+rg -n "cfat[_]|cfut[_]|discord[.]com/api/webhooks|GOOGLE_AI_API_KEY\\s*=\\s*[^\\s#]+|CLOUDFLARE_AI_API_TOKEN\\s*=\\s*[^\\s#]+" .
 ```
 
-If anything real appears, remove it and rotate the exposed credential.
-
-## Documentation Checks
-
-- README explains BattleLuck is a V Rising BepInEx plugin.
-- README says AI is optional and local-first.
-- README links to `docs/LLM_GUIDE.md`.
-- README credits any referenced mods or libraries.
-- LICENSE exists and matches the intended reuse policy.
-- Third-party notices mention inspiration or references without copying incompatible code.
+On a clean server, smoke-test `.bl.help`, `.aistatus`, `.modelist`, `.event.status`, and one private event before publishing.
 
 ## Versioning
 
-Before upload:
+Increment `manifest.json` `version_number`, update `CHANGELOG.md`, and keep the package name stable for updates.
 
-- Increment `manifest.json` `version_number`.
-- Update `CHANGELOG.md`.
-- Keep the package name stable for updates.
-- Upload a new zip for any README, DLL, manifest, or config change.
+## V Rising references
 
-## Final Smoke Test
-
-On a clean server:
-
-```text
-.reload
-.aistatus
-.ai catalog search boss wall glow
-.modelist
-.event.status
-```
-
-For local AI:
-
-```powershell
-.\scripts\start_vllm.ps1
-```
-
-Fallback profile (llama.cpp):
-
-```powershell
-.\scripts\start_local_llama.ps1
-```
-
-Then:
-
-```text
-.ai.reload
-.ai can you search the catalog for boss movement actions?
-```
-
-## References
-
-- V Rising Mod Wiki Thunderstore upload guide: https://wiki.vrisingmods.com/dev/upload_to_thunderstore.html
-- Thunderstore package guide: https://wiki.thunderstore.io/mods/creating-a-package
-- Thunderstore update guide: https://wiki.thunderstore.io/mods/updating-a-package
-- BattleLuck LLM guide: LLM_GUIDE.md
+- [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
+- [Mod licensing and attribution](https://wiki.vrisingmods.com/dev/licensing.html)
+- [Thunderstore upload](https://wiki.vrisingmods.com/dev/upload_to_thunderstore.html)

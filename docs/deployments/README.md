@@ -33,7 +33,7 @@ The package manifest must be valid JSON:
 {
   "name": "BattleLuck",
   "version_number": "1.0.0",
-  "website_url": "https://github.com/Coyoteq1/BattleLuck-AI",
+  "website_url": "https://github.com/usstunlab1/Battleluck-",
   "description": "Competitive arena game modes, event flow, and optional AI tooling for V Rising dedicated servers.",
   "dependencies": [
     "BepInEx-BepInExPack_V_Rising-1.733.2",

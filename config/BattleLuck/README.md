@@ -1,55 +1,31 @@
-# BattleLuck Configuration
+# BattleLuck server configuration
 
-This directory contains all configuration files for the BattleLuck game mode system.
+All runtime configuration lives in this directory. JSON files are created or updated by the plugin and can be edited while the server is stopped.
 
-## Directory Structure
+## Main files
 
-- **core/** - Global/shared configs (actions, abilities, kits, bosses)
-- **integrations/** - External service configs (AI, Discord, webhooks)
-- **modes/** - Game mode definitions (bloodbath, colosseum, siege, trials, aievent)
-- **schematics/** - Arena geometry blueprints
-- **sequences/** - Custom action sequences
-- **profiles/** - Test/dev client profiles
-- **docs/** - Documentation and guides
+- `ai_config.json` — provider, model, safety, and approval settings.
+- `roadmap.json` — enabled roadmap phases and progress notes.
+- `event_entities.json` — event entities and spatial points.
+- `live_system_registry.json` — verified ProjectM/Unity system references.
+- `prompts/` — server and developer LLM prompt templates.
+- `schematics/` — reusable arena building definitions.
+- `sequences/` — verified native and UUID action sequences.
 
-## Creating a New Mode
+Optional runtime files such as logs, snapshots, backups, and generated catalogs are local server state and should not be uploaded with a release package.
 
-1. Copy `modes/_template/` to `modes/your_mode_name/`
-2. Edit `manifest.json` with your mode metadata
-3. Configure `session.json` (rules, duration, player limits)
-4. Define `zones.json` (arena positions, boundaries)
-5. Set up `kit.json` (starting equipment)
-6. Create `flow_enter.json` and `flow_exit.json` (entry/exit actions)
-7. (Optional) Add `event.json` for complex event flows
-8. Register mode in `BattleLuckPlugin.cs`
+## Safe workflow
 
-## Config Loading Order
+1. Stop the server or use the documented reload command.
+2. Copy the file you are changing as a local backup.
+3. Validate JSON before restarting.
+4. Run `.validateconfig` and test the event in a private arena.
+5. Keep risky AI actions approval-gated.
 
-1. Core configs loaded at plugin startup
-2. Mode configs loaded on first `.toggleenter <mode>`
-3. Schematics loaded when arena initializes
-4. Event definitions loaded when session starts
-
-## Validation
-
-Run `.validateconfig <mode>` in-game to check for:
-- Missing required files
-- Invalid JSON syntax
-- Broken action references
-- Missing schematic files
-
-## Live ProjectM / Unity System References
-
-Admins can register a verified system from the bundled KindredExtract inventory without restarting the plugin:
+Admins can register a verified system without restarting:
 
 `.bl.system.register ProjectM ProjectM.AbilityInputSystem system.projectm.ability_input Ability input reference`
 
-Registrations are saved in `live_system_registry.json` and become available immediately as live actions. They are verified references for BattleLuck and AI tooling; they do not instantiate, patch, or invoke arbitrary native ECS systems.
+Registrations are saved in `live_system_registry.json`. They are verified references for BattleLuck and AI tooling; they do not instantiate, patch, or invoke arbitrary native ECS systems.
 
-## Backup
-
-Configs are automatically backed up before major changes.
-
-## Support
-
-See `docs/config_schema.md` for detailed format reference.
+See the [user guide](../../docs/user/README.md) and [developer guide](../../docs/developer/README.md) for command and schema details.

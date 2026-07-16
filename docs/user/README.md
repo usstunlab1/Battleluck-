@@ -152,4 +152,4 @@ The bridge supports slash commands and event relay to Discord channels.
 
 - **Discord**: [V Rising Mod Community](https://vrisingmods.com/discord)
 - **Wiki**: [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
-- **Issues**: [GitHub Issues](https://github.com/coyoteq1/Battleluck-AI/issues)
+- **Issues**: [GitHub Issues](https://github.com/usstunlab1/Battleluck-/issues)

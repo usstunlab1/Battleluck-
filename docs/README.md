@@ -1,49 +1,28 @@
-# BattleLuck Documentation
+# BattleLuck documentation
 
-BattleLuck is a V Rising dedicated server BepInEx plugin that adds competitive arena game modes, player state management, zone-driven match flow, and optional AI assistance.
+BattleLuck is a V Rising dedicated-server BepInEx plugin. These pages describe installation, server configuration, development, AI prompts, and publishing.
 
-## Quick Start
+## Start here
 
-- **[Installation](user/README.md)** — Install BepInEx, deploy BattleLuck, configure modes
-- **[User Commands](user/README.md#commands)** — Player-facing commands
-- **[Developer Guide](developer/README.md)** — Architecture, ECS patterns, Harmony patching
+- [User guide](user/README.md) — install, configure, and run events.
+- [Developer guide](developer/README.md) — architecture, ECS, patches, and builds.
+- [AI guide](LLM_GUIDE.md) — local providers, prompts, safety, and event authoring.
+- [Publishing checklist](PUBLISHING_CHECKLIST.md) — validate a Thunderstore-ready package.
+- [Reference index](reference/README.md) — V Rising-specific API and mod references.
 
-## Documentation Structure
+## Current runtime guides
 
-| Section | Description |
-|---------|-------------|
-| [User Guide](user/README.md) | Installation, configuration, commands, game modes |
-| [Developer Guide](developer/README.md) | Architecture, ECS patterns, Harmony patching, building |
-| [LLM Guide](LLM_GUIDE.md) | Local AI setup, prompting rules, event authoring |
-| [Publishing](PUBLISHING_CHECKLIST.md) | Release checklist, Thunderstore, secrets |
-| [Deployments](deployments/README.md) | CI/CD, server deployment, AI services |
-| [Reference](reference/README.md) | V Rising Mod Wiki references and external tools |
+- [Roadmap system](ROADMAP.md)
+- [LLM server integration](LLM_SERVER.md)
+- [Developer server integration](DEVELOPER_SERVER.md)
+- [Prompt system](PROMPT_SYSTEM.md)
 
-## External References
+## Official V Rising guides
 
-- [V Rising Mod Wiki](https://wiki.vrisingmods.com/) — Standard mod development patterns
-- [Th Thunderstore](https://thunderstore.io/c/v-rising/) — V Rising mod repository
-- [Thunderstore Package Guide](https://wiki.thunderstore.io/mods/creating-a-package)
-
-## Project Structure
-
-BattleLuck follows the standard V Rising mod folder layout. See [Mod Structure](developer/mod-structure.md) for details.
-
-```
-BattleLuck/
-├── BattleLuckPlugin.cs    # BepInEx entry point
-├── Core/                  # Static service locator
-├── Commands/              # VCF chat commands
-├── Services/              # Business logic
-├── Patches/               # Harmony patches
-├── Models/                # Data structures
-├── Utilities/             # Helper methods
-├── Data/                  # Static data (PrefabGUIDs, embedded resources)
-├── ECS/                   # ECS action infrastructure
-├── Events/                # Event bus
-└── config/                # Embedded configuration
-```
+- [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
+- [Mod licensing and attribution](https://wiki.vrisingmods.com/dev/licensing.html)
+- [Thunderstore upload](https://wiki.vrisingmods.com/dev/upload_to_thunderstore.html)
 
 ## License
 
-MIT Licensed. See [LICENSE](../LICENSE) and [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).
+BattleLuck is licensed under the GNU Affero General Public License, version 3 or any later version. See [LICENSE](../LICENSE) and [third-party notices](../THIRD_PARTY_NOTICES.md).
