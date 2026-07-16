@@ -5,6 +5,8 @@ using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
 using System.Text.Json;
 using ProjectM.Network;
 using ProjectM.Terrain;
@@ -226,8 +228,8 @@ public sealed class DiscordBridgeController : IDisposable
             var publicKeyBytes = Convert.FromHexString(_config.PublicKey);
 
             // Ed25519 verification using BouncyCastle (not available in .NET 6 built-in crypto)
-            var edParams = new Org.BouncyCastle.Crypto.Parameters.Ed25519PublicKeyParameters(publicKeyBytes, 0);
-            var verifier = new Org.BouncyCastle.Crypto.Signers.Ed25519Signer();
+            var edParams = new Ed25519PublicKeyParameters(publicKeyBytes, 0);
+            var verifier = new Ed25519Signer();
             verifier.Init(false, edParams);
             var msgBytes = System.Text.Encoding.UTF8.GetBytes(message);
             verifier.BlockUpdate(msgBytes, 0, msgBytes.Length);

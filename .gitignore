@@ -27,6 +27,10 @@ obj/
 obj-readme/
 obj-tests/
 
+# ThunderStore package
+thunderstore_package/
+*.zip
+
 # Large/transient model & build artifacts
 blobs/
 manifests/
