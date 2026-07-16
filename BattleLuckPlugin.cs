@@ -64,11 +64,12 @@ public class BattleLuckPlugin : BasePlugin
     public static bool IsInitialized => Core.IsInitialized;
     public static bool IsDiscordBridgeEnabled => _discordBridge != null;
     public static bool IsConversationBackupEnabled => _conversationBackup?.Enabled == true;
-    public static string ConversationBackupPath => _conversationBackup?.RootPath ?? Path.Combine(ConfigLoader.ConfigRoot, "chat-backups");
+    public static string ConversationBackupPath => _conversationBackup?.RootPath ??
+        ConversationBackupService.ResolveRootPath(null, ConfigLoader.ConfigRoot);
 
     /// <summary>
     /// Configure the optional server-side per-player AI chat backup. This never
-    /// writes to a player's client; it stores JSONL files under the game server.
+    /// writes to a player's client; on Windows it uses V Rising's LocalLow data root.
     /// </summary>
     public static void ConfigureConversationBackup(AIConfig config)
     {

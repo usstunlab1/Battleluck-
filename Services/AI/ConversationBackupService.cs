@@ -7,7 +7,7 @@ namespace BattleLuck.Services.AI;
 
 /// <summary>
 /// Optional server-owner backup for per-player AI chat turns.
-/// Files stay on the dedicated server; the plugin never writes to a player's PC.
+/// Files stay on the server host; the plugin never writes to a player's PC.
 /// </summary>
 public sealed class ConversationBackupService : IDisposable
 {
@@ -29,7 +29,7 @@ public sealed class ConversationBackupService : IDisposable
         _retentionDays = Math.Clamp(settings.RetentionDays, 1, 3650);
         _maxFileBytes = Math.Clamp(settings.MaxFileSizeMb, 1, 256) * 1024L * 1024L;
         _logWarning = logWarning;
-        RootPath = Path.GetFullPath(Path.Combine(configRoot, "chat-backups"));
+        RootPath = ResolveRootPath(settings.Path, configRoot);
         Directory.CreateDirectory(RootPath);
         PruneOldFiles();
         ConversationStore.Instance.TurnAppended += OnTurnAppended;
@@ -38,6 +38,38 @@ public sealed class ConversationBackupService : IDisposable
 
     public bool Enabled { get; }
     public string RootPath { get; }
+
+    public static string ResolveRootPath(string? configuredPath, string configRoot)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+        {
+            var trimmed = configuredPath.Trim();
+            return Path.GetFullPath(Path.IsPathRooted(trimmed)
+                ? trimmed
+                : Path.Combine(configRoot, trimmed));
+        }
+
+        // Unity's Windows persistent-data location is LocalLow. Use the same
+        // root requested by the server owner when BattleLuck runs on Windows.
+        if (OperatingSystem.IsWindows())
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var appData = Directory.GetParent(localAppData)?.FullName;
+            if (!string.IsNullOrWhiteSpace(appData))
+            {
+                return Path.GetFullPath(Path.Combine(
+                    appData,
+                    "LocalLow",
+                    "Stunlock Studios",
+                    "VRising",
+                    "BattleLuck",
+                    "chat-backups"));
+            }
+        }
+
+        // Portable fallback for Linux hosts and unusual service accounts.
+        return Path.GetFullPath(Path.Combine(configRoot, "chat-backups"));
+    }
 
     void OnTurnAppended(ConversationTurn turn)
     {

@@ -176,6 +176,13 @@ namespace BattleLuck.Models
         [JsonPropertyName("enabled")]
         public bool Enabled { get; set; } = false;
 
+        /// <summary>
+        /// Optional absolute path. When empty on Windows, the V Rising LocalLow
+        /// directory is used automatically.
+        /// </summary>
+        [JsonPropertyName("path")]
+        public string Path { get; set; } = "";
+
         [JsonPropertyName("retention_days")]
         public int RetentionDays { get; set; } = 30;
 

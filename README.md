@@ -21,9 +21,11 @@ or tool file, so upgrades preserve server-owner changes. Provider credentials an
 `.env` files are not embedded in the DLL; configure those locally on the server.
 
 AI chat backups are server-side and opt-in. Set `chat_backup.enabled` to `true` in
-`BepInEx/config/BattleLuck/ai_config.json` to write one JSONL stream per player
-under `BepInEx/config/BattleLuck/chat-backups/`. Players do not need to install
-anything for this, and the server cannot write to their local game folders.
+`BepInEx/config/BattleLuck/ai_config.json` to write one JSONL stream per player.
+On Windows the default is
+`C:\Users\<server-user>\AppData\LocalLow\Stunlock Studios\VRising\BattleLuck\chat-backups\<steamId>\`;
+set `chat_backup.path` to override it. Players do not need to install anything,
+and the server cannot write to their local game folders.
 
 AI is server-owned and local-first. Every installation includes the `.ai` command
 surface, but no model weights or provider credentials are bundled. A server owner

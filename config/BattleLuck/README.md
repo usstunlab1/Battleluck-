@@ -26,15 +26,17 @@ The server owner can opt in through `ai_config.json`:
 ```json
 "chat_backup": {
   "enabled": true,
+  "path": "",
   "retention_days": 30,
   "max_file_size_mb": 8
 }
 ```
 
-Enabled backups are written only on the dedicated server to
-`BepInEx/config/BattleLuck/chat-backups/<steamId>/YYYY-MM-DD.jsonl`. They are
-not sent to players or installed in client game folders. Keep the directory
-private and follow the server owner's retention and consent policy.
+When `path` is empty on Windows, enabled backups are written to
+`%USERPROFILE%\AppData\LocalLow\Stunlock Studios\VRising\BattleLuck\chat-backups\<steamId>\YYYY-MM-DD.jsonl`.
+Linux and other hosts use `BepInEx/config/BattleLuck/chat-backups/` by default.
+They are not sent to players or installed in client game folders. Keep the
+directory private and follow the server owner's retention and consent policy.
 
 ## Safe workflow
 

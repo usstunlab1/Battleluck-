@@ -34,9 +34,10 @@ configured model is installed, then run `.ai.reload` and `.ai.status`.
 
 Chat backup is controlled by the server owner, not by a client installer. Set
 `chat_backup.enabled` to `true` in `BepInEx/config/BattleLuck/ai_config.json` to
-write per-player JSONL backups under
-`BepInEx/config/BattleLuck/chat-backups/<steamId>/`. The plugin rotates files by
-day, prunes them after `retention_days`, and caps each file with
+write per-player JSONL backups. On Windows, an empty `chat_backup.path` uses
+`%USERPROFILE%\AppData\LocalLow\Stunlock Studios\VRising\BattleLuck\chat-backups\<steamId>\`;
+Linux hosts fall back to `BepInEx/config/BattleLuck/chat-backups/`. The plugin
+rotates files by day, prunes them after `retention_days`, and caps each file with
 `max_file_size_mb`. The server never writes these files to a player's local game
 folder; keep the server directory private and disclose retention to players.
 

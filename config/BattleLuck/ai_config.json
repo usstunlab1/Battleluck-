@@ -62,6 +62,7 @@
   },
   "chat_backup": {
     "enabled": false,
+    "path": "",
     "retention_days": 30,
     "max_file_size_mb": 8
   },
