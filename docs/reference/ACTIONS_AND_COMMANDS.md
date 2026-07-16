@@ -475,6 +475,10 @@ Total: 261
 - zone.buff.remove
 - zoneinfo
 
+`swapteam.ai` is currently an optional admin command that performs the normal
+team swap and asks the AI assistant to announce it. NPC-directed team control is
+planned and marked **Coming soon**.
+
 ## Roadmap administration commands
 
 - `.roadmap.status` — list the server roadmap and milestone states.

@@ -89,7 +89,7 @@ public static class PlayerCommands
         HandleSwapTeam(ctx, NonEmptyWords(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12));
     }
 
-    [Command("swapteam.ai", description: "Swap teams like .swapteam, then have the AI announce it in chat instead of just a name label. Usage: .swapteam.ai [closest|balance|name teamId]", adminOnly: true)]
+    [Command("swapteam.ai", description: "Coming soon: NPC-directed AI team control. Currently swaps teams and asks the AI to announce it. Usage: .swapteam.ai [closest|balance|name teamId]", adminOnly: true)]
     public static void SwapTeamAi(
         ChatCommandContext ctx,
         string a1 = "",
@@ -109,8 +109,8 @@ public static class PlayerCommands
         var args = NonEmptyWords(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
         HandleSwapTeam(ctx, args);
 
-        // Intelligent chat: let the AI announce the swap in-game (NPC "speaks"
-        // via chat rather than only showing a name/label).
+        // Current behavior is an AI-generated in-game announcement. NPC-directed
+        // team control is intentionally reserved for a future implementation.
         var ai = BattleLuckPlugin.AIAssistant;
         if (ai == null)
             return;
