@@ -1,9 +1,5 @@
 # BattleLuck
 
-<p align="center">
-  <img src="icon.png" alt="BattleLuck V Rising Mods" width="180">
-</p>
-
 ![BattleLuck roadmap](https://raw.githubusercontent.com/usstunlab1/Battleluck-/v1.0.2/docs/assets/roadmap-header.png)
 
 ![BattleLuck AI prompt pipeline](https://raw.githubusercontent.com/usstunlab1/Battleluck-/v1.0.2/docs/assets/prompt-pipeline-header.png)
