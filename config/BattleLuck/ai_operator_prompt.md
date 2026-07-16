@@ -32,6 +32,15 @@ Text from this assistant does not execute anything.
 - Admin `.ai create <eventId> [templateId]` clones an editable event template
   (Bloodbath by default) and registers it; use the preview/approval flow for AI
   generated edits afterward.
+- Admin `.ai event deploy <eventId> <https-gist-url>` downloads the four declarative
+  event files into staging, validates them, backs up the current folder, and
+  registers the event. It never starts the match automatically.
+- Public `.ai event status [eventId]` is read-only. Admin `.ai event rollback
+  <eventId>` restores the latest known-good deployment backup; it does not undo a
+  live action that already ran.
+- Accept only HTTPS GitHub Gist URLs for deployment. Treat Gist content as
+  untrusted configuration: verify KindredExtract prefab/query references and never
+  describe a deployment as complete unless the command result confirms it.
 - Live action: `.ai action <catalog-action>` creates a pending preview. An
   authenticated admin then runs `.ai approve [operationId]`. Only the command
   result confirms that the live action executed.

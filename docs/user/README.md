@@ -136,8 +136,11 @@ discards pending proposals; it does not reverse an action that already executed.
 | `.ai event preview <id>` | Preview a proposed edit (admin) |
 | `.ai event approve <id>` | Apply an approved edit (admin) |
 | `.ai approve [id]` | Execute an approved live action (admin) |
-| `.ai event rollback <id>` | Roll back a pending event proposal (admin) |
+| `.ai event rollback <operationId>` | Roll back a pending event proposal (admin) |
 | `.ai rollback [id]` | Discard a pending live-action proposal (admin) |
+| `.ai event deploy <eventId> <https-gist-url>` | Stage, validate, back up, and register four event files (admin) |
+| `.ai event status [eventId]` | Read-only deployment/file status (public) |
+| `.ai event rollback <eventId>` | Restore the latest known-good event deployment (admin) |
 | `.ai.reload` | Reload AI configuration (admin) |
 | `.ai.status` | Check detailed AI provider status (admin) |
 

@@ -1139,6 +1139,16 @@ public static class PlayerCommands
         if (words.Count == 0)
             return false;
 
+        // Read-only deployment status is safe for every player. Mutating deploy
+        // and rollback commands remain in the admin-gated operator path below.
+        if (words.Count >= 2 &&
+            words[0].Equals("event", StringComparison.OrdinalIgnoreCase) &&
+            words[1].Equals("status", StringComparison.OrdinalIgnoreCase))
+        {
+            EventDeploymentCommands.Status(ctx, words.Count > 2 ? words[2] : "");
+            return true;
+        }
+
         if (words[0].Equals("end", StringComparison.OrdinalIgnoreCase) && words.Count == 1)
         {
             var ended = GameChatAiBridge.EndSession(steamId);
@@ -1298,6 +1308,24 @@ public static class PlayerCommands
         if (trimmed.StartsWith("event ", StringComparison.OrdinalIgnoreCase))
         {
             var rest = trimmed["event ".Length..].Trim();
+            if (rest.StartsWith("deploy ", StringComparison.OrdinalIgnoreCase))
+            {
+                var deployArgs = SplitCommandWords(rest["deploy ".Length..]);
+                if (deployArgs.Count < 2)
+                {
+                    ctx.Reply("Usage: .ai event deploy <eventId> <https-gist-url>. Admin only; files are staged, validated, backed up, then registered.");
+                    return true;
+                }
+
+                await EventDeploymentCommands.DeployFromGist(ctx, deployArgs[0], deployArgs[1]);
+                return true;
+            }
+            if (rest.Equals("status", StringComparison.OrdinalIgnoreCase) ||
+                rest.StartsWith("status ", StringComparison.OrdinalIgnoreCase))
+            {
+                EventDeploymentCommands.Status(ctx, rest.Length == "status".Length ? "" : rest["status ".Length..].Trim());
+                return true;
+            }
             if (rest.StartsWith("review ", StringComparison.OrdinalIgnoreCase))
             {
                 await ReplyEventReview(ctx, aiAssistant, steamId, rest["review ".Length..]);
@@ -1351,7 +1379,11 @@ public static class PlayerCommands
             }
             if (rest.StartsWith("rollback ", StringComparison.OrdinalIgnoreCase))
             {
-                ReplyEventRollback(ctx, steamId, rest["rollback ".Length..].Trim());
+                var rollbackTarget = rest["rollback ".Length..].Trim();
+                if (LooksLikeDeploymentEventId(rollbackTarget))
+                    EventDeploymentCommands.Rollback(ctx, rollbackTarget);
+                else
+                    ReplyEventRollback(ctx, steamId, rollbackTarget);
                 return true;
             }
             if (rest.Equals("rollback", StringComparison.OrdinalIgnoreCase) ||
@@ -1390,6 +1422,17 @@ public static class PlayerCommands
     {
         var normalized = NormalizeSelector(value);
         return normalized is "rollback" or "cancel" or "no" or "n" or "stop" or "discard";
+    }
+
+    static bool LooksLikeDeploymentEventId(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.StartsWith("aio_", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var trimmed = value.Trim();
+        return trimmed.Length is >= 2 and <= 32 &&
+            trimmed.All(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-') &&
+            char.IsLetterOrDigit(trimmed[0]);
     }
 
     static bool TryHandleKitAbilityEmptyCommand(ChatCommandContext ctx, string trimmed)
@@ -2078,7 +2121,8 @@ public static class PlayerCommands
         ctx.Reply("Process: players may ask .ai for advice; only admins can create previews or approve live changes.");
         ctx.Reply("Live change flow: catalog/search → preview → admin approval → main-thread execution → rollback/discard if still pending.");
         ctx.Reply("Public/read-only: .ai <question>, .aistatus");
-        ctx.Reply("Admin event flow: .ai create <eventId> [templateId] (clone), .ai event request/review, .ai event preview, .ai approve, .ai rollback");
+        ctx.Reply("Admin event flow: .ai create <eventId> [templateId] (clone), .ai event deploy <eventId> <https-gist-url>, .ai event request/review, .ai event preview, .ai approve, .ai rollback");
+        ctx.Reply("Public deployment status: .ai event status [eventId]. Admin recovery: .ai event rollback <eventId> restores the latest known-good file backup.");
         ctx.Reply("Admin runtime actions: .ai catalog search <text>, .ai action <catalog action>, then .ai approve to execute");
         ctx.Reply("Admin system references: .ai action system.search/system.find, then system.register for a verified ProjectM/Unity alias");
         ctx.Reply("Admin developer tools: .ai.sequence.create/gather/preview/show/list/add/delete/execute; use wait:<seconds> and tick:<event-second> markers");

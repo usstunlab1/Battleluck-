@@ -89,3 +89,21 @@ pre-event snapshots persist under `BepInEx/data/BattleLuck/snapshots/` and are
 used by normal exit or explicit restore. A hard crash may interrupt cleanup, so
 inspect the logs and verify affected-player restoration after restart; automatic
 rollback during abrupt process termination is not guaranteed.
+
+### No-code AI controller
+
+Any player may request status through `.ai`; only admins can change event files:
+
+```text
+.ai event deploy shadow_hunt https://gist.github.com/owner/gist-id
+.ai event status shadow_hunt
+.ai event rollback shadow_hunt
+```
+
+`deploy` accepts an HTTPS GitHub Gist containing `flow.json`, `zones.json`,
+`kits.json`, and `prompt.txt`. BattleLuck downloads into staging, validates JSON,
+actions, prompt rules, kit references, and zone-hash uniqueness, backs up the
+current folder under `backups/<eventId>/`, then registers the event. It never
+starts the match automatically. `rollback` restores the latest known-good backup;
+it cannot undo a live native action. KindredExtract IDs must still be verified
+with `.dump p`/`.dump eq` before the Gist is published.

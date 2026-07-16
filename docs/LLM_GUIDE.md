@@ -128,6 +128,23 @@ The LLM should follow this loop:
 7. **Execute** — the server validates the approved operation and dispatches native-world work on its main thread.
 8. **Rollback** — use `.ai rollback` / `.ai event rollback <operationId>` for pending proposals; rollback cannot undo an action that already ran.
 
+### No-code event deployment
+
+Admins can deploy an editable event without C# or shell scripts:
+
+```text
+.ai event deploy <eventId> <https-gist-url>
+.ai event status [eventId]
+.ai event rollback <eventId>
+```
+
+`deploy` accepts only an HTTPS GitHub Gist containing `flow.json`, `zones.json`,
+`kits.json`, and `prompt.txt`. BattleLuck downloads to staging, validates JSON,
+catalog actions, prompt policy, kit references, and zone-hash uniqueness, backs up
+the current event, then registers it. It does not start the match. Status is
+read-only for all players; deploy and deployment rollback require an authenticated
+admin. A deployment rollback restores files, not a native action that already ran.
+
 ### Good Admin Prompt
 
 ```

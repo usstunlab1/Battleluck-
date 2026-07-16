@@ -156,12 +156,15 @@ Permission labels: **public** commands are read-only/advice-oriented;
 .ai catalog search <text>      Search the verified action catalog [admin]
 .ai action <catalog action>    Preview one runtime action [admin]
 .ai create <eventId> [template] Clone an event, default Bloodbath [admin]
+.ai event deploy <id> <gist>   Stage, validate, back up, and register an event [admin]
+.ai event status [id]          Show deployment/file status [public]
+.ai event rollback <eventId>  Restore the latest known-good event backup [admin]
 .ai event request <change>     Draft a validated event edit [admin]
 .ai event review <mode>        Review an event without writing files [admin]
 .ai event preview <id>         Inspect a pending proposal [admin]
 .ai event approve <id>         Apply an approved event proposal [admin]
 .ai approve [id]               Execute an approved live-action proposal [admin]
-.ai event rollback <id>        Roll back a pending event proposal [admin]
+.ai event rollback <operationId> Roll back a pending event proposal [admin]
 .ai rollback [id]              Discard a pending live-action proposal [admin]
 .ai.status                     Show detailed AI provider status [admin]
 .ai.reload                     Reload AI configuration [admin]
@@ -291,6 +294,29 @@ offline or in a low-load/standby window. Review the event with `.ai event review
 <eventId>`, keep a backup of `config/BattleLuck/events/`, and use the server's
 controlled reload command only after the files pass review. This keeps risky
 registration and native action execution out of peak player traffic.
+
+#### No-code AI controller
+
+Any player can ask `.ai` for guidance or use the read-only status request. Only
+admins can deploy or roll back files; no admin needs to write C#:
+
+```text
+.ai event deploy shadow_hunt https://gist.github.com/owner/gist-id
+.ai event status shadow_hunt
+.ai event rollback shadow_hunt
+```
+
+`deploy` downloads `flow.json`, `zones.json`, `kits.json`, and `prompt.txt` from
+an HTTPS GitHub Gist, validates the declarative actions, prompt policy, JSON, kit
+references, and zone hashes, backs up the current event under
+`BepInEx/config/BattleLuck/backups/<eventId>/`, then stages and registers it. It
+does not start the event. `status` is read-only and available to all players;
+`rollback` restores the latest known-good deployment and re-registers it. A
+rollback restores files, not a live action that already executed.
+
+KindredExtract remains a developer reference tool: use `.dump p`/`.dump eq` to
+verify prefab names and queries before publishing the Gist. BattleLuck does not
+execute arbitrary KindredExtract code or treat a Gist as trusted native code.
 
 ## Support
 
