@@ -1,0 +1,46 @@
+---
+eventId: bloodbath
+allowedActions:
+  - announce
+  - notify
+  - notification
+  - teleport
+  - heal
+  - blood.change
+  - kit.apply
+  - pvp.enable
+  - spawn.wave
+  - spawn.npc
+  - shrink.zone
+blockedActions:
+  - snapshot.restore
+  - entity.destroy
+  - mode.end
+allowedTechs:
+  - sudden_death
+  - double_loot
+---
+
+Last player standing wins in Bloodbath arena.
+
+Arena shrinks over time. Spawn pressure increases.
+
+The first entrant initializes logical session state only. No player starts arena, schematic, floor, wall, platform, or blueprint construction.
+
+Players temporarily replace their old inventory, equipped slots, passive spells, and ability slots with the configured Bloodbath kit. Exit or elimination removes the event kit first and restores the original snapshot exactly.
+
+Each player receives three immediate in-arena respawns. Deaths 1, 2, and 3 respawn inside Bloodbath; death 4 eliminates and rolls back only that player.
+
+The boundary rule requiring .toggleleave is inactive until the event is fully started and that player has been teleported.
+
+Live floors, walls, tiles, platforms, schematics, blueprints, tech/progression changes, and native destroy actions are disabled. Skip every such action rejected by runtime safety validation.
+
+PvP is enabled. Use pvp.enable action.
+
+Use spawn.wave to add enemy waves. Use shrink.zone to shrink playable area.
+
+Use announce and notification for player messaging.
+
+Use healing actions to restore player health between rounds.
+
+Use blood.change to modify player blood type when required.

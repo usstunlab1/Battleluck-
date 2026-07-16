@@ -1,0 +1,162 @@
+{
+  "detection": {
+    "checkIntervalMs": 500,
+    "positionThreshold": 1
+  },
+  "autoEnter": {
+    "enabled": true,
+    "enterOnConnect": false,
+    "enterOnSpawn": true,
+    "exitOnDisconnect": true,
+    "tickIntervalMs": 250,
+    "spawnResolveTimeoutMs": 15000
+  },
+  "fxPresetList": [],
+  "zones": [
+    {
+      "name": "Bloodbath Arena",
+      "type": "bloodbath",
+      "hash": 2002,
+      "priority": 1,
+      "kitId": "bloodbath",
+      "position": {
+        "x": -2000,
+        "y": 5,
+        "z": -2800
+      },
+      "teleportSpawn": {
+        "x": -2000,
+        "y": 5,
+        "z": -2800
+      },
+      "radius": 100,
+      "exitRadius": 110,
+      "isSafe": false,
+      "blockedActions": [],
+      "boundary": {
+        "policy": "dot_and_walls",
+        "dot": {
+          "enabled": true,
+          "warningRadiusPercent": 0.8,
+          "dangerRadiusPercent": 0.95,
+          "teleportOnExit": true
+        },
+        "walls": {
+          "enabled": false,
+          "height": 15,
+          "spacing": 5,
+          "floorSpacing": 2.5,
+          "batchSize": 2,
+          "spawnWalls": false,
+          "spawnFloors": false,
+          "requireOnlineAdmin": true,
+          "wallPrefab": "TM_Castle_Wall_Tier02_Stone",
+          "floorPrefab": "TM_Castle_Floor_Foundation_Stone03",
+          "buffs": [],
+          "timers": [],
+          "glow": {
+            "enabled": false,
+            "spawnGlowEntities": "",
+            "glowEntityCount": 0,
+            "glowRadius": 0,
+            "disableSunEffects": false,
+            "npcFriendly": false
+          }
+        }
+      },
+      "waypoints": {
+        "enabled": true,
+        "points": [
+          {
+            "x": -2000,
+            "y": 20,
+            "z": -2800
+          },
+          {
+            "x": -1980,
+            "y": 20,
+            "z": -2780
+          },
+          {
+            "x": -1960,
+            "y": 20,
+            "z": -2800
+          },
+          {
+            "x": -1980,
+            "y": 20,
+            "z": -2820
+          },
+          {
+            "x": -2000,
+            "y": 20,
+            "z": -2840
+          },
+          {
+            "x": -2020,
+            "y": 20,
+            "z": -2820
+          },
+          {
+            "x": -2040,
+            "y": 20,
+            "z": -2800
+          },
+          {
+            "x": -2020,
+            "y": 20,
+            "z": -2780
+          },
+          {
+            "x": -2000,
+            "y": 20,
+            "z": -2760
+          },
+          {
+            "x": -2000,
+            "y": 20,
+            "z": -2800
+          }
+        ],
+        "moveIntervalSec": 5,
+        "moveSpeed": 8,
+        "loop": true,
+        "radiusShrinkPerWaypoint": 3,
+        "minimumRadius": 15
+      },
+      "glowBorder": {
+        "enabled": false,
+        "scanWidth": 10,
+        "maxGlowEntities": 50,
+        "batchSize": 10
+      },
+      "movingPlatform": {
+        "enabled": false,
+        "tilePrefab": "TM_Castle_Floor_Foundation_Stone03",
+        "gridSize": 5,
+        "tileSpacing": 2.5,
+        "heightOffset": 0.1,
+        "glowEdge": true,
+        "totalTiles": 25
+      },
+      "lootCrates": {
+        "enabled": false,
+        "spawnIntervalSec": 15,
+        "maxActiveCrates": 3,
+        "despawnAfterSec": 900,
+        "spawnAtCenter": true,
+        "lockedUntilKills": 3,
+        "winnerOnly": true,
+        "containerPrefab": "Chain_Container_WorldChest_Iron_01",
+        "crateTypes": [
+          {
+            "type": "winner_gold",
+            "weight": 100,
+            "prefab": "Item_Ingredient_Mineral_GoldBar",
+            "amount": 100
+          }
+        ]
+      }
+    }
+  ]
+}

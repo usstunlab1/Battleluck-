@@ -1,0 +1,10 @@
+{
+  "name": "BattleLuck",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/usstunlab1/Battleluck-",
+  "description": "Server-side V Rising arena events, NPC control, progression, and optional local AI authoring.",
+  "dependencies": [
+    "BepInEx-BepInExPack_V_Rising-1.733.2",
+    "deca-VampireCommandFramework-0.11.0"
+  ]
+}

@@ -1,0 +1,129 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <!-- BepInEx doesn't use the shared framework; force NuGet deps to copy-local -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- Assembly identity -->
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <Description>BattleLuck - structured game-mode plugin for V Rising dedicated servers.</Description>
+    <Authors>BattleLuck Contributors</Authors>
+
+    <!-- Disable packaging and publishing -->
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PublishRepositoryUrl>false</PublishRepositoryUrl>
+    <IncludeSymbols>false</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="VRising.VampireCommandFramework" />
+
+    <!-- Optional integration library. Resolved at compile time only (Private=false)
+         so its DLL is not bundled into the Thunderstore package; server owners who
+         want the VAutomationCore integration install it separately. -->
+    <PackageReference Include="VAutomationCore" PrivateAssets="all">
+      <IncludeAssets>compile</IncludeAssets>
+      <Private>false</Private>
+    </PackageReference>
+
+    <PackageReference Include="VampireReferenceAssemblies" />
+    <PackageReference Include="Il2CppInterop.Runtime" />
+    <PackageReference Include="HookDOTS.API" />
+    <PackageReference Include="BouncyCastle.Cryptography" />
+    <PackageReference Include="BepInEx.Unity.IL2CPP" />
+    <PackageReference Include="BepInEx.Unity.Common" />
+    <PackageReference Include="BepInEx.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="config\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="docs\reference\kindredextract-reference.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ServerConfigFiles Include="config\BattleLuck\**\*" />
+    <!-- The live ProjectM/Unity system registry validates registrations against this inventory. -->
+    <ServerReferenceFiles Include="docs\reference\kindredextract-reference.json" />
+  </ItemGroup>
+
+  <!-- Exclude Unity-specific, test, generated, and external folders from SDK globs. -->
+  <ItemGroup>
+    <Compile Remove="Assets\**" />
+    <Compile Remove=".external\**" />
+    <Compile Remove="BattleLuck.Tests\**" />
+    <Compile Remove="Tests\**" />
+    <Compile Remove="scripts\**" />
+    <Compile Remove="8net\**" />
+    <Compile Remove="ai_orchestrator\**" />
+    <Compile Remove="ai_runtime\**" />
+    <Compile Remove="gg\**" />
+    <Compile Remove="google-services\**" />
+    <Compile Remove="kubernetes-engine-samples\**" />
+    <Compile Remove="kubernetes-engine-samples.worktrees\**" />
+    <Compile Remove="lib\**" />
+    <Compile Remove="mcp-servers\**" />
+    <Compile Remove="my-first-site\**" />
+    <Compile Remove="NGG\**" />
+    <Compile Remove="temp_edgegap_repo\**" />
+    <Compile Remove="GenerateREADME.cs" />
+    <Compile Remove="**\*-aa.cs" />
+    <EmbeddedResource Remove="Assets\**" />
+    <EmbeddedResource Remove=".external\**" />
+    <EmbeddedResource Remove="gg\**" />
+    <EmbeddedResource Remove="google-services\**" />
+    <EmbeddedResource Remove="kubernetes-engine-samples\**" />
+    <EmbeddedResource Remove="kubernetes-engine-samples.worktrees\**" />
+    <EmbeddedResource Remove="mcp-servers\**" />
+    <EmbeddedResource Remove="my-first-site\**" />
+    <EmbeddedResource Remove="NGG\**" />
+    <None Remove=".external\**" />
+    <None Remove="gg\**" />
+    <None Remove="google-services\**" />
+    <None Remove="kubernetes-engine-samples\**" />
+    <None Remove="kubernetes-engine-samples.worktrees\**" />
+    <None Remove="mcp-servers\**" />
+    <None Remove="my-first-site\**" />
+    <None Remove="NGG\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="config\BattleLuck\**\*.json" />
+    <EmbeddedResource Include="config\BattleLuck\**\*.md" />
+    <EmbeddedResource Include="config\BattleLuck\**\*.txt" />
+    <ServerConfigFiles Include="config\BattleLuck\**\*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ServerPluginPath Condition="'$(ServerPluginPath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\VRising\VRising_Server\BepInEx\plugins\BattleLuck</ServerPluginPath>
+    <ServerConfigPath Condition="'$(ServerConfigPath)' == ''">C:\Program Files (x86)\Steam\steamapps\common\VRising\VRising_Server\BepInEx\config\BattleLuck</ServerConfigPath>
+  </PropertyGroup>
+
+  <Target Name="BuildToServer" AfterTargets="Build" Condition="'$(DeployBattleLuck)' == 'true'">
+    <ItemGroup>
+      <PluginFiles Include="$(TargetDir)$(ProjectName).dll" />
+      <PluginFiles Include="$(TargetDir)BouncyCastle.Cryptography.dll" />
+      <PluginFiles Include="$(TargetDir)HookDOTS.API.dll" />
+    </ItemGroup>
+    <MakeDir Directories="$(ServerPluginPath)" />
+    <MakeDir Directories="$(ServerConfigPath)" />
+    <Copy SourceFiles="@(PluginFiles)" DestinationFolder="$(ServerPluginPath)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ServerConfigFiles)" DestinationFiles="@(ServerConfigFiles->'$(ServerConfigPath)\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ServerReferenceFiles)" DestinationFolder="$(ServerConfigPath)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="[Deploy] Plugin and configs deployed to $(ServerPluginPath) and $(ServerConfigPath)" />
+  </Target>
+
+</Project>

@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Multiple SDK projects live at the repository root. Without isolated
+         intermediate paths they overwrite each other's NuGet assets. -->
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildThisFileDirectory)obj\**;$(MSBuildThisFileDirectory)**\obj\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

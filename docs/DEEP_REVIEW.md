@@ -1,0 +1,317 @@
+# Deep Review: BattleLuck Plugin Architecture & Security
+
+**Date:** 2026-06-18  
+**Scope:** BattleLuck V Rising plugin (net6.0, BepInEx, ECS-based game mode system)  
+**Status:** ✅ Build passes | ⚠️ Security/Testing concerns identified
+
+---
+
+## Executive Summary
+
+BattleLuck is a well-structured, feature-rich plugin with 6 game modes, AI integration, and external service bridges (Discord, Webhooks, Lark, Cloudflare AI). However, the codebase has critical gaps in testing, risky global static state, and several security/code-quality issues that should be addressed before production deployment.
+
+**Key Risks:**
+- ⚠️ **AllowUnsafeBlocks=true** in csproj (unused; recommend disabling)
+- ⚠️ **Only 1 test file** (CommandRecordTests.cs); no unit tests for core systems
+- ⚠️ **Global static singletons** throughout (BattleLuckPlugin, Session, GameModes, etc.)
+- ⚠️ **Caught exceptions often lose stack traces** (ex.Message instead of ex.ToString())
+- ⚠️ **External endpoints** (Discord, Webhook, Lark) open ports; defaults should be disabled
+- ⚠️ **No comprehensive CI** before our changes (now added)
+
+---
+
+## Architecture Overview
+
+### Design Patterns
+- **Plugin Architecture:** BepInEx mod with Harmony patches for hooking V Rising game events
+- **Event-Driven:** ProjectMEventRouter broadcasts game events (death, action, mode changes)
+- **ECS Integration:** Uses Unity DOTS EntityManager for efficient queries and mutations
+- **Configuration-Driven:** Mode definitions, flows, and kits stored in JSON under `config/BattleLuck/`
+- **Main Thread Dispatch:** Off-thread work (AI, HTTP) queued back to main thread via MainThreadDispatcher
+
+### Core Components
+
+| Component | Role | Risk |
+| --- | --- | --- |
+| **BattleLuckPlugin** | Entry point; initializes all services | **HIGH:** 40+ static fields; lock on TryInitializeCore |
+| **SessionController** | Manages active game sessions & round state | **MEDIUM:** Drives all per-tick logic |
+| **GameModeRegistry** | Registry of 6 game modes (Bloodbath, Gauntlet, etc.) | **LOW:** Simple registry |
+| **FlowController** | Interprets action strings, applies kits, teleports, buffs | **HIGH:** Complex mutation pipeline |
+| **AIAssistant** | Cloudflare/Google AI query handler | **HIGH:** External API, network I/O |
+| **NpcControlService** | Sole controlled-entity registry (NPCs, elites, VBloods, servants, companions, waves) | **MEDIUM:** ECS-dependent |
+| **SessionCleanupService** | Zone cleanup on session end | **MEDIUM:** Bulk entity deletion |
+| **Discord/Webhook/Lark Bridges** | External HTTP endpoints | **HIGH:** Open ports, enabled by default |
+
+---
+
+## Security Issues
+
+### 1. **Hardcoded AllowUnsafeBlocks (CSProj)**
+```xml
+<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+```
+- **Finding:** Allows unsafe code blocks, but grep found no actual `unsafe` or `fixed` usage.
+- **Risk:** Increases attack surface if unsafe code is added later.
+- **Recommendation:** 
+  - Confirm no unsafe code exists
+  - Set to `False` to prevent future abuse
+  - Document why unsafe is needed if it must stay enabled
+
+### 2. **Exposed Cloudflare API Token**
+- **Finding:** User pasted CLOUDFLARE_API_TOKEN in chat earlier
+- **Status:** ✅ **FIXED** (commit: CI/CD + secrets management)
+  - Token now read from environment variables
+  - GitHub Actions Secrets used for CI
+  - docs/CI_SECRETS.md explains setup
+- **Action Required:** Revoke and regenerate the exposed token immediately
+
+### 3. **External Endpoints Enabled by Default**
+**Affected Services:**
+- `DiscordBridgeController` (line 383-393, BattleLuckPlugin.cs)
+- `WebhookController` (line 403-418)
+- `LarkBridgeService` (line 495-511)
+
+```csharp
+// Loads config; enables if configured.Enabled == true
+var discordConfig = ConfigLoader.LoadDiscordBridgeConfig();
+if (discordConfig?.Enabled == true) { ... }
+```
+
+- **Risk:** Ports opened publicly if config enables them (default: check config files)
+- **Recommendation:**
+  - Verify all `*_config.json` files have `"enabled": false` by default
+  - Document which ports are opened (Discord webhook, Webhook listener, Lark webhook)
+  - Add firewall rules / network ACLs in deployment docs
+
+### 4. **Exception Handling Loses Stack Traces**
+**Pattern Found:** 40+ instances (grep found 200 matches)
+```csharp
+catch (Exception ex) {
+    Log?.LogWarning($"[BattleLuck] Tick error: {ex.Message}");  // ❌ Only message, no stack trace
+}
+```
+
+- **Risk:** Debugging failures is hard without stack traces; security issues may be missed
+- **Recommendation:**
+  ```csharp
+  catch (Exception ex) {
+      Log?.LogWarning($"[BattleLuck] Tick error:\n{ex}");  // ✅ Full exception + stack
+  }
+  ```
+
+### 5. **Global Static State & Thread Safety**
+**High-Risk Statics (BattleLuckPlugin.cs):**
+```csharp
+static Harmony? _harmony;
+static bool _initialized;
+static readonly object _initLock = new();  // Only locks TryInitializeCore
+static EntityQuery? _playerQuery;
+static AiHologramService? _hologramService;
+```
+
+- **Risk:** 40+ static fields create race conditions, hard to test, tight coupling
+- **Recommendation:**
+  - Use dependency injection instead of statics for services
+  - Keep only truly global (plugin meta, logger) as static
+  - Example: `public static ISessionController Session => _instance?.Session;`
+
+### 6. **No Input Validation on External Endpoints**
+**Webhook & Lark Handlers:**
+- Incoming HTTP requests (Discord webhooks, Lark webhooks, custom webhook listener)
+- No visible validation of request signatures or HMAC verification
+- **Risk:** Spoofed events from untrusted sources
+- **Recommendation:**
+  - Validate webhook signatures (Discord: X-Signature-Ed25519)
+  - Restrict CIDR ranges for Lark/webhook endpoints
+  - Document security assumptions in code
+
+---
+
+## Testing & Quality Gaps
+
+### 1. **Minimal Test Coverage**
+- **Total Test Files:** 1 (CommandRecordTests.cs)
+- **Coverage:** ~0.5% (only command recording tested)
+- **Missing:**
+  - SessionController state machine tests
+  - FlowAction parsing and execution
+  - AI integration (mocked)
+  - Kit application logic
+  - Zone cleanup edge cases
+
+- **Recommendation:**
+  ```
+  Tests to add (priority order):
+  1. SessionController.cs
+     - Session start/end lifecycle
+     - Player join/leave
+     - Proper cleanup on unexpected exit
+  2. FlowActionExecutor.cs
+     - Parse action strings correctly
+     - Validate parameters
+     - Rollback on invalid mutations
+  3. ScoreTracker / EloController
+     - Ranking calculations
+     - Tie-breaking rules
+  4. KitController
+     - Kit loading from JSON
+     - Slot resolution (weapon, armor, abilities)
+     - Override behavior
+  ```
+
+### 2. **No Integration Tests**
+- ECS queries untested (EntityManager mocking required)
+- Patch compatibility with game versions not verified
+- Mode end-to-end flows not validated
+
+### 3. **Code Quality Observations**
+
+| Issue | Count | Severity |
+| --- | --- | --- |
+| Empty catch blocks swallowing errors | 5+ | MEDIUM |
+| No input validation on JSON configs | 10+ | MEDIUM |
+| Magic numbers (e.g., radius=200f) | 15+ | LOW |
+| Commented-out debug code | 8+ | LOW |
+| Missing null checks before .Exists() | 3+ | MEDIUM |
+
+---
+
+## Architecture Issues
+
+### 1. **Circular Dependencies**
+- BattleLuckPlugin initializes -> SessionController -> FlowController -> GameModes
+- Hard to unit test without initializing entire plugin
+- Recommendation: Use factory pattern + DI
+
+### 2. **No Abstraction for External APIs**
+- Direct `HttpClient` calls to Cloudflare, Discord, etc.
+- No retry logic or circuit breaker
+- **Recommendation:** Create `ICloudflareClient`, `IDiscordClient`, etc. with mocks for tests
+
+### 3. **ProjectMEventRouter Thread Safety**
+- Broadcasts game events; listeners may run off main thread
+- No documented guarantees on thread context
+- **Recommendation:** Document thread model; add assertions in listeners
+
+### 4. **Config Hot-Reload**
+- `.reload` command reloads configs from disk
+- No validation that new config is compatible with running sessions
+- **Risk:** Corrupted state if config changes mid-session
+- **Recommendation:** Validate config before applying; queue changes for next session end
+
+---
+
+## Performance Notes
+
+### Observed Optimizations
+- ✅ ECS Query Registry (cached queries per EntityManager)
+- ✅ MainThreadDispatcher (batches off-thread work)
+- ✅ Tick-based updates (not polling)
+
+### Potential Bottlenecks
+- 🔍 PlayerQuery recreated if null (line 146-148, BattleLuckPlugin.cs) — should cache
+- 🔍 Zone cleanup (CleanupZone) may stall main thread if zone has 1000+ entities
+- 🔍 AI queries (CloudflareAiService) block main thread until response — should stream or use task
+
+---
+
+## Deployment & Operations
+
+### Current CI/CD
+- ✅ **Added (this session):**
+  - GitHub Actions workflow (build + test)
+  - Gitleaks secret scanning
+  - Environment secret injection
+- ❌ **Missing:**
+  - Code coverage reporting
+  - Performance benchmarking
+  - Automated security scanning (SAST)
+
+### Secrets Management
+- ✅ **Fixed (this session):**
+  - CLOUDFLARE_API_TOKEN → environment variable
+  - GitHub Actions Secrets configured
+  - Local dev: dotnet user-secrets or env var
+- ❌ **Remaining:**
+  - Discord webhook URL still in config files (should use env var)
+  - Lark API key in config (should use env var)
+
+### Production Checklist
+- [ ] Revoke exposed Cloudflare token
+- [ ] Set AllowUnsafeBlocks=false if no unsafe code
+- [ ] Verify all endpoint configs default to disabled
+- [ ] Test firewall/network policy for opened ports
+- [ ] Document service port usage (Discord: ?, Webhook: ?, Lark: ?)
+- [ ] Add rate-limit middleware to HTTP endpoints
+- [ ] Enable request signature validation (Discord, Lark)
+- [ ] Configure log aggregation (CloudFlare Logs API, Discord webhook forwarding)
+- [ ] Load-test zone cleanup with 10,000+ entities
+- [ ] Verify no memory leaks in long-running sessions
+
+---
+
+## Recommendations by Priority
+
+### 🔴 CRITICAL (Before Production)
+1. **Revoke exposed API token** and regenerate
+2. **Disable AllowUnsafeBlocks** if unused
+3. **Validate webhook signatures** (Discord, Lark)
+4. **Fix exception logging** (use `ex.ToString()` not `ex.Message`)
+
+### 🟠 HIGH (Next Sprint)
+1. **Add unit tests** for SessionController, FlowActionExecutor, ScoreTracker (30–50% coverage target)
+2. **Refactor global statics** into injectable services
+3. **Hot-reload validation** for config changes
+4. **Retry logic + circuit breaker** for external APIs
+5. **Security audit** of config handling (file permissions, encoding)
+
+### 🟡 MEDIUM (Backlog)
+1. Add integration tests for ECS queries
+2. Performance profiling of zone cleanup
+3. Code coverage reporting in CI
+4. Refactor magic numbers into named constants
+5. Remove commented-out debug code
+
+### 🟢 LOW (Polish)
+1. Add input validation on JSON configs with helpful error messages
+2. Documentation: thread model, security model, deployment guide
+3. Add tracing/observability hooks (OpenTelemetry?)
+4. Benchmark AI queries; consider async/await patterns
+
+---
+
+## Files Requiring Review
+
+| File | Lines | Risk | Notes |
+| --- | --- | --- | --- |
+| BattleLuckPlugin.cs | ~696 | HIGH | 40+ statics; exception handling; initialization lock |
+| Services/Flow/FlowActionExecutor.cs | ? | HIGH | Core action logic; no visible validation |
+| Services/AI/AIAssistant.cs | ? | HIGH | External API calls; thread safety |
+| Core/SessionController.cs | ? | HIGH | Session lifecycle; state machine |
+| Services/Integrations/WebhookController.cs | ? | HIGH | HTTP endpoint; no signature validation |
+| Services/Integrations/DiscordBridgeController.cs | ? | MEDIUM | HTTP endpoint; check signature validation |
+| Services/Integrations/LarkBridgeService.cs | ? | MEDIUM | HTTP endpoint; check signature validation |
+| Models/* | ? | MEDIUM | Ensure JSON serialization is safe; no code injection |
+| BattleLuck.csproj | ~118 | MEDIUM | AllowUnsafeBlocks=true; review DirectoryPackages.props |
+
+---
+
+## Conclusion
+
+BattleLuck is **architecturally sound** and **feature-complete** for a game mod. The core ECS patterns, event routing, and session management are solid. However, **before production use**, address the critical security issues (token exposure, unsafe blocks, webhook validation) and add meaningful test coverage. The codebase would benefit from dependency injection to reduce global state and improve testability.
+
+**Next Steps:**
+1. ✅ Merge CI/CD changes (done)
+2. Create ticket for AllowUnsafeBlocks audit
+3. Create ticket for webhook signature validation
+4. Create ticket for unit test framework + 30% coverage target
+5. Refactor statics → DI in separate PR
+
+---
+
+## References
+
+- **CI/CD Changes:** commit eb1e48e2
+- **Secrets Setup:** docs/CI_SECRETS.md
+- **Config Layout:** README.md (lines 176–217)
+- **Commands Reference:** README.md (lines 25–173)

@@ -1,0 +1,167 @@
+{
+  "detection": {
+    "checkIntervalMs": 500,
+    "positionThreshold": 1
+  },
+  "autoEnter": {
+    "enabled": true,
+    "enterOnConnect": false,
+    "enterOnSpawn": true,
+    "exitOnDisconnect": true,
+    "tickIntervalMs": 250,
+    "spawnResolveTimeoutMs": 15000
+  },
+  "fxPresetList": [],
+  "zones": [
+    {
+      "name": "The Colosseum",
+      "type": "colosseum",
+      "hash": 2005,
+      "priority": 1,
+      "kitId": "colosseum",
+      "position": {
+        "x": -1750,
+        "y": 5,
+        "z": -2800
+      },
+      "teleportSpawn": {
+        "x": -1750,
+        "y": 5,
+        "z": -2800
+      },
+      "radius": 20,
+      "exitRadius": 25,
+      "isSafe": false,
+      "blockedActions": [],
+      "boundary": {
+        "policy": "dot_and_walls",
+        "dot": {
+          "enabled": true,
+          "warningRadiusPercent": 0.8,
+          "dangerRadiusPercent": 0.95,
+          "teleportOnExit": true
+        },
+        "walls": {
+          "enabled": false,
+          "height": 15,
+          "spacing": 5,
+          "floorSpacing": 2.5,
+          "batchSize": 2,
+          "spawnWalls": false,
+          "spawnFloors": false,
+          "requireOnlineAdmin": false,
+          "wallPrefab": "TM_Castle_Wall_Tier02_Stone",
+          "floorPrefab": "TM_Castle_Floor_Foundation_Stone03",
+          "buffs": [],
+          "timers": [],
+          "glow": {
+            "enabled": false,
+            "spawnGlowEntities": "",
+            "glowEntityCount": 0,
+            "glowRadius": 0,
+            "disableSunEffects": false,
+            "npcFriendly": false
+          }
+        }
+      },
+      "waypoints": {
+        "enabled": true,
+        "points": [
+          {
+            "x": -1750,
+            "y": 20,
+            "z": -2800
+          },
+          {
+            "x": -1740,
+            "y": 20,
+            "z": -2790
+          },
+          {
+            "x": -1730,
+            "y": 20,
+            "z": -2800
+          },
+          {
+            "x": -1740,
+            "y": 20,
+            "z": -2810
+          },
+          {
+            "x": -1750,
+            "y": 20,
+            "z": -2820
+          },
+          {
+            "x": -1760,
+            "y": 20,
+            "z": -2810
+          },
+          {
+            "x": -1770,
+            "y": 20,
+            "z": -2800
+          },
+          {
+            "x": -1760,
+            "y": 20,
+            "z": -2790
+          },
+          {
+            "x": -1750,
+            "y": 20,
+            "z": -2800
+          }
+        ],
+        "moveIntervalSec": 4,
+        "moveSpeed": 6,
+        "loop": true,
+        "radiusShrinkPerWaypoint": 2,
+        "minimumRadius": 10
+      },
+      "glowBorder": {
+        "enabled": false,
+        "scanWidth": 8,
+        "maxGlowEntities": 30,
+        "batchSize": 10
+      },
+      "movingPlatform": {
+        "enabled": false,
+        "tilePrefab": "TM_Castle_Floor_Foundation_Stone03",
+        "gridSize": 4,
+        "tileSpacing": 2.5,
+        "heightOffset": 0.1,
+        "glowEdge": true,
+        "totalTiles": 16
+      },
+      "lootCrates": {
+        "enabled": false,
+        "spawnIntervalSec": 20,
+        "maxActiveCrates": 2,
+        "despawnAfterSec": 10,
+        "crateTypes": [
+          {
+            "type": "health_potion",
+            "weight": 40,
+            "prefab": "Item_Consumable_GlassBottle_BloodRosePotion_T01"
+          },
+          {
+            "type": "speed_buff",
+            "weight": 25,
+            "prefab": "Buff_Cloak_Mounted"
+          },
+          {
+            "type": "damage_buff",
+            "weight": 20,
+            "prefab": "Buff_InCombat"
+          },
+          {
+            "type": "shield_buff",
+            "weight": 15,
+            "prefab": "Buff_BloodMend"
+          }
+        ]
+      }
+    }
+  ]
+}

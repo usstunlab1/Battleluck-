@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "id": "colosseum",
+    "displayName": "Colosseum",
+    "enabled": true,
+    "version": "1"
+  },
+  "rules": {
+    "minPlayers": 2,
+    "maxPlayers": 4,
+    "enablePvP": true,
+    "enableVBloods": false,
+    "enableEliteMobs": false,
+    "matchDurationMinutes": 5,
+    "allowLateJoin": false,
+    "eliminationMode": true,
+    "livesPerPlayer": 0,
+    "zoneEnterRule": "auto_enter"
+  },
+  "zones": [
+    {
+      "name": "The Colosseum",
+      "type": "colosseum",
+      "hash": 2005,
+      "priority": 1,
+      "kitId": "colosseum",
+      "center": { "x": -1750, "y": 5, "z": -2800 },
+      "teleportSpawn": { "x": -1750, "y": 5, "z": -2800 },
+      "radius": 60,
+      "exitRadius": 70,
+      "safe": false,
+      "blockedActions": [],
+      "boundaryPolicy": "dot_and_walls",
+      "boundary": {
+        "policy": "dot_and_walls",
+        "dot": { "enabled": true, "warningRadiusPercent": 0.8, "dangerRadiusPercent": 0.95, "teleportOnExit": true },
+        "walls": {
+          "enabled": false, "height": 15, "spacing": 5, "floorSpacing": 2.5, "batchSize": 2,
+          "spawnWalls": false, "spawnFloors": false, "requireOnlineAdmin": true,
+          "wallPrefab": "TM_Castle_Wall_Tier02_Stone", "floorPrefab": "TM_Castle_Floor_Foundation_Stone03",
+          "buffs": [], "timers": [],
+          "glow": { "enabled": false, "scanWidth": 8, "maxGlowEntities": 64, "batchSize": 8 }
+        }
+      }
+    }
+  ],
+  "actions": [
+    { "type": "pvp.enable" },
+    { "type": "kit.apply", "params": { "kitId": "colosseum" } },
+    { "type": "schematic.load", "params": { "eventName": "colosseum_arena", "position": "-1750,5,-2800", "safetyMode": "event_tracked_zone_only" } },
+    { "type": "player.stun", "params": { "duration": "10" } },
+    { "type": "team.swap", "params": { "teamId": "10" } },
+    { "type": "team.cornerteleport", "params": { "zoneHash": "2005", "radius": "50" } },
+    { "type": "chest.spawn", "params": { "position": "-1750,5,-2800", "requiredKills": "3", "lootTable": "GoldIngots" } }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "techs": [
+    {
+      "techId": "nightmare_mode",
+      "enabled": true,
+      "stackGroup": "difficulty",
+      "priority": 100,
+      "conflicts": [ "easy_mode" ],
+      "conflictMode": "Reject",
+      "description": "Nightmare mode: increased enemy health, damage, and aggressive behavior.",
+      "modifiers": {
+        "enemyHealthMultiplier": "2.0",
+        "enemyDamageMultiplier": "1.5",
+        "aggroRadiusMultiplier": "1.3"
+      }
+    },
+    {
+      "techId": "easy_mode",
+      "enabled": false,
+      "stackGroup": "difficulty",
+      "priority": 10,
+      "conflicts": [],
+      "conflictMode": "Reject",
+      "description": "Easy mode: reduced enemy stats, helpful NPCs.",
+      "modifiers": {
+        "enemyHealthMultiplier": "0.5",
+        "enemyDamageMultiplier": "0.5"
+      }
+    },
+    {
+      "techId": "double_loot",
+      "enabled": true,
+      "stackGroup": "rewards",
+      "priority": 50,
+      "conflicts": [],
+      "conflictMode": "Reject",
+      "description": "All loot drops grant double items.",
+      "modifiers": { "lootMultiplier": "2.0" }
+    },
+    {
+      "techId": "sudden_death",
+      "enabled": true,
+      "stackGroup": "combat",
+      "priority": 75,
+      "conflicts": [],
+      "conflictMode": "Reject",
+      "description": "Players take double damage in the final phase.",
+      "modifiers": { "damageMultiplier": "2.0" }
+    },
+    {
+      "techId": "infinite_revive",
+      "enabled": false,
+      "stackGroup": "survival",
+      "priority": 60,
+      "conflicts": [ "hardcore" ],
+      "conflictMode": "Reject",
+      "description": "Players can revive unlimited times.",
+      "modifiers": { "reviveUnlimited": "true" }
+    },
+    {
+      "techId": "hardcore",
+      "enabled": false,
+      "stackGroup": "survival",
+      "priority": 80,
+      "conflicts": [ "infinite_revive" ],
+      "conflictMode": "Reject",
+      "description": "One life only - no revives permitted.",
+      "modifiers": { "hardcore": "true" }
+    }
+  ],
+  "stackGroups": [ "difficulty", "rewards", "combat", "survival" ]
+}

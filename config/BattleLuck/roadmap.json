@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "project": "BattleLuck",
+  "description": "Server-owned roadmap for the event runtime, LLM director, and developer workflow.",
+  "milestones": [
+    {
+      "id": "architecture",
+      "title": "Canonical runtime architecture",
+      "status": "completed",
+      "summary": "One action pipeline, one NPC owner, managed player sessions, and explicit runtime services.",
+      "owner": "runtime",
+      "dependencies": [],
+      "acceptance": [
+        "FlowActionExecutor remains the canonical execution path",
+        "NpcControlService owns controlled non-player entities",
+        "Release build has zero errors"
+      ],
+      "promptRefs": ["developer", "llm"]
+    },
+    {
+      "id": "player-runtime",
+      "title": "Player state and safety services",
+      "status": "completed",
+      "summary": "Loadout snapshots, progression boundaries, teleportation, and charge-based death prevention are explicit services.",
+      "owner": "runtime",
+      "dependencies": ["architecture"],
+      "acceptance": [
+        "Leave, death, disconnect, and unload clear managed state",
+        "Unsupported progression operations fail explicitly",
+        "Death prevention consumes a charge per prevented death"
+      ],
+      "promptRefs": ["developer", "llm"]
+    },
+    {
+      "id": "event-data",
+      "title": "Events, spatial points, and schematics",
+      "status": "completed",
+      "summary": "Events use one entity schema, spatial points instead of markers, and schematic-backed construction.",
+      "owner": "runtime",
+      "dependencies": ["architecture"],
+      "acceptance": [
+        "Catalog actions have reachable executor routes",
+        "Marker teleport and direct construction routes are absent",
+        "JSON catalogs parse successfully"
+      ],
+      "promptRefs": ["developer", "llm"]
+    },
+    {
+      "id": "ai-dev-server",
+      "title": "LLM and developer operations inside the server",
+      "status": "active",
+      "summary": "Expose the same roadmap, role prompts, runtime facts, and safety boundaries to the in-server LLM and admins.",
+      "owner": "ai-dev",
+      "dependencies": ["architecture", "event-data"],
+      "acceptance": [
+        "LLM receives roadmap context as read-only system context",
+        "Admins can inspect roadmap status and role prompts",
+        "Developer actions remain preview-first and admin-only"
+      ],
+      "promptRefs": ["llm", "developer"]
+    },
+    {
+      "id": "live-verification",
+      "title": "Live server verification",
+      "status": "planned",
+      "summary": "Verify event entry and exit, NPC control, rollback, teleport, schematics, progression boundaries, and prompt safety on a live server.",
+      "owner": "operations",
+      "dependencies": ["ai-dev-server"],
+      "acceptance": [
+        "Admin and player permission paths are exercised",
+        "Server restart and unload preserve expected cleanup behavior",
+        "LLM never claims execution without a runtime result"
+      ],
+      "promptRefs": ["llm", "developer"]
+    }
+  ],
+  "roles": [
+    {
+      "id": "llm",
+      "title": "In-server LLM director",
+      "description": "A read-only director assistant that observes verified server state and proposes approved actions.",
+      "promptFile": "prompts/llm_server.md",
+      "capabilities": ["explain gameplay", "search the action catalog", "prepare previews", "summarize roadmap state"],
+      "guardrails": ["never invent actions or completion", "never reveal secrets", "never execute without explicit admin approval"]
+    },
+    {
+      "id": "developer",
+      "title": "In-server developer operator",
+      "description": "An authenticated admin workflow for inspecting, testing, and validating the runtime without bypassing the action pipeline.",
+      "promptFile": "prompts/developer_server.md",
+      "capabilities": ["inspect runtime", "run dev sandbox tests", "review prompts", "reload roadmap config"],
+      "guardrails": ["admin-only commands", "preview before mutation", "use verified prefabs and catalog actions"]
+    }
+  ]
+}

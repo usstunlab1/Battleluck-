@@ -1,0 +1,91 @@
+{
+  "detection": {
+    "checkIntervalMs": 500,
+    "positionThreshold": 1
+  },
+  "autoEnter": {
+    "enabled": true,
+    "enterOnConnect": false,
+    "enterOnSpawn": true,
+    "exitOnDisconnect": true,
+    "tickIntervalMs": 250,
+    "spawnResolveTimeoutMs": 15000
+  },
+  "fxPresetList": [],
+  "zones": [
+    {
+      "name": "AI Event Arena",
+      "type": "aievent",
+      "hash": 2010,
+      "priority": 1,
+      "kitId": "aievent",
+      "position": {
+        "x": -1510,
+        "y": 5,
+        "z": -2800
+      },
+      "teleportSpawn": {
+        "x": -1510,
+        "y": 5,
+        "z": -2800
+      },
+      "radius": 20,
+      "exitRadius": 25,
+      "isSafe": false,
+      "blockedActions": [],
+      "boundary": {
+        "policy": "dot_and_walls",
+        "dot": {
+          "enabled": true,
+          "warningRadiusPercent": 0.8,
+          "dangerRadiusPercent": 0.95,
+          "teleportOnExit": true
+        },
+        "walls": {
+          "enabled": false,
+          "height": 15,
+          "spacing": 5,
+          "floorSpacing": 2.5,
+          "batchSize": 2,
+          "spawnWalls": false,
+          "spawnFloors": false,
+          "requireOnlineAdmin": true,
+          "wallPrefab": "TM_Castle_Wall_Tier02_Stone",
+          "floorPrefab": "TM_Castle_Floor_Foundation_Stone03",
+          "buffs": [],
+          "timers": [],
+          "glow": {
+            "enabled": false,
+            "spawnGlowEntities": "",
+            "glowEntityCount": 0,
+            "glowRadius": 0,
+            "disableSunEffects": false,
+            "npcFriendly": false
+          }
+        }
+      },
+      "glowBorder": {
+        "enabled": false,
+        "scanWidth": 8,
+        "maxGlowEntities": 30,
+        "batchSize": 10
+      },
+      "movingPlatform": {
+        "enabled": false,
+        "tilePrefab": "TM_Castle_Floor_Foundation_Stone03",
+        "gridSize": 4,
+        "tileSpacing": 2.5,
+        "heightOffset": 0.1,
+        "glowEdge": true,
+        "totalTiles": 16
+      },
+      "lootCrates": {
+        "enabled": false,
+        "spawnIntervalSec": 30,
+        "maxActiveCrates": 1,
+        "despawnAfterSec": 10,
+        "crateTypes": []
+      }
+    }
+  ]
+}

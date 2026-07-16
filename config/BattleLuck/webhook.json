@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "bindAddress": "0.0.0.0",
+  "port": 25580,
+  "secret": "",
+  "user": "",
+  "password": "",
+  "ipWhitelist": [],
+  "rateLimitPerSecond": 10,
+  "discord_webhook_url": "REPLACE_WITH_DISCORD_WEBHOOK_URL"
+}

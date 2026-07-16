@@ -1,0 +1,82 @@
+# Secrets & Credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.env
+*.env.local
+*.env.*.local
+secrets.json
+credentials.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Example.json
+
+# User directories
+.external/
+.agentsroom/
+.claude/
+.idea/
+.vs/
+.vscode/
+
+# Build artifacts
+bin/
+obj/
+obj-readme/
+obj-tests/
+
+# Large/transient model & build artifacts
+blobs/
+manifests/
+tools/oracleJdk-26/
+
+# External/generated code
+External/genai-stack/
+my-first-site/
+gg/
+NGG/
+
+# MCP servers
+mcp-servers/embedder/
+mcp-servers/server-monitor/
+
+# IDE and user files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Build logs
+msbuild.log
+*.log
+docker-logs-*.csv
+
+# Environment files
+.env
+.env.*
+.venv/
+venv/
+env/
+node_modules/
+kubernetes-engine-samples/
+kubernetes-engine-samples.worktrees/
+
+# NGG specific
+NGG/.gitignore
+NGG/.python-version
+NGG/.aitk/
+NGG/inspector/
+.mcp.json
+.agentsroom/
+.agentsroom/**
+.agentsroom/handoff-transcript-*.txt
+.agentsroom/handoff-summary-*.md
+
+# Misc transient
+c
+start
+todo.md
+errors.txt

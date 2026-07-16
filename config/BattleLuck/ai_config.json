@@ -1,0 +1,104 @@
+{
+  "enabled": true,
+  "provider": "llama",
+  "direct_chat_max_tokens": 256,
+  "direct_chat_skip_sidecar_under_chars": 180,
+  "llama_api": {
+    "enabled": true,
+    "api_key": "",
+    "base_url": "http://localhost:11434",
+    "model": "llama2:latest",
+    "max_requests_per_second": 5,
+    "temperature": 0.5,
+    "max_tokens": 512,
+    "timeout_seconds": 120
+  },
+  "cloudflare_ai": {
+    "enabled": false,
+    "account_id": "REPLACE_WITH_YOUR_CLOUDFLARE_ACCOUNT_ID",
+    "api_token": "REPLACE_WITH_YOUR_CLOUDFLARE_API_TOKEN",
+    "gateway_id": "",
+    "model": "meta-llama/Llama-3.2-3B-Instruct-FP8",
+    "max_requests_per_second": 10,
+    "temperature": 0.7,
+    "max_tokens": 256,
+    "timeout_seconds": 60
+  },
+  "google_ai_studio": {
+    "enabled": false,
+    "api_key": "REPLACE_WITH_YOUR_GOOGLE_AI_STUDIO_API_KEY",
+    "model": "gemini-pro",
+    "max_requests_per_second": 10,
+    "temperature": 0.7,
+    "max_tokens": 256,
+    "fallback_models": []
+  },
+  "messaging": {
+    "message_cooldown_seconds": 30,
+    "tip_cooldown_minutes": 5,
+    "context_retention_minutes": 30,
+    "auto_tips_enabled": true,
+    "welcome_messages_enabled": true,
+    "match_summaries_enabled": true,
+    "discord_webhook_url": "[REDACTED]",
+    "show_holograms": false,
+    "ai_colors": {
+      "enabled": true,
+      "name": "#66E3FF",
+      "default": "#D7E3FF",
+      "good": "#47FF8A",
+      "info": "#5CC8FF",
+      "warning": "#FFD166",
+      "error": "#FF5C7A",
+      "admin": "#C77DFF",
+      "event": "#FFB347"
+    }
+  },
+  "privacy": {
+    "opt_out_by_default": false,
+    "allow_player_toggle": true,
+    "store_conversation_history": false,
+    "max_conversation_history_size": 0
+  },
+  "event_authoring": {
+    "enabled": true,
+    "max_actions_per_event": 1000,
+    "config_edit_max_tokens": 32000,
+    "use_actions_catalog": true,
+    "pending_operation_minutes": 30
+  },
+  "projectm_aigroup": {
+    "enabled": true,
+    "auto_execute": false,
+    "snapshot_interval_seconds": 15,
+    "max_units": 10,
+    "max_players": 8,
+    "min_confidence": 0.65,
+    "allowed_actions": [
+      "announce",
+      "notification",
+      "npc.aggro",
+      "npc.follow",
+      "npc.hold",
+      "npc.release",
+      "ai.boss.aggro",
+      "ai.boss.deaggro",
+      "ai.set_behavior",
+      "boss.goto",
+      "boss.goto.pos",
+      "boss.return_home"
+    ]
+  },
+  "sidecar": {
+    "enabled": false,
+    "base_url": "http://localhost:8000",
+    "auth_key": ""
+  },
+  "mcp_runtime": {
+    "enabled": false,
+    "transport": "stdio",
+    "tools_cache_enabled": true,
+    "logs_enabled": false,
+    "servers": {}
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "enabled": true,
+  "providers": {
+    "azure": {
+      "enabled": false,
+      "endpoint": "",
+      "deployment": "gpt-4o-mini"
+    },
+    "gemini": {
+      "enabled": false,
+      "model": "gemini-2.5-flash"
+    },
+    "superuserSidecar": {
+      "enabled": false,
+      "url": "http://localhost:3000"
+    }
+  },
+  "discord": {
+    "webhookUrl": "https://discord.com/api/webhooks/1524622678969946223/zWB2d7AMdXUPpRTbARdcRV9rLvaJnhYJYgvFcnE12u3lhK1dn1m2kPleJCz-ik_0ygb5",
+    "serverId": "",
+    "channelId": ""
+  },
+  "buffer": {
+    "flushIntervalSec": 60,
+    "maxSize": 100
+  },
+  "prompts": {
+    "system": "You are a game event summarizer for a V Rising PvP arena mod called BattleLuck. Summarize the following game events into a brief, engaging narrative suitable for a Discord channel. Use 1-3 sentences."
+  }
+}

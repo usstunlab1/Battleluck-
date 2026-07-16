@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <RestoreLockedMode Condition="'$(GITHUB_ACTIONS)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="VampireReferenceAssemblies" Version="1.1.11-r96495-b8" />
+    <PackageVersion Include="Il2CppInterop.Runtime" Version="1.4.6-ci.426" />
+    <PackageVersion Include="VRising.VampireCommandFramework" Version="0.10.4" />
+    <PackageVersion Include="HookDOTS.API" Version="1.1.1" />
+    <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageVersion Include="VAutomationCore" Version="1.0.3" />
+    <PackageVersion Include="BepInEx.Core" Version="6.0.0-be.733" />
+    <PackageVersion Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" />
+    <PackageVersion Include="BepInEx.Unity.Common" Version="6.0.0-be.733" />
+
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
+    <PackageVersion Include="System.Text.Json" Version="6.0.10" />
+    <PackageVersion Include="FluentAssertions" Version="6.12.0" />
+  </ItemGroup>
+</Project>

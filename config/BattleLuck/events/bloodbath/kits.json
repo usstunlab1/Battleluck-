@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "healOnApply": true,
+    "clearInventoryFirst": true
+  },
+  "blood": {
+    "type": "Brute",
+    "quality": 100.0,
+    "value": 100.0
+  },
+  "armors": {
+    "chest": "Item_Armor_Chest_T08",
+    "legs": "Item_Armor_Legs_T08",
+    "gloves": "Item_Armor_Gloves_T08",
+    "boots": "Item_Armor_Boots_T08",
+    "cloak": "Item_Cloak_T08",
+    "headgear": "Item_Headgear_T08",
+    "magicSource": "Item_MagicSource_Chaos_T08"
+  },
+  "weapons": [
+    { "prefab": "Item_Weapon_Sword_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Axe_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Mace_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Spear_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Crossbow_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Slashers_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Reaper_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Pistols_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_GreatSword_T08", "amount": 1 },
+    { "prefab": "Item_Weapon_Whip_T08", "amount": 1 }
+  ],
+  "items": [],
+  "abilities": {},
+  "passiveSpells": []
+}

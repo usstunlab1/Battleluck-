@@ -1,0 +1,21 @@
+{
+  "all_actions": {
+    "Equipment": [
+      { "ItemId": "Item_Equip_Armor_T08_Chest", "Amount": 1 },
+      { "ItemId": "Item_Equip_Armor_T08_Legs", "Amount": 1 },
+      { "ItemId": "Item_Equip_Armor_T08_Gloves", "Amount": 1 },
+      { "ItemId": "Item_Equip_Armor_T08_Boots", "Amount": 1 }
+    ],
+    "Inventory": [
+      { "ItemId": "Item_Weapon_Scythe_T08_Rare", "Amount": 1 },
+      { "ItemId": "Item_Weapon_Sword_T08_Rare", "Amount": 1 },
+      { "ItemId": "Item_Weapon_Slashers_T08_Rare", "Amount": 1 },
+      { "ItemId": "Item_Consumable_Potion_Health_T03", "Amount": 10 }
+    ],
+    "Abilities": [
+      { "Slot": 5, "ItemId": "Ability_Warrior_Counter" },
+      { "Slot": 6, "ItemId": "Ability_Warrior_Charge" },
+      { "Slot": 7, "ItemId": "Ability_Warrior_Ultimate" }
+    ]
+  }
+}
