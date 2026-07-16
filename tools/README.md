@@ -15,3 +15,14 @@ powershell -ExecutionPolicy Bypass -File tools/extract-kindredextract-reference.
 
 Use the actual [Odjit/KindredExtract](https://github.com/Odjit/KindredExtract)
 release separately when you need its in-game dump commands.
+
+To generate the Unity system list, tick-semantics list, and research prompt:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/export-kindredextract-system-csv.ps1
+```
+
+This writes `docs/reference/kindredextract-systems.csv`,
+`docs/reference/kindredextract-ticks.csv`, and
+`docs/reference/kindredextract-systems-prompt.md`. Tick labels are research
+categories only; exact rates still require Unity group metadata or a live dump.

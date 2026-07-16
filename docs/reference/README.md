@@ -51,8 +51,9 @@ Large reference data dumps stored in this folder:
 | File | Description |
 |------|-------------|
 | `systemsTree.json` | Full ECS system hierarchy (1,075 systems) |
-| [kindredextract-systems.csv](kindredextract-systems.csv) | 1,534 systems from `SystemsQueryExtraction.tt` with purpose/tick hints |
-| [kindredextract-systems-prompt.md](kindredextract-systems-prompt.md) | Prompt for Unity purpose, world, update-group, and tick verification |
+| [kindredextract-systems.csv](kindredextract-systems.csv) | 1,534 systems from `SystemsQueryExtraction.tt`/`.cs` with purpose/tick hints and semantics |
+| [kindredextract-ticks.csv](kindredextract-ticks.csv) | Tick-semantic classification list with counts and verification evidence requirements |
+| [kindredextract-systems-prompt.md](kindredextract-systems-prompt.md) | Prompt and tick-semantics list for Unity purpose, world, update-group, and timing verification |
 | `queryDescriptions.json` | All EntityQuery definitions |
 
 ## Related Documentation
