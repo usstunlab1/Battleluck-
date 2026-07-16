@@ -32,7 +32,7 @@ public sealed class FlowController
             if (ctx?.State.TryGetValue(returnPositionKey, out var returnValue) == true && returnValue is float3 savedReturnPosition)
                 returnPosition = savedReturnPosition;
 
-            var prepareResult = _playerState.PrepareForEventEntry(playerCharacter, zone.Hash, returnPosition, steamId);
+            var prepareResult = _playerState.PrepareForEventEntry(playerCharacter, zone.Hash, returnPosition, steamId, ctx?.SessionId ?? "", ctx?.ModeId ?? "");
             if (!prepareResult.Success)
                 return prepareResult;
 
@@ -164,7 +164,7 @@ public sealed class FlowController
         var steamId = playerCharacter.GetSteamId();
         var kitId = string.IsNullOrWhiteSpace(zone.KitId) ? config.KitId : zone.KitId;
 
-        _playerState.SaveSnapshotIfMissing(playerCharacter, zone.Hash);
+        _playerState.SaveSnapshotIfMissing(playerCharacter, zone.Hash, eventRunId: "", eventModeId: config.ModeId);
         var kitResult = KitController.ApplyKit(playerCharacter, kitId);
         if (!kitResult.Success)
         {

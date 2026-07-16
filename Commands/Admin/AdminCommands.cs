@@ -611,14 +611,31 @@ public static class AdminCommands
 
     // ── Event Control Commands ──────────────────────────────────────────
 
-    [Command("event.start", description: "Start an event mode (teleports you in)", adminOnly: true)]
-    public static void EventStart(ChatCommandContext ctx, string modeId)
+    [Command("event.start", description: "Start an event mode (teleports you in). Add force=true only after reviewing high load.", adminOnly: true)]
+    public static void EventStart(ChatCommandContext ctx, string modeId, bool force = false)
     {
         var session = BattleLuckPlugin.Session;
         if (session == null) { ctx.Reply("Session controller not initialized."); return; }
 
         var registry = BattleLuckPlugin.GameModes;
         if (registry?.Resolve(modeId) == null) { ctx.Reply($"Unknown mode: {modeId}"); return; }
+
+        var guard = OperatorSafetyService.CheckEventStart(modeId, force);
+        if (!guard.Success || force)
+        {
+            EventDeploymentCommands.Audit.RecordGuard("event.start", modeId,
+                guard.Success ? "START_WINDOW_FORCED" : "START_WINDOW_BLOCKED",
+                guard.Success
+                    ? "Explicit force accepted by admin."
+                    : guard.Error ?? "Start blocked by operator safety guard.",
+                forced: force);
+        }
+        if (!guard.Success)
+        {
+            ctx.Reply($"⚠️ {guard.Error}");
+            ctx.Reply("Retry with `.event.start <mode> true` only after confirming the server is stable.");
+            return;
+        }
 
         var entity = ctx.Event.SenderCharacterEntity;
         session.ForceStart(modeId, entity);

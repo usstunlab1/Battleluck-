@@ -2,8 +2,10 @@ using Stunlock.Core;
 
 /// <summary>
 /// Versioned snapshot contract — captures full entity state per player.
-/// 13 categories: position, health, energy, blood, equipment levels, equipment slots,
-/// inventory, weapons, abilities, jewels, passives, buffs, progression.
+/// 13-category storage contract: position, health, energy, blood, equipment levels,
+/// equipment slots, inventory, weapons, abilities, jewels, passives, buffs, and
+/// progression. RestoreSnapshot currently replays the native-supported categories
+/// and retains energy/jewel/progression fields for forward-compatible snapshots.
 /// </summary>
 public sealed class PlayerSnapshot
 {
@@ -13,6 +15,10 @@ public sealed class PlayerSnapshot
     public string Name { get; set; } = "";
     public DateTime Timestamp { get; set; }
     public int ZoneHash { get; set; }
+    /// <summary>Managed event session id that owns this snapshot, when captured at event entry.</summary>
+    public string EventRunId { get; set; } = "";
+    /// <summary>Mode id associated with EventRunId; empty for non-event snapshots.</summary>
+    public string EventModeId { get; set; } = "";
 
     public Vec3Snapshot Position { get; set; } = new();
     public HealthSnapshot Health { get; set; } = new();

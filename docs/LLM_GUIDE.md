@@ -155,7 +155,7 @@ restores files, not a native action that already ran. Audit recommendations neve
 change validators or execute actions automatically.
 
 Rollback scope is explicit: `.ai event rollback <eventId>` is for event files;
-`.ai rollback player <name|steamId>` restores one online player's event snapshot;
+`.ai rollback player <name|steamId> <timestamp|runId>` restores one exact online player's event snapshot;
 `.ai rollback server players confirm` restores all online event snapshots; and
 `.ai rollback server purge <eventId> [backupId] confirm` deletes only a BattleLuck
 deployment backup. The plugin cannot safely invoke the host's full V Rising

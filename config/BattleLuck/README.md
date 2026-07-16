@@ -15,7 +15,9 @@ they are intentionally not embedded in the DLL.
 - `live_system_registry.json` — verified ProjectM/Unity system references.
 - `prompts/` — server and developer LLM prompt templates.
 - `schematics/` — reusable arena building definitions.
-- `sequences/` — verified native and UUID action sequences.
+- `sequences/` — native and UUID action sequences. The UUID catalog is strict:
+  only entries confirmed in-game may be executable; source/allowlist values
+  remain pending until verified.
 
 Optional runtime files such as logs, snapshots, backups, and generated catalogs are local server state and should not be uploaded with a release package.
 
@@ -78,7 +80,8 @@ executes the edited flow. Invalid JSON, prefabs, actions, or native ECS operatio
 can hang, crash, or restart the server. Back up `events/`, run `.ai event review
 <eventId>`, and test privately. On a busy server, copy and edit the template while
 the server is offline or in a low-load/standby window, then use the controlled
-reload command after review.
+reload command after review. High-load windows are blocked by default; use
+`.event.start <mode> true` only after confirming the server is stable.
 
 #### AI recovery and safety protocol
 
@@ -118,7 +121,7 @@ can run jq/AJV checks when those optional tools are installed.
 
 ```text
 .ai event rollback <eventId>                           # event files
-.ai rollback player <name|steamId>                    # one online event player
+.ai rollback player <name|steamId> <timestamp|runId>   # exact snapshot selector
 .ai rollback server players confirm                   # all online event players
 .ai rollback server purge <eventId> [backupId] confirm # delete BattleLuck backup
 ```

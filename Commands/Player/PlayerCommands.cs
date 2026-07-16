@@ -1164,7 +1164,7 @@ public static class PlayerCommands
                 return true;
             }
 
-            await EventDeploymentCommands.DeployFromGist(ctx, words[2], words[3]);
+            await EventDeploymentCommands.DeployFromGist(ctx, words[2], words[3], words.Skip(4).Any(word => word.Equals("--dry-run", StringComparison.OrdinalIgnoreCase) || word.Equals("dry-run", StringComparison.OrdinalIgnoreCase)));
             return true;
         }
 
@@ -1204,7 +1204,7 @@ public static class PlayerCommands
                 return true;
             }
 
-            PlayerRollbackCommands.RollbackPlayer(ctx, words.Count > 2 ? words[2] : "self");
+            PlayerRollbackCommands.RollbackPlayer(ctx, words.Count > 2 ? words[2] : "self", words.Count > 3 ? words[3] : "");
             return true;
         }
 
@@ -1396,7 +1396,7 @@ public static class PlayerCommands
                     return true;
                 }
 
-                await EventDeploymentCommands.DeployFromGist(ctx, deployArgs[0], deployArgs[1]);
+                await EventDeploymentCommands.DeployFromGist(ctx, deployArgs[0], deployArgs[1], deployArgs.Skip(2).Any(word => word.Equals("--dry-run", StringComparison.OrdinalIgnoreCase) || word.Equals("dry-run", StringComparison.OrdinalIgnoreCase)));
                 return true;
             }
             if (rest.Equals("status", StringComparison.OrdinalIgnoreCase) ||
@@ -2207,7 +2207,7 @@ public static class PlayerCommands
         ctx.Reply("Live change flow: catalog/search → preview → admin approval → main-thread execution → rollback/discard if still pending.");
         ctx.Reply("Public/read-only: .ai <question>, .aistatus");
         ctx.Reply("Admin event flow: .ai create <eventId> [templateId] (clone), .ai event deploy <eventId> <https-gist-url>, .ai event request/review, .ai event preview, .ai approve, .ai rollback");
-        ctx.Reply("Public deployment status: .ai event status [eventId]. Admin recovery: .ai event rollback <eventId> restores the latest known-good file backup; .ai rollback player <name|steamId> restores one event snapshot; .ai rollback server players confirm restores all online event snapshots. Admin learning: .ai event audit [eventId].");
+        ctx.Reply("Public deployment status: .ai event status [eventId]. Admin recovery: .ai event rollback <eventId> restores the latest known-good file backup; .ai rollback player <name|steamId> <timestamp|runId> restores one exact event snapshot; .ai rollback server players confirm restores all online event snapshots. Admin learning: .ai event audit [eventId].");
         ctx.Reply("Admin runtime actions: .ai catalog search <text>, .ai action <catalog action>, then .ai approve to execute");
         ctx.Reply("Admin system references: .ai action system.search/system.find, then system.register for a verified ProjectM/Unity alias");
         ctx.Reply("Admin developer tools: .ai.sequence.create/gather/preview/show/list/add/delete/execute; use wait:<seconds> and tick:<event-second> markers");

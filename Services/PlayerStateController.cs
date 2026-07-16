@@ -33,7 +33,7 @@ namespace BattleLuck.Services
     }
 
     /// <summary>Save full 13-category entity state for a player.</summary>
-    public void SaveSnapshot(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0)
+    public void SaveSnapshot(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0, string eventRunId = "", string eventModeId = "")
     {
         ulong steamId = steamIdOverride != 0 ? steamIdOverride : character.GetSteamId();
         if (steamId == 0) return;
@@ -45,7 +45,9 @@ namespace BattleLuck.Services
             GameVersion = Application.version,
             PlayerId = steamId.ToString(),
             Timestamp = DateTime.UtcNow,
-            ZoneHash = zoneHash
+            ZoneHash = zoneHash,
+            EventRunId = eventRunId?.Trim() ?? "",
+            EventModeId = eventModeId?.Trim() ?? ""
         };
 
         // 1. Name
@@ -169,7 +171,7 @@ namespace BattleLuck.Services
     /// Event enter flows call this before kit/actions so old configs cannot overwrite
     /// the real return position with an already-teleported arena state.
     /// </summary>
-    public bool SaveSnapshotIfMissing(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0)
+    public bool SaveSnapshotIfMissing(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0, string eventRunId = "", string eventModeId = "")
     {
         ulong steamId = steamIdOverride != 0 ? steamIdOverride : character.GetSteamId();
         if (steamId == 0) return false;
@@ -178,7 +180,7 @@ namespace BattleLuck.Services
         if (existing != null && existing.ZoneHash != KitRollbackZoneHash)
             return false;
 
-        SaveSnapshot(character, zoneHash, returnPositionOverride, steamId);
+        SaveSnapshot(character, zoneHash, returnPositionOverride, steamId, eventRunId, eventModeId);
         return true;
     }
 
@@ -186,13 +188,13 @@ namespace BattleLuck.Services
     /// Hard event-entry boundary: preserve rollback state first, then remove the
     /// player's current inventory/equipment items before event kits or actions run.
     /// </summary>
-    public OperationResult PrepareForEventEntry(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0)
+    public OperationResult PrepareForEventEntry(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0, string eventRunId = "", string eventModeId = "")
     {
         ulong steamId = steamIdOverride != 0 ? steamIdOverride : character.GetSteamId();
         if (steamId == 0)
             return OperationResult.Fail("Player SteamID not found.");
 
-        var savedNow = SaveSnapshotIfMissing(character, zoneHash, returnPositionOverride, steamId);
+        var savedNow = SaveSnapshotIfMissing(character, zoneHash, returnPositionOverride, steamId, eventRunId, eventModeId);
         var removedAbilities = AbilityController.ClearAbilitySlots(character);
         var removedPassives = AbilityController.ClearPassiveSpells(character);
         var removed = ClearInventory(character);

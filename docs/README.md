@@ -17,6 +17,7 @@ BattleLuck is a V Rising dedicated-server BepInEx plugin. These pages describe i
 - [LLM server integration](LLM_SERVER.md)
 - [Developer server integration](DEVELOPER_SERVER.md)
 - [Prompt system](PROMPT_SYSTEM.md)
+- [Deployment audit contract](audit/README.md)
 
 ## Official V Rising guides
 

@@ -1,0 +1,27 @@
+name: Validate BattleLuck event contracts
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install jq and AJV CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes jq
+          npm install --global ajv-cli
+      - name: Validate event JSON, schemas, IDs, and timing markers
+        shell: bash
+        run: bash tools/audit/validate-event-bundles.sh
+      - name: Build plugin without deploying to a server
+        run: dotnet build BattleLuck.sln -c Release /p:DeployBattleLuck=false

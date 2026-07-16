@@ -309,14 +309,20 @@ public static class ConfigLoader
                 assembly,
                 $"{assemblyName}.tools.",
                 ToolsRoot);
+            var allowlistsDeployed = DeployEmbeddedFiles(
+                assembly,
+                $"{assemblyName}.docs.audit.systems.allowlists.",
+                Path.Combine(ConfigRoot, "audit", "systems", "allowlists"));
 
-            if (configDeployed > 0 || toolsDeployed > 0)
+            if (configDeployed > 0 || toolsDeployed > 0 || allowlistsDeployed > 0)
             {
                 var details = new List<string>();
                 if (configDeployed > 0)
                     details.Add($"{configDeployed} config file(s)");
                 if (toolsDeployed > 0)
                     details.Add($"{toolsDeployed} tool file(s)");
+                if (allowlistsDeployed > 0)
+                    details.Add($"{allowlistsDeployed} KindredExtract allowlist file(s)");
                 BattleLuckPlugin.LogInfo($"[ConfigLoader] Extracted {string.Join(" and ", details)} under {ConfigRoot}");
             }
         }

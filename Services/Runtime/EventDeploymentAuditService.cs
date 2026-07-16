@@ -25,7 +25,8 @@ public sealed class EventDeploymentAuditService
         string eventId,
         string? source,
         OperationResult<EventDeploymentResult> result,
-        bool rollback = false)
+        bool rollback = false,
+        bool dryRun = false)
     {
         try
         {
@@ -35,7 +36,7 @@ public sealed class EventDeploymentAuditService
             var record = new EventDeploymentAuditRecord
             {
                 Timestamp = DateTime.UtcNow,
-                Command = command,
+                Command = dryRun ? $"{command}_dry_run" : command,
                 EventId = SafeEventId(eventId),
                 Gist = source,
                 Files = EventDeploymentService.RequiredFiles.ToDictionary(
@@ -47,13 +48,13 @@ public sealed class EventDeploymentAuditService
                 {
                     Json = result.Success || !HasCode(error, "EJSONPARSE"),
                     Schema = result.Success || !HasCode(error, "ESCHEMA"),
-                    Ids = result.Success || !HasCode(error, "EINVALIDID", "EUNKNOWNID")
+                    Ids = result.Success || !HasCode(error, "EINVALIDID", "EUNKNOWNID", "E_IDS")
                 },
                 Server = new EventServerAudit
                 {
-                    RegisterOk = result.Success,
+                    RegisterOk = result.Success && !dryRun,
                     StartOk = false,
-                    Error = result.Success ? null : error
+                    Error = dryRun ? "Dry run: registration was not attempted." : result.Success ? null : error
                 },
                 Rollback = rollback,
                 Exit = result.Success ? 0 : 1,
@@ -139,6 +140,30 @@ public sealed class EventDeploymentAuditService
         catch (Exception ex)
         {
             BattleLuckPlugin.LogWarning($"[EventDeploymentAudit] State rollback write failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Record a deterministic operator safety decision.</summary>
+    public void RecordGuard(string command, string eventId, string? code, string message, bool forced = false)
+    {
+        try
+        {
+            var record = new EventDeploymentAuditRecord
+            {
+                Timestamp = DateTime.UtcNow,
+                Command = command,
+                EventId = SafeEventId(eventId),
+                Validation = new EventValidationAudit { Json = true, Schema = true, Ids = true },
+                Server = new EventServerAudit { RegisterOk = false, StartOk = false, Error = message },
+                Exit = forced ? 0 : 1,
+                ErrorCode = code,
+                Error = message
+            };
+            AppendLine(JsonSerializer.Serialize(record, JsonOptions));
+        }
+        catch (Exception ex)
+        {
+            BattleLuckPlugin.LogWarning($"[EventDeploymentAudit] Guard write failed: {ex.Message}");
         }
     }
 
@@ -274,7 +299,7 @@ public sealed class EventDeploymentAuditService
     static string ClassifyError(string? error)
     {
         if (string.IsNullOrWhiteSpace(error)) return "EUNKNOWN";
-        var known = new[] { "EJSONPARSE", "ESCHEMA", "EMISSINGFILE", "EINVALIDID", "EUNKNOWNID", "EGIST", "ERUNTIMEREGISTER", "EACTIVE", "EBACKUP", "EZONEHASH", "EPURGE", "EPURGE_CONFIRM" };
+        var known = new[] { "EJSONPARSE", "ESCHEMA", "EMISSINGFILE", "EINVALIDID", "EUNKNOWNID", "E_IDS", "E_TICK", "E_UUID_UNVERIFIED", "EGIST", "ERUNTIMEREGISTER", "EACTIVE", "EBACKUP", "E_BACKUP_TAMPERED", "E_NO_SNAPSHOT", "EZONEHASH", "E_RATE", "START_WINDOW_BLOCKED", "EPURGE", "EPURGE_CONFIRM" };
         var direct = known.FirstOrDefault(code => error.Contains(code, StringComparison.OrdinalIgnoreCase));
         if (direct != null) return direct;
         if (error.Contains("Gist", StringComparison.OrdinalIgnoreCase) || error.Contains("download", StringComparison.OrdinalIgnoreCase)) return "EGIST";
@@ -289,11 +314,17 @@ public sealed class EventDeploymentAuditService
     {
         "EJSONPARSE" => "Run tools/validators/validate-json.sh and fix the JSON syntax before deploying.",
         "ESCHEMA" => "Compare the event files with config/BattleLuck/events/schemas and add the missing required fields.",
+        "E_IDS" or "EUNKNOWNID" => "Check the file and JSONPath against docs/audit/systems/allowlists and a target-server KindredExtract dump.",
+        "E_TICK" => "Use validated wait:<seconds> and tick:<event-second> markers.",
+        "E_UUID_UNVERIFIED" => "Remove the sequence UUID from the executable catalog until a target-server dump confirms it.",
         "EGIST" => "Use a public HTTPS gist.github.com URL containing all four required files.",
         "EZONEHASH" => "Choose a unique positive zone hash and keep flow.json and zones.json identical.",
         "EACTIVE" => "End the active event before replacing or restoring its definition.",
         "ERUNTIMEREGISTER" => "Use the Safe-Stage workflow, inspect the server log, and verify KindredExtract references.",
         "EBACKUP" => "Check the latest backup manifest and restore only a verified known-good snapshot.",
+        "E_BACKUP_TAMPERED" => "Do not restore the backup; retain it for forensic review and create a new snapshot.",
+        "E_NO_SNAPSHOT" => "Create a verified BattleLuck deployment snapshot before production deployment.",
+        "E_RATE" or "START_WINDOW_BLOCKED" => "Retry during a low-load window or explicitly force the operation after review.",
         "EPURGE" or "EPURGE_CONFIRM" => "Use the exact BattleLuck backup id and add the final confirm token; never target the host world save.",
         _ => "Review the deployment error and run .ai event status <eventId> before retrying."
     };

@@ -1,4 +1,10 @@
 param(
+    # Compatibility names used by the pinned KindredExtract regeneration
+    # command in tools/README.md. The older parameter names remain supported
+    # for existing local scripts.
+    [string]$KindredPath = "",
+    [string]$OutCsv = "",
+    [string]$OutTicks = "",
     [string]$ReferencePath = "docs/reference/kindredextract-reference.json",
     [string]$TemplatePath = ".external/KindredExtract/SystemsQueryExtraction.tt",
     [string]$CsvPath = "docs/reference/kindredextract-systems.csv",
@@ -14,6 +20,25 @@ $repoRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 function Resolve-RepoPath([string]$path) {
     if ([System.IO.Path]::IsPathRooted($path)) { return $path }
     return Join-Path $repoRoot $path
+}
+
+if ($PSBoundParameters.ContainsKey("OutCsv") -and -not [string]::IsNullOrWhiteSpace($OutCsv)) {
+    $CsvPath = $OutCsv
+}
+if ($PSBoundParameters.ContainsKey("OutTicks") -and -not [string]::IsNullOrWhiteSpace($OutTicks)) {
+    $TickCsvPath = $OutTicks
+}
+if ($PSBoundParameters.ContainsKey("KindredPath") -and -not [string]::IsNullOrWhiteSpace($KindredPath)) {
+    $kindredRoot = Resolve-RepoPath $KindredPath
+    $ttCandidate = Join-Path $kindredRoot "SystemsQueryExtraction.tt"
+    $csCandidate = Join-Path $kindredRoot "SystemsQueryExtraction.cs"
+    if (Test-Path -LiteralPath $ttCandidate) {
+        $TemplatePath = $ttCandidate
+    } elseif (Test-Path -LiteralPath $csCandidate) {
+        $TemplatePath = $csCandidate
+    } else {
+        throw "KindredExtract checkout at '$kindredRoot' has no SystemsQueryExtraction.tt or SystemsQueryExtraction.cs."
+    }
 }
 
 $referenceFullPath = Resolve-RepoPath $ReferencePath

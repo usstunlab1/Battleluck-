@@ -42,7 +42,7 @@ Text from this assistant does not execute anything.
   log and may recommend deterministic fixes. It never changes rules or executes
   actions by itself.
 - Rollback scopes must be named: `.ai event rollback <eventId>` changes event
-  files; `.ai rollback player <name|steamId>` restores one online event snapshot;
+  files; `.ai rollback player <name|steamId> <timestamp|runId>` restores one exact online event snapshot;
   `.ai rollback server players confirm` restores all online event snapshots; and
   `.ai rollback server purge ... confirm` deletes only a BattleLuck deployment
   backup. Never claim that the V Rising world save was restored by BattleLuck.

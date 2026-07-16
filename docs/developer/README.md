@@ -102,6 +102,13 @@ Developers can compose reusable sequences from catalog actions with
 `.ai.sequence.preview`, then execute it from a phase, timer, trigger, or approved
 live operation using `sequence.custom.play:sequenceId=<id>|schedule=true`.
 
+Native `SequenceGUID` hashes have a separate executable catalog at
+`config/BattleLuck/sequences/uuid_catalog.json`. KindredExtract allowlists and
+the fallback constants in `ActionModels.cs` are reference-only; they are not
+in-game verification. Keep `entries` empty until a target-server dump confirms
+the hash, then record `verificationStatus: "in_game_verified"`, the UTC time,
+and the dump source.
+
 ## Project Folders
 
 | Folder | Purpose |

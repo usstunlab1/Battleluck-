@@ -113,8 +113,10 @@ public static class ActionTypeExtensions
 }
 
 /// <summary>
-/// Curated SequenceGUID constants from V Rising for BattleLuck event VFX.
-/// Loaded from config/action_config.json.
+/// Reference fallback SequenceGUID constants for BattleLuck event VFX.
+/// They are not target-build verification. Confirm hashes in-game and promote
+/// only the confirmed values to config/BattleLuck/sequences/uuid_catalog.json.
+/// Loaded from config/action_config.json when present.
 /// </summary>
 public static class ActionSequences
 {

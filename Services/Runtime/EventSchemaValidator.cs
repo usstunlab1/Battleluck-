@@ -28,6 +28,8 @@ public static class EventSchemaValidator
         if (!files.TryGetValue("prompt.txt", out var prompt) || string.IsNullOrWhiteSpace(prompt))
             result.Errors.Add("ESCHEMA: prompt.txt must contain a non-empty prompt contract.");
 
+        result.Errors.AddRange(EventReferenceAllowlistValidator.Validate(files).Errors);
+
         return result;
     }
 

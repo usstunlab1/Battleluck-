@@ -107,6 +107,9 @@
     <!-- Helper scripts/docs are embedded so installing only BattleLuck.dll still
          creates the optional tools folder on the first server load. -->
     <EmbeddedResource Include="tools\**\*" />
+    <!-- KindredExtract allowlists are embedded so production servers can
+         validate system/component references without a repository checkout. -->
+    <EmbeddedResource Include="docs\audit\systems\allowlists\*.json" />
     <ServerConfigFiles Include="config\BattleLuck\**\*" />
   </ItemGroup>
 

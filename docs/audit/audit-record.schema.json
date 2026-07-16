@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://battleluck.dev/schemas/event-audit-record.schema.json",
+  "title": "BattleLuck EventDeploymentAuditRecord",
+  "type": "object",
+  "required": ["timestamp", "command", "eventId", "files", "fileHashes", "validation", "server", "rollback", "exit"],
+  "properties": {
+    "timestamp": { "type": "string", "format": "date-time" },
+    "command": { "type": "string" },
+    "eventId": { "type": "string" },
+    "gist": { "type": ["string", "null"] },
+    "files": { "type": "object", "additionalProperties": { "type": "boolean" } },
+    "fileHashes": { "type": "object", "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
+    "validation": {
+      "type": "object",
+      "required": ["json", "schema", "ids"],
+      "properties": {
+        "json": { "type": "boolean" },
+        "schema": { "type": "boolean" },
+        "ids": { "type": "boolean" }
+      }
+    },
+    "server": {
+      "type": "object",
+      "required": ["registerOk", "startOk"],
+      "properties": {
+        "registerOk": { "type": "boolean" },
+        "startOk": { "type": "boolean" },
+        "error": { "type": ["string", "null"] }
+      }
+    },
+    "rollback": { "type": "boolean" },
+    "exit": { "type": "integer", "enum": [0, 1] },
+    "errorCode": { "type": ["string", "null"] },
+    "error": { "type": ["string", "null"] },
+    "backup": { "type": ["string", "null"] },
+    "restoredPlayers": { "type": "integer", "minimum": 0 },
+    "skippedPlayers": { "type": "integer", "minimum": 0 }
+  },
+  "additionalProperties": false
+}

@@ -339,7 +339,7 @@ The `main` checkout contains 368 tracked files: 277 C# files, 27 tracked JSON fi
 BattleLuck now exposes three deliberately separate recovery scopes:
 
 1. **Event definition rollback** (`.ai event rollback <eventId>`): restores a verified BattleLuck deployment backup after manifest/hash and schema checks.
-2. **Per-player event rollback** (`.ai rollback player <name|steamId>`): restores one online player's persisted pre-event snapshot. The snapshot is consumed only after a successful restore.
+2. **Per-player event rollback** (`.ai rollback player <name|steamId> <timestamp|runId>`): restores one online player's exact persisted pre-event snapshot. The snapshot is consumed only after a successful restore.
 3. **All-player event rollback** (`.ai rollback server players confirm`): restores every matching online event snapshot and retains offline snapshots as pending. It never rewrites the V Rising world save.
 
 `.ai rollback server purge <eventId> [backupId] confirm` deletes one inactive BattleLuck deployment-backup directory only. It cannot delete or alter `VRisingServer/Saves`; that directory is owned by V Rising's native `SaveFileManager` and must be managed with the host's world-save backup tooling. This is intentional: a plugin-side recursive delete of the native world history could permanently destroy the only recovery copy.
@@ -354,3 +354,12 @@ Deployments use an HTTPS-only source, a staging directory, schema/referential va
 - ECS registration, zone cleanup, and player restoration still require a running V Rising server for integration verification.
 - Existing compiler warnings remain in unrelated legacy paths and should be addressed separately.
 - Native full-world rollback remains an operator/host responsibility. The log values supplied for `world1` (`AutoSaveCount=10`, `AutoSaveInterval=120`, compressed saves) confirm that V Rising is maintaining its own save history; they do not provide a safe plugin API for deleting that history.
+
+### Audit and operator guardrail follow-up
+
+- The audit contract is now locked by `docs/audit/audit-record.schema.json`; field names match `EventDeploymentAuditRecord` exactly.
+- KindredExtract component/system lists are generated under `docs/audit/systems/allowlists/` and embedded as reference candidates for server-side validation. They are not in-game verification; prefab enforcement remains runtime-backed until a real target-server `.dump p` export is supplied. Native sequence UUIDs use the separate strict `config/BattleLuck/sequences/uuid_catalog.json` and are promoted only after in-game confirmation.
+- Event references now fail with `E_IDS` and a file/JSONPath; malformed `wait:`/`tick:` markers fail with `E_TICK`.
+- `.event.start` blocks configured high-load windows and records `START_WINDOW_BLOCKED`; an explicit admin force token records `START_WINDOW_FORCED`.
+- Production mode can require a verified BattleLuck deployment manifest (`E_NO_SNAPSHOT`) before replacement. This is opt-in and does not substitute for the native V Rising world-save backup.
+- Per-player rollback requires an exact snapshot timestamp or event run id and restores only the documented snapshot categories; managed event session flags are cleared by `SessionController`, not copied between players.

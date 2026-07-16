@@ -7,9 +7,9 @@ using BattleLuck.Services.Runtime;
 public static class EventDeploymentCommands
 {
     static readonly EventDeploymentService Service = new();
-    static readonly EventDeploymentAuditService Audit = new();
+    public static EventDeploymentAuditService Audit { get; } = new();
 
-    public static async Task DeployFromGist(ChatCommandContext ctx, string eventId, string gistUrl)
+    public static async Task DeployFromGist(ChatCommandContext ctx, string eventId, string gistUrl, bool dryRun = false)
     {
         if (string.IsNullOrWhiteSpace(eventId) || string.IsNullOrWhiteSpace(gistUrl))
         {
@@ -17,9 +17,11 @@ public static class EventDeploymentCommands
             return;
         }
 
-        ctx.Reply($"🤖 Staging '{eventId}' from the HTTPS Gist. Download, validation, backup, and registration are in progress; no live event has started.");
-        var result = await Service.DeployFromGistAsync(eventId, gistUrl).ConfigureAwait(false);
-        Audit.Record("deploy", eventId, gistUrl, result);
+        ctx.Reply(dryRun
+            ? $"🔎 Dry-running '{eventId}' from the HTTPS Gist. Files are downloaded and validated in memory; no backup, registration, or event start is attempted."
+            : $"🤖 Staging '{eventId}' from the HTTPS Gist. Download, validation, backup, and registration are in progress; no live event has started.");
+        var result = await Service.DeployFromGistAsync(eventId, gistUrl, dryRun).ConfigureAwait(false);
+        Audit.Record("deploy", eventId, gistUrl, result, dryRun: dryRun);
         if (!result.Success || result.Value == null)
         {
             ctx.Reply($"❌ Event deployment rejected: {result.Error}");
@@ -28,8 +30,12 @@ public static class EventDeploymentCommands
         }
 
         var deployment = result.Value;
-        ctx.Reply($"✅ Event '{deployment.ModeId}' deployed and registered ({deployment.ZoneCount} zone(s), hash {deployment.ZoneHash}).");
-        ctx.Reply($"Backup: {deployment.BackupPath}. Start it only after review with `.event.start {deployment.ModeId}`.");
+        ctx.Reply(dryRun
+            ? $"✅ Dry run passed for '{deployment.ModeId}' ({deployment.ZoneCount} zone(s), hash {deployment.ZoneHash}); registry unchanged."
+            : $"✅ Event '{deployment.ModeId}' deployed and registered ({deployment.ZoneCount} zone(s), hash {deployment.ZoneHash}).");
+        ctx.Reply(dryRun
+            ? "Audit recorded deploy_dry_run with exit=0 and registerOk=false."
+            : $"Backup: {deployment.BackupPath}. Start it only after review with `.event.start {deployment.ModeId}`.");
         ctx.Reply("KindredExtract IDs are references only; verify prefabs and queries against a live dump before launch.");
     }
 

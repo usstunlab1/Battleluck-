@@ -139,10 +139,11 @@ discards pending proposals; it does not reverse an action that already executed.
 | `.ai event rollback <operationId>` | Roll back a pending event proposal (admin) |
 | `.ai rollback [id]` | Discard a pending live-action proposal (admin) |
 | `.ai event deploy <eventId> <https-gist-url>` | Stage, validate, back up, and register four event files (admin) |
+| `.ai event deploy <eventId> <https-gist-url> --dry-run` | Validate without backup or registration (admin) |
 | `.ai event status [eventId]` | Read-only deployment/file status (public) |
 | `.ai event audit [eventId]` | Summarize deployment outcomes and remediation hints (admin) |
 | `.ai event rollback <eventId>` | Restore the latest known-good event deployment (admin) |
-| `.ai rollback player <name|steamId>` | Restore one online player's pre-event snapshot (admin) |
+| `.ai rollback player <name|steamId> <timestamp|runId>` | Restore one exact online snapshot (admin) |
 | `.ai rollback server players confirm` | Restore all online event snapshots; offline remain pending (admin) |
 | `.ai rollback server purge <eventId> [backupId] confirm` | Delete a BattleLuck deployment backup only (admin) |
 | `.ai.reload` | Reload AI configuration (admin) |
@@ -154,7 +155,7 @@ discards pending proposals; it does not reverse an action that already executed.
 |---------|-------------|
 | `.reload` | Reload configuration |
 | `.event.create <eventId> [templateId]` | Clone Bloodbath (or another event) into a custom event |
-| `.event.start <mode>` | Start a game mode |
+| `.event.start <mode> [force=true]` | Start a game mode; high-load windows require explicit force |
 | `.event.end <mode>` | End a game mode |
 | `.event.status` | Show active events and player counts |
 | `.modelist` | List registered game modes |

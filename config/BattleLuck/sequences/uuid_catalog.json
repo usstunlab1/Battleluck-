@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "battleluck.sequence-uuid",
+  "verificationPolicy": "strict_in_game",
+  "description": "Only SequenceGUID values confirmed by a target-server in-game dump belong in entries. KindredExtract source/reference values remain pending until verified.",
+  "entries": [],
+  "pendingReferenceSources": [
+    {
+      "source": "Models/ActionModels.cs",
+      "reason": "Fallback SequenceGUID constants are reference candidates, not target-build verification."
+    },
+    {
+      "source": "config/BattleLuck/action_config.json",
+      "reason": "Configured values must be checked against the running V Rising build before promotion."
+    }
+  ],
+  "entryShape": {
+    "id": "Combat.Kill_Impact",
+    "sequenceGuidHash": 0,
+    "verificationStatus": "in_game_verified",
+    "verifiedAtUtc": "",
+    "verifiedBy": "",
+    "dumpSource": "KindredExtract .dump eq/.dump p output or approved runtime capture"
+  }
+}

@@ -1,4 +1,4 @@
-﻿# KindredExtract Unity system/tick research prompt
+# KindredExtract Unity system/tick research prompt
 
 You are reviewing `kindredextract-systems.csv` and `kindredextract-ticks.csv`, generated from the
 [Odjit/KindredExtract](https://github.com/Odjit/KindredExtract) reference list

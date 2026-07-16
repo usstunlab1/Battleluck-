@@ -231,7 +231,7 @@ non-admins or when a feature is disabled:
 .swapteam [closest|balance]    Balance or move event teams (admin)
 .swapteam.ai [options]         Balance teams + AI announcement; NPC AI coming soon (admin)
 .event.create <eventId>        Clone Bloodbath into a custom event (admin)
-.event.start <mode>            Start and enter an event mode (admin)
+.event.start <mode> [force]    Start an event; high-load windows require force=true (admin)
 .event.end <mode>              End a mode's active sessions (admin)
 .event.status                  Show active events and player counts (admin)
 .modelist                      List registered modes (admin)
@@ -326,11 +326,15 @@ deployment, status, audit, and rollback commands are deterministic and do not
 require an external LLM provider to be online; the optional LLM only helps
 admins draft or explain changes.
 
+Use `.ai event deploy <eventId> <https-gist-url> --dry-run` to validate a bundle
+without writing a backup or registering it. The audit record reports
+`deploy_dry_run`, `registerOk=false`, and `exit=0` when validation passes.
+
 #### Rollback scopes
 
 ```text
 .ai event rollback <eventId>                           # event definition backup
-.ai rollback player <name|steamId>                    # one online player's event snapshot
+.ai rollback player <name|steamId> <timestamp|runId>   # exact snapshot selector
 .ai rollback server status                            # count online/offline event snapshots
 .ai rollback server players confirm                   # restore all online event snapshots
 .ai rollback server purge <eventId> [backupId] confirm # delete a BattleLuck backup

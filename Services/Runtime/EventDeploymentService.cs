@@ -27,11 +27,16 @@ public sealed class EventDeploymentService
     public async Task<OperationResult<EventDeploymentResult>> DeployFromGistAsync(
         string modeId,
         string gistUrl,
+        bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
         modeId = NormalizeId(modeId);
         if (modeId.Length == 0)
             return OperationResult<EventDeploymentResult>.Fail("EINVALIDID: Event id must use lowercase letters, numbers, '_' or '-'.");
+
+        var snapshotGuard = OperatorSafetyService.EnsureDeploymentSnapshot(modeId);
+        if (!snapshotGuard.Success)
+            return OperationResult<EventDeploymentResult>.Fail(snapshotGuard.Error ?? "E_NO_SNAPSHOT: Deployment snapshot required.");
 
         if (!TryBuildGistFileUrls(gistUrl, out var fileUrls, out var urlError))
             return OperationResult<EventDeploymentResult>.Fail("EGIST: " + urlError);
@@ -58,6 +63,14 @@ public sealed class EventDeploymentService
         if (!validation.Success)
             return OperationResult<EventDeploymentResult>.Fail(
                 "ESCHEMA: Deployment rejected by validation: " + string.Join("; ", validation.Errors.Take(8)));
+
+        if (dryRun)
+        {
+            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["flow.json"], ConfigLoader.JsonOptions)!;
+            var zoneHash = flow.Zones.FirstOrDefault()?.Hash ?? 0;
+            return OperationResult<EventDeploymentResult>.Ok(new EventDeploymentResult(
+                modeId, $"dry-run:{gistUrl.Trim()}", "dry-run (not installed)", flow.Zones.Count, zoneHash));
+        }
 
         return InstallBundle(modeId, files, gistUrl.Trim());
     }
@@ -555,7 +568,7 @@ public sealed class EventDeploymentService
             var manifest = JsonSerializer.Deserialize<EventDeploymentManifest>(File.ReadAllText(path));
             if (manifest == null || !manifest.ModeId.Equals(modeId, StringComparison.OrdinalIgnoreCase))
             {
-                error = "Backup manifest event id does not match the requested event.";
+                error = "E_BACKUP_TAMPERED: Backup manifest event id does not match the requested event.";
                 return false;
             }
 
@@ -563,14 +576,14 @@ public sealed class EventDeploymentService
             {
                 if (!manifest.Files.TryGetValue(file, out var expected))
                 {
-                    error = $"Backup manifest is missing {file}.";
+                    error = $"E_BACKUP_TAMPERED: Backup manifest is missing {file}.";
                     return false;
                 }
 
                 var filePath = Path.Combine(directory, file);
                 if (!File.Exists(filePath))
                 {
-                    error = $"Backup file {file} is missing.";
+                    error = $"E_BACKUP_TAMPERED: Backup file {file} is missing.";
                     return false;
                 }
 
@@ -578,7 +591,7 @@ public sealed class EventDeploymentService
                 var actualHash = Convert.ToHexString(SHA256.Create().ComputeHash(stream)).ToLowerInvariant();
                 if (!actualHash.Equals(expected.Sha256, StringComparison.OrdinalIgnoreCase) || stream.Length != expected.Bytes)
                 {
-                    error = $"Backup file {file} failed SHA-256/size verification.";
+                    error = $"E_BACKUP_TAMPERED: Backup file {file} failed SHA-256/size verification.";
                     return false;
                 }
             }

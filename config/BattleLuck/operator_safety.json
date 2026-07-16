@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "highLoadOnlinePlayers": 36,
+  "highLoadActiveSessions": 3,
+  "productionMode": false,
+  "requireSnapshotBeforeProductionDeploy": false
+}

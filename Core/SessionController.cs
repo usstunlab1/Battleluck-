@@ -295,7 +295,7 @@ public sealed class SessionController
             {
                 // Skip enter actions and do only safe player prep/placement.
                 // Used by admin safety mode and action staging mode.
-                var prepareResult = _playerState.PrepareForEventEntry(playerCharacter, zoneHash, returnPositionOverride, steamId);
+                var prepareResult = _playerState.PrepareForEventEntry(playerCharacter, zoneHash, returnPositionOverride, steamId, session.Context.SessionId, modeId);
                 if (!prepareResult.Success)
                 {
                     _enteringPlayers.Remove(steamId);
