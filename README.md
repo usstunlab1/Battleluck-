@@ -34,6 +34,27 @@ catalog guidance. Live actions and event edits still require admin approval.
    configured provider receives the prompt; conversation history remains off by
    default and no credentials are stored in the mod package.
 
+## 📣 Coming soon — next week
+
+🚧 **BattleLuck AI Chat channel** is planned for next week. It will be a new,
+dedicated channel in the existing BattleLuck chat/server, so players can keep AI
+questions and responses separate from match play without joining a second server
+or installing another mod. It will use the same `.ai` permissions, provider, and
+approval pipeline already described above.
+
+The channel remains part of the same chat integration, but uses a separate
+route so messages can be filtered independently. Planned message markers start
+each message and make the channel easy to scan:
+
+- `📣 [ANNOUNCE]` — server and event notices.
+- `🤖 [AI]` — questions, guidance, and approved AI previews.
+- `⚔️ [EVENT]` — match starts, phases, and results.
+- `🛡️ [ADMIN]` — approval and rollback status (admin-only details).
+
+This is a roadmap item, not a current command or configuration option. Until the
+channel ships, use `.ai` in the normal game chat and `.aistatus` for provider
+health.
+
 ## Included features
 
 - Match-ready, action-driven event flow for arena and custom V Rising events.
