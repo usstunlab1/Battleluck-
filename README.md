@@ -254,9 +254,7 @@ Discord support: <https://discord.gg/uJ2ehWv4gR>
 - [User guide](docs/user/README.md)
 - [Developer guide](docs/developer/README.md)
 - [AI and prompt guide](docs/LLM_GUIDE.md)
-- [Publishing checklist](docs/PUBLISHING_CHECKLIST.md)
 - [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
-- [V Rising Mod Wiki: Thunderstore upload](https://wiki.vrisingmods.com/dev/upload_to_thunderstore.html)
 - [V Rising Mod Wiki: licensing](https://wiki.vrisingmods.com/dev/licensing.html)
 
 ## License
