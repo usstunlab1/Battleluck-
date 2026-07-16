@@ -90,11 +90,7 @@ public sealed class SessionController
     {
         foreach (var modeId in _registry.GetRegisteredModes())
         {
-            var config = LoadEffectiveConfig(modeId);
-            foreach (var zone in config.Zones.Zones)
-            {
-                _zoneModeMap[zone.Hash] = modeId;
-            }
+            TryRegisterModeZones(modeId, out _);
         }
 
         _zoneDetection.OnPlayerEnterZone += HandlePlayerWalkIntoZone;
@@ -103,6 +99,42 @@ public sealed class SessionController
 
         _autoTrash.Initialize();
         BattleLuckPlugin.LogInfo($"[SessionController] Initialized with {_zoneModeMap.Count} zone-mode mappings.");
+    }
+
+    /// <summary>
+    /// Add zones for a mode created after server startup to the live detection
+    /// map. This keeps .toggleenter and walk-in detection working immediately.
+    /// </summary>
+    public bool TryRegisterModeZones(string modeId, out string error)
+    {
+        error = "";
+        try
+        {
+            var config = LoadEffectiveConfig(modeId);
+            if (config.Zones.Zones.Count == 0)
+            {
+                error = $"Event '{modeId}' has no zones.";
+                return false;
+            }
+
+            foreach (var zone in config.Zones.Zones)
+            {
+                if (zone.Hash == 0)
+                {
+                    error = $"Event '{modeId}' contains a zone with hash 0.";
+                    return false;
+                }
+
+                _zoneModeMap[zone.Hash] = modeId;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"Could not register zones for '{modeId}': {ex.Message}";
+            return false;
+        }
     }
 
     public ActiveSession? GetSessionByEntity(Entity sessionEntity)

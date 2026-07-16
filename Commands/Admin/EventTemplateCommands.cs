@@ -23,6 +23,13 @@ public static class EventTemplateCommands
             return;
         }
 
+        if (BattleLuckPlugin.Session is { } session &&
+            !session.TryRegisterModeZones(result.Value.ModeId, out var zoneError))
+        {
+            ctx.Reply($"Created and registered '{result.Value.ModeId}', but zone detection was not updated: {zoneError}");
+            return;
+        }
+
         ctx.Reply($"Created custom event '{result.Value.DisplayName}' as '{result.Value.ModeId}' from '{result.Value.TemplateId}' (zone hash {result.Value.ZoneHash}).");
         ctx.Reply($"Edit config/BattleLuck/events/{result.Value.ModeId}/flow.json, zones.json, kits.json, and prompt.txt, then run .event.start {result.Value.ModeId}.");
         ctx.Reply("The cloned event keeps Bloodbath's kit, entry/exit lifecycle, rollback snapshot flow, and action validation until you customize it. Move the copied zone center/teleportSpawn before use if it should be a separate arena.");
