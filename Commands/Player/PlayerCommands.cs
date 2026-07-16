@@ -89,7 +89,7 @@ public static class PlayerCommands
         HandleSwapTeam(ctx, NonEmptyWords(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12));
     }
 
-    [Command("swapteam.ai", description: "Coming soon: NPC-directed AI team control. Currently swaps teams and asks the AI to announce it. Usage: .swapteam.ai [closest|balance|name teamId]", adminOnly: true)]
+    [Command("swapteam.ai", description: "Balance teams and announce with AI. NPC-directed AI team control is coming soon. Usage: .swapteam.ai [closest|balance|name teamId]", adminOnly: true)]
     public static void SwapTeamAi(
         ChatCommandContext ctx,
         string a1 = "",

@@ -63,7 +63,7 @@ non-admins or when a feature is disabled:
 .start                         Force-start a prepared event session (admin)
 .rollback <operationId>        Roll back a pending operation (admin)
 .swapteam [closest|balance]    Balance or move event teams (admin)
-.swapteam.ai [options]         NPC-directed team AI — coming soon (admin)
+.swapteam.ai [options]         Balance teams + AI announcement; NPC AI coming soon (admin)
 .event.create <eventId>        Clone Bloodbath into a custom event (admin)
 .event.start <mode>            Start and enter an event mode (admin)
 .event.end <mode>              End a mode's active sessions (admin)

@@ -122,7 +122,7 @@ corresponding feature is enabled.
 | `.npc.follow <npcId> [target]` | Make an NPC follow a target |
 | `.npc.goto <npcId> [x y z]` | Move a controlled NPC |
 | `.npc.despawn <npcId\|all>` | Despawn controlled NPCs |
-| `.swapteam.ai [options]` | NPC-directed team AI — coming soon; currently announces swaps (admin) |
+| `.swapteam.ai [options]` | Balance teams and announce with AI; NPC AI coming soon (admin) |
 | `.schematic.list` | List loaded schematics |
 
 ### Optional Player Event Commands
