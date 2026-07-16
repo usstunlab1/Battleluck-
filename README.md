@@ -108,6 +108,20 @@ added without changing the `.ai`, approval, task, sequence, and rollback workflo
 Unity ECS/BepInEx games are the next planned adapter family; Unreal, Source, and
 other games are roadmap ideas only and are not supported by this release.
 
+## ☁️ Multi-cloud and on-premise
+
+BattleLuck is cloud-provider-neutral: deploy the same plugin, event configuration,
+action catalog, and AI approval pipeline on a Windows or Linux V Rising dedicated
+server hosted by any cloud provider—or on your own hardware. No cloud SDK is
+required in the plugin, so moving providers normally only changes the server path,
+network rules, storage backup, and optional provider credentials.
+
+Snapshots, event definitions, custom sequences, and integrations remain portable
+files under `BepInEx/config/BattleLuck/`. Keep those files and the server's backup
+policy under your control; do not copy secrets or active player data into a public
+repository. See the [self-hosted operations guide](docs/OPEN_SOURCE_SELF_HOSTED.md)
+for the deployment contract.
+
 ## Commands
 
 `.ai` is the primary BattleLuck interface. All commands use the `.` prefix, and

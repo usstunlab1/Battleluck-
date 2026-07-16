@@ -19,6 +19,19 @@ BattleLuck-specific capabilities remain in this repository: declarative V Rising
 events, the verified action catalog, native-backed rollback snapshots, tick and
 sequence scheduling, NPC control, and approval-gated AI operations.
 
+## ☁️ Multi-cloud and on-premise
+
+The plugin has no cloud-provider SDK or required hosted control plane. The same
+release can run on a Windows or Linux V Rising dedicated server in any cloud or
+on your own hardware. Moving environments normally requires only deployment path,
+firewall, storage-backup, and optional AI-provider credential changes—not a code
+change to BattleLuck.
+
+Portable operational files live under `BepInEx/config/BattleLuck/`, including event
+definitions, action catalogs, custom sequences, and provider settings. Treat
+snapshots, logs, credentials, and player data as private server state and move
+them only through your protected backup process.
+
 ## ⚔️ Install from the same repository
 
 Install BepInEx and VampireCommandFramework on the V Rising server first, then
