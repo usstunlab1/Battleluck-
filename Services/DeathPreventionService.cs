@@ -1,5 +1,7 @@
 using BattleLuck.Models;
 using Unity.Entities;
+using BattleLuck.Services.Flow;
+using BattleLuck.Services.Runtime;
 
 namespace BattleLuck.Services;
 
@@ -71,7 +73,29 @@ public sealed class DeathPreventionService : IDisposable
                 steamId,
                 $"Death prevented. {state!.RemainingCharges} charge(s) remain.");
             if (!string.IsNullOrWhiteSpace(state.OnTriggeredSequenceId))
-                BattleLuckPlugin.LogInfo($"[DeathPrevention] Trigger sequence requested: {state.OnTriggeredSequenceId} for {steamId}.");
+            {
+                try
+                {
+                    // Execute the configured UUID sequence immediately with the prevented-death context.
+                    var executor = new FlowActionExecutor(new PlayerStateController(), BattleLuckPlugin.GameModes);
+                    var context = new FlowActionContext
+                    {
+                        PlayerCharacter = died,
+                        GameContext = null,
+                        Config = null,
+                        ZoneHash = 0
+                    };
+                    var run = new CustomSequenceService().ExecuteImmediate(state.OnTriggeredSequenceId, executor, context);
+                    if (!run.Success)
+                    {
+                        BattleLuckPlugin.LogWarning($"[DeathPrevention] Sequence '{state.OnTriggeredSequenceId}' failed: {run.Error ?? run.UserMessage}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    BattleLuckPlugin.LogWarning($"[DeathPrevention] Sequence '{state.OnTriggeredSequenceId}' threw: {ex.Message}");
+                }
+            }
         });
     }
 
