@@ -1,4 +1,4 @@
-8using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using BattleLuck.Models;
 using BattleLuck.Services.Flow;

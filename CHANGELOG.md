@@ -1,11 +1,5 @@
 # Changelog
 
-## 1.1.3
-
-- Moved `.github/workflows` to `.agents/workflows` for better organization.
-- Added `.github/` to `.gitignore` to remove from remote tracking.
-- Updated `.ai/mcp/mcp.json` with BattleLuck Actions server configuration.
-
 ## 1.1.2
 
 - Added `commands.txt` quick reference file with copy-paste friendly commands for build, test, docker, git, and project analysis.

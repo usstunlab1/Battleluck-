@@ -2,6 +2,11 @@ using Unity.Entities;
 using BattleLuck.Services;
 using BattleLuck.Services.AI;
 using BattleLuck.Services.Castles;
+using BattleLuck.Services.Companion;
+using BattleLuck.Services.Encounter;
+using BattleLuck.Services.Boss;
+using BattleLuck.Services.Portal;
+using BattleLuck.Services.Creature;
 
 /// <summary>
 /// Static service locator for BattleLuck.
@@ -45,11 +50,11 @@ internal static class Core
     public static CastlePolicyService? CastlePolicy { get; internal set; }
 
     // ── Wave 1: New expansion services ──────────────────────────────────────────
-    public static Companion.CompanionService? Companion { get; internal set; }
-    public static Encounter.EncounterService? Encounters { get; internal set; }
-    public static Boss.BossScalingService? BossScaling { get; internal set; }
-    public static Portal.PortalService? Portals { get; internal set; }
-    public static Creature.CreatureCaptureService? CreatureCapture { get; internal set; }
+    public static CompanionService? Companion { get; internal set; }
+    public static EncounterService? Encounters { get; internal set; }
+    public static BossScalingService? BossScaling { get; internal set; }
+    public static PortalService? Portals { get; internal set; }
+    public static CreatureCaptureService? CreatureCapture { get; internal set; }
 
     /// <summary>True once <see cref="InitializeAfterLoaded"/> has completed.</summary>
     public static bool IsInitialized { get; internal set; }

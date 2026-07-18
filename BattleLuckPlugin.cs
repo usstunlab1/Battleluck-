@@ -16,6 +16,11 @@ using BattleLuck.Services.AI;
 using BattleLuck.Services.Modes;
 using BattleLuck.Core.Loaders;
 using BattleLuck.Core.Validation;
+using BattleLuck.Services.Companion;
+using BattleLuck.Services.Encounter;
+using BattleLuck.Services.Boss;
+using BattleLuck.Services.Portal;
+using BattleLuck.Services.Creature;
 using VampireCommandFramework;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,11 +54,11 @@ public class BattleLuckPlugin : BasePlugin
     public static RoadmapService? Roadmap { get => Core.Roadmap; private set => Core.Roadmap = value; }
     public static CastlePolicyService? CastlePolicy { get => Core.CastlePolicy; private set => Core.CastlePolicy = value; }
     // ── Wave 1: New expansion services ──────────────────────────────────────────
-    public static Companion.CompanionService? Companion { get => Core.Companion; private set => Core.Companion = value; }
-    public static Encounter.EncounterService? Encounters { get => Core.Encounters; private set => Core.Encounters = value; }
-    public static Boss.BossScalingService? BossScaling { get => Core.BossScaling; private set => Core.BossScaling = value; }
-    public static Portal.PortalService? Portals { get => Core.Portals; private set => Core.Portals = value; }
-    public static Creature.CreatureCaptureService? CreatureCapture { get => Core.CreatureCapture; private set => Core.CreatureCapture = value; }
+    public static CompanionService? Companion { get => Core.Companion; private set => Core.Companion = value; }
+    public static EncounterService? Encounters { get => Core.Encounters; private set => Core.Encounters = value; }
+    public static BossScalingService? BossScaling { get => Core.BossScaling; private set => Core.BossScaling = value; }
+    public static PortalService? Portals { get => Core.Portals; private set => Core.Portals = value; }
+    public static CreatureCaptureService? CreatureCapture { get => Core.CreatureCapture; private set => Core.CreatureCapture = value; }
     static DiscordBridgeController? _discordBridge;
     static AiLoggerController? _aiLogger;
     static WebhookController? _webhookController;
@@ -561,19 +566,19 @@ public class BattleLuckPlugin : BasePlugin
                 GameEvents.OnModeEnded += HandleModeEndedNpcDespawn;
 
                 // ── Wave 1: New expansion services ──────────────────────────────────────
-                Companion = new Companion.CompanionService(NpcService);
+                Companion = new CompanionService(NpcService);
                 Log?.LogInfo("[BattleLuck] Companion service initialized.");
 
-                Encounters = new Encounter.EncounterService(NpcService);
+                Encounters = new EncounterService(NpcService);
                 Log?.LogInfo("[BattleLuck] Encounter service initialized.");
 
-                BossScaling = new Boss.BossScalingService();
+                BossScaling = new BossScalingService();
                 Log?.LogInfo("[BattleLuck] Boss scaling service initialized.");
 
-                Portals = new Portal.PortalService();
+                Portals = new PortalService();
                 Log?.LogInfo("[BattleLuck] Portal service initialized.");
 
-                CreatureCapture = new Creature.CreatureCaptureService(NpcService);
+                CreatureCapture = new CreatureCaptureService(NpcService);
                 Log?.LogInfo("[BattleLuck] Creature capture service initialized.");
 
                 // Initialize the session cleanup service (destroys walls / floors / bosses / NPCs
