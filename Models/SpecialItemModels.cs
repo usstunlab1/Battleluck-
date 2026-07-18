@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>Config for the PvP transformation special item.</summary>
 public sealed class SpecialItemConfig
 {

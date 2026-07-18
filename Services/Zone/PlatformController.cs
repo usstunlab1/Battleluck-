@@ -1,9 +1,5 @@
-using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
-using Stunlock.Core;
-using Unity.Collections;
 using Unity.Physics;
+using Unity.Transforms;
 using Math = System.Math;
 
 /// <summary>

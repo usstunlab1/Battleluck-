@@ -1,11 +1,5 @@
-using Unity.Entities;
-using Unity.Collections;
-using Unity.Mathematics;
-using BattleLuck.ECS.Actions.Components;
 using BattleLuck.Core;
-using BattleLuck.Utilities;
-using ProjectM;
-using ProjectM.Network;
+using BattleLuck.ECS.Actions.Components;
 
 namespace BattleLuck.ECS.Actions.Systems;
 

@@ -1,7 +1,3 @@
-using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Collections;
-
 namespace BattleLuck.ECS.Actions.Components;
 
 public struct EventParticipant

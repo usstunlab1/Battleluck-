@@ -1,7 +1,4 @@
 using HarmonyLib;
-using ProjectM.Network;
-using Unity.Collections;
-using Unity.Entities;
 
 [HarmonyPatch]
 internal static class BattleLuckMapVisibilityPatches

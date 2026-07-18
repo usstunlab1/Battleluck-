@@ -1,7 +1,3 @@
-using ProjectM;
-using ProjectM.Network;
-using Unity.Entities;
-
 /// <summary>
 /// Toggles building placement restrictions during events via V Rising's
 /// SetDebugSettingEvent system — the same mechanism KindredSchematics uses.

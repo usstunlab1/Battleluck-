@@ -1,8 +1,3 @@
-using ProjectM;
-using Unity.Entities;
-using Unity.Mathematics;
-using BattleLuck.Services.Flow;
-
 /// <summary>
 /// Executes configured BattleLuck enter/exit/action flows on the main thread.
 /// The concrete action behavior lives in FlowActionExecutor so config, commands,
@@ -183,7 +178,7 @@ public sealed class FlowController
     void TryRestorePreparedEnter(Entity playerCharacter, int zoneHash)
     {
         var steamId = playerCharacter.GetSteamId();
-        if (steamId == 0 || !_playerState.HasSnapshot(steamId))
+        if (steamId == 0 || !_playerState.HasSnapshot(steamId, zoneHash > 0))
             return;
 
         try { _playerState.RestoreSnapshot(playerCharacter, zoneHash); }

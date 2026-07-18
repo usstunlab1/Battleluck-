@@ -5,8 +5,6 @@
 // and its Lifecycle field is updated at each stage. It carries all context
 // needed to route, validate, execute, and report the result.
 
-using System;
-
 namespace BattleLuck.Models;
 
 /// <summary>

@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>
 /// Configuration model for kit_grant_rules.json.
 /// Maps crafted item prefabs to kit IDs that should be granted on craft completion.

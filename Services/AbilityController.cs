@@ -1,7 +1,4 @@
-﻿using ProjectM;
-using ProjectM.Shared;
-using Stunlock.Core;
-using Unity.Entities;
+﻿using ProjectM.Shared;
 
 /// <summary>
 /// Manages player ability/spell slots.

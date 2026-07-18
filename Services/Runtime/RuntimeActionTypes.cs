@@ -4,10 +4,7 @@
 // These records are pure C# — no BepInEx, VRising, or Unity references.
 // They are shared by the plugin, the test project, and any external tooling.
 
-using System.Text.Json.Serialization;
-using Unity.Entities;
 using BattleLuck.Services;
-using BattleLuck.Models;
 
 namespace BattleLuck.Services.Runtime;
 

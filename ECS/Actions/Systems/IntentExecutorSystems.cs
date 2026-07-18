@@ -1,8 +1,5 @@
-using Unity.Entities;
-using Unity.Collections;
-using Unity.Mathematics;
-using BattleLuck.ECS.Actions.Components;
 using BattleLuck.Core;
+using BattleLuck.ECS.Actions.Components;
 using BattleLuck.Services;
 
 namespace BattleLuck.ECS.Actions.Systems;

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Tracks per-player and per-team scores for a game session.
 /// </summary>
 public sealed class ScoreTracker

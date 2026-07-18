@@ -1,6 +1,5 @@
 using BattleLuck.ECS.Actions.Components;
 using BattleLuck.Services.Npc;
-using Unity.Entities;
 
 namespace BattleLuck.ECS.Actions.Systems;
 

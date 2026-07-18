@@ -1,5 +1,3 @@
-using Unity.Entities;
-
 namespace BattleLuck.Services.Runtime;
 
 public sealed record SpawnedEntityRecord(

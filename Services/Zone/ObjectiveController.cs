@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-/// <summary>
+﻿/// <summary>
 /// Manages capture-point objectives for team-based modes (Siege, CTF).
 /// </summary>
 public sealed class ObjectiveController

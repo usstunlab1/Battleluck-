@@ -1,10 +1,4 @@
-﻿using ProjectM;
-using ProjectM.Network;
-using Stunlock.Core;
-using Unity.Entities;
-using Unity.Mathematics;
-
-namespace BattleLuck.Services
+﻿namespace BattleLuck.Services
 {
     /// <summary>
     /// Full 13-category player state save/restore with JSON file persistence.
@@ -17,7 +11,19 @@ namespace BattleLuck.Services
         public const int KitRollbackZoneHash = -999;
 
         static readonly string SnapshotDir = Path.Combine(
-            BepInEx.Paths.BepInExRootPath, "data", "BattleLuck", "snapshots");
+            GetBepInExRootPath(), "data", "BattleLuck", "snapshots");
+
+        static string GetBepInExRootPath()
+        {
+            try
+            {
+                return BepInEx.Paths.BepInExRootPath ?? AppContext.BaseDirectory;
+            }
+            catch
+            {
+                return AppContext.BaseDirectory;
+            }
+        }
 
     static readonly JsonSerializerOptions JsonOpts = new()
     {
@@ -25,7 +31,9 @@ namespace BattleLuck.Services
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    readonly Dictionary<ulong, PlayerSnapshot> _cache = new();
+    readonly Dictionary<string, PlayerSnapshot> _cache = new();
+
+    static string GetCacheKey(ulong steamId, bool isEvent) => $"{steamId}_{(isEvent ? "event" : "regular")}";
 
     public PlayerStateController()
     {
@@ -156,8 +164,10 @@ namespace BattleLuck.Services
         }
 
         // Cache + persist to disk
-        _cache[steamId] = snap;
-        WriteToDisk(steamId, snap);
+        var isEvent = zoneHash > 0;
+        var key = GetCacheKey(steamId, isEvent);
+        _cache[key] = snap;
+        WriteToDisk(steamId, snap, isEvent);
 
         BattleLuckPlugin.LogInfo(
             $"[PlayerState] Saved full snapshot for {steamId} " +
@@ -176,7 +186,7 @@ namespace BattleLuck.Services
         ulong steamId = steamIdOverride != 0 ? steamIdOverride : character.GetSteamId();
         if (steamId == 0) return false;
 
-        var existing = GetSnapshot(steamId);
+        var existing = GetSnapshot(steamId, zoneHash > 0);
         if (existing != null && existing.ZoneHash != KitRollbackZoneHash)
             return false;
 
@@ -213,10 +223,10 @@ namespace BattleLuck.Services
         ulong steamId = character.GetSteamId();
         if (steamId == 0) return false;
 
-        var snap = GetSnapshot(steamId);
+        var snap = GetSnapshot(steamId, zoneHash > 0);
         if (snap == null)
         {
-            BattleLuckPlugin.LogWarning($"[PlayerState] No snapshot found for {steamId}.");
+            BattleLuckPlugin.LogWarning($"[PlayerState] No snapshot found for {steamId} (isEvent: {zoneHash > 0}).");
             return false;
         }
 
@@ -291,8 +301,9 @@ namespace BattleLuck.Services
         character.SetPosition(new float3(snap.Position.X, snap.Position.Y, snap.Position.Z));
 
         // Cleanup
-        _cache.Remove(steamId);
-        DeleteFromDisk(steamId);
+        var key = GetCacheKey(steamId, zoneHash > 0);
+        _cache.Remove(key);
+        DeleteFromDisk(steamId, zoneHash > 0);
 
         BattleLuckPlugin.LogInfo($"[PlayerState] Restored snapshot for {steamId} ({snap.Inventory.Count} items).");
         return true;
@@ -626,13 +637,36 @@ namespace BattleLuck.Services
         }
     }
 
-    public bool HasSnapshot(ulong steamId) => _cache.ContainsKey(steamId) || FileExists(steamId);
+    public bool HasSnapshot(ulong steamId) => 
+        _cache.ContainsKey(GetCacheKey(steamId, true)) || 
+        _cache.ContainsKey(GetCacheKey(steamId, false)) || 
+        FileExists(steamId, true) || 
+        FileExists(steamId, false);
+
+    public bool HasSnapshot(ulong steamId, bool isEvent) =>
+        _cache.ContainsKey(GetCacheKey(steamId, isEvent)) || 
+        FileExists(steamId, isEvent);
+
+    public bool HasSnapshot(ulong steamId, int zoneHash) =>
+        HasSnapshot(steamId, zoneHash > 0);
 
     public PlayerSnapshot? GetSnapshot(ulong steamId)
     {
-        if (_cache.TryGetValue(steamId, out var cached))
+        // Try event first, then regular
+        return GetSnapshot(steamId, isEvent: true) ?? GetSnapshot(steamId, isEvent: false);
+    }
+
+    public PlayerSnapshot? GetSnapshot(ulong steamId, bool isEvent)
+    {
+        var key = GetCacheKey(steamId, isEvent);
+        if (_cache.TryGetValue(key, out var cached))
             return cached;
-        return ReadFromDisk(steamId);
+        return ReadFromDisk(steamId, isEvent);
+    }
+
+    public PlayerSnapshot? GetSnapshot(ulong steamId, int zoneHash)
+    {
+        return GetSnapshot(steamId, zoneHash > 0);
     }
 
     /// <summary>Enumerate valid persisted snapshots without changing state.</summary>
@@ -645,9 +679,30 @@ namespace BattleLuck.Services
         foreach (var path in Directory.GetFiles(SnapshotDir, "*.json"))
         {
             var name = Path.GetFileNameWithoutExtension(path);
-            if (!ulong.TryParse(name, out var steamId))
-                continue;
-            var snapshot = GetSnapshot(steamId);
+            bool isEvent = false;
+            ulong steamId = 0;
+            if (name.EndsWith("_event", StringComparison.OrdinalIgnoreCase))
+            {
+                isEvent = true;
+                var idStr = name.Substring(0, name.Length - 6);
+                if (!ulong.TryParse(idStr, out steamId))
+                    continue;
+            }
+            else if (name.EndsWith("_regular", StringComparison.OrdinalIgnoreCase))
+            {
+                isEvent = false;
+                var idStr = name.Substring(0, name.Length - 8);
+                if (!ulong.TryParse(idStr, out steamId))
+                    continue;
+            }
+            else
+            {
+                // Fallback for old style `{steamId}.json` files
+                if (!ulong.TryParse(name, out steamId))
+                    continue;
+            }
+
+            var snapshot = GetSnapshot(steamId, isEvent);
             if (snapshot != null)
                 snapshots.Add(snapshot);
         }
@@ -657,8 +712,10 @@ namespace BattleLuck.Services
 
     public void ClearSnapshot(ulong steamId)
     {
-        _cache.Remove(steamId);
-        DeleteFromDisk(steamId);
+        _cache.Remove(GetCacheKey(steamId, true));
+        _cache.Remove(GetCacheKey(steamId, false));
+        DeleteFromDisk(steamId, true);
+        DeleteFromDisk(steamId, false);
     }
 
     public void ClearAll()
@@ -675,16 +732,17 @@ namespace BattleLuck.Services
 
     // ── File persistence ────────────────────────────────────────────────
 
-    static string GetPath(ulong steamId) => Path.Combine(SnapshotDir, $"{steamId}.json");
+    static string GetPath(ulong steamId, bool isEvent) =>
+        Path.Combine(SnapshotDir, isEvent ? $"{steamId}_event.json" : $"{steamId}_regular.json");
 
-    static bool FileExists(ulong steamId) => File.Exists(GetPath(steamId));
+    static bool FileExists(ulong steamId, bool isEvent) => File.Exists(GetPath(steamId, isEvent));
 
-    void WriteToDisk(ulong steamId, PlayerSnapshot snap)
+    void WriteToDisk(ulong steamId, PlayerSnapshot snap, bool isEvent)
     {
         try
         {
             var json = JsonSerializer.Serialize(snap, JsonOpts);
-            File.WriteAllText(GetPath(steamId), json);
+            File.WriteAllText(GetPath(steamId, isEvent), json);
         }
         catch (Exception ex)
         {
@@ -692,10 +750,33 @@ namespace BattleLuck.Services
         }
     }
 
-    static PlayerSnapshot? ReadFromDisk(ulong steamId)
+    static PlayerSnapshot? ReadFromDisk(ulong steamId, bool isEvent)
     {
-        var path = GetPath(steamId);
-        if (!File.Exists(path)) return null;
+        var path = GetPath(steamId, isEvent);
+        if (!File.Exists(path))
+        {
+            // Fallback: check if the old {steamId}.json exists and matches
+            var oldPath = Path.Combine(SnapshotDir, $"{steamId}.json");
+            if (File.Exists(oldPath))
+            {
+                try
+                {
+                    var json = File.ReadAllText(oldPath);
+                    var oldSnap = JsonSerializer.Deserialize<PlayerSnapshot>(json, new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    });
+                    if (oldSnap != null)
+                    {
+                        bool oldIsEvent = oldSnap.ZoneHash > 0;
+                        if (oldIsEvent == isEvent)
+                            return oldSnap;
+                    }
+                }
+                catch { }
+            }
+            return null;
+        }
         try
         {
             var json = File.ReadAllText(path);
@@ -711,12 +792,35 @@ namespace BattleLuck.Services
         }
     }
 
-    static void DeleteFromDisk(ulong steamId)
+    static void DeleteFromDisk(ulong steamId, bool isEvent)
     {
-        var path = GetPath(steamId);
+        var path = GetPath(steamId, isEvent);
         if (File.Exists(path))
         {
             try { File.Delete(path); } catch { }
+        }
+
+        // Also delete old-style file if we are deleting the matching type
+        var oldPath = Path.Combine(SnapshotDir, $"{steamId}.json");
+        if (File.Exists(oldPath))
+        {
+            try
+            {
+                var json = File.ReadAllText(oldPath);
+                var oldSnap = JsonSerializer.Deserialize<PlayerSnapshot>(json, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+                if (oldSnap != null)
+                {
+                    bool oldIsEvent = oldSnap.ZoneHash > 0;
+                    if (oldIsEvent == isEvent)
+                    {
+                        File.Delete(oldPath);
+                    }
+                }
+            }
+            catch { }
         }
     }
 

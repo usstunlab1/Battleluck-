@@ -1,7 +1,4 @@
-﻿using System;
-using Unity.Mathematics;
-
-/// <summary>
+﻿/// <summary>
 /// Controls a shrinking zone boundary for battle-royale-style gameplay (Bloodbath).
 /// Radius decreases over time. Supports dynamic waypoint movement with smooth lerp.
 /// </summary>

@@ -1,6 +1,3 @@
-using ProjectM.Network;
-using Unity.Collections;
-
 /// <summary>
 /// Enhanced notification utilities with structured messaging inspired by Cloudflare's
 /// redesign principles: scannable state names, actionable troubleshooting, consistent

@@ -1,6 +1,3 @@
-using Unity.Entities;
-using Unity.Mathematics;
-
 namespace BattleLuck.ECS.Actions.Components;
 
 /// <summary>

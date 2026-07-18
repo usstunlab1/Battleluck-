@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace BattleLuck.Models
 {
     public class BattleAiSidecarSettings

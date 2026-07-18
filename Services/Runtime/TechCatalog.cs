@@ -1,8 +1,3 @@
-using BattleLuck.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace BattleLuck.Services.Runtime;
 
 /// <summary>Manages tech catalog loading and resolution.</summary>
@@ -59,7 +54,8 @@ public sealed class TechResolver
         // Sort by priority descending (higher priority wins conflicts)
         var sorted = requestedTechIds
             .Where(id => _catalog.TryGetTech(id, out _))
-            .OrderByDescending(id => _catalog.TryGetTech(id, out var t) ? t.Priority : 0)
+            // Guard against possible null value returned via out var 't'
+            .OrderByDescending(id => _catalog.TryGetTech(id, out var t) && t != null ? t.Priority : 0)
             .ToList();
 
         foreach (var techId in sorted)

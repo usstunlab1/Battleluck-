@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text.Json.Serialization;
-
 namespace BattleLuck.Models.Api
 {
     // Request model for OpenAI/Cloudflare Chat Completions API

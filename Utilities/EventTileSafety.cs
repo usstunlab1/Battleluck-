@@ -1,5 +1,3 @@
-using Unity.Collections;
-using Unity.Entities;
 using ProjectM.CastleBuilding;
 using ProjectM.Gameplay.Scripting;
 

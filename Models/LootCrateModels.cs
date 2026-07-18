@@ -1,8 +1,3 @@
-using System.Text.Json.Serialization;
-using Unity.Entities;
-using Unity.Mathematics;
-using Stunlock.Core;
-
 /// <summary>Config for loot crate spawning on the battle platform.</summary>
 public sealed class LootCrateConfig
 {

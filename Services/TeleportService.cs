@@ -1,6 +1,3 @@
-using Unity.Entities;
-using Unity.Mathematics;
-
 namespace BattleLuck.Services;
 
 /// <summary>Canonical player teleport boundary using the native network-event path in EntityExtensions.</summary>

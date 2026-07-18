@@ -1,5 +1,3 @@
-using Unity.Entities;
-
 namespace BattleLuck.Services;
 
 /// <summary>Canonical progression boundary. Unsupported native mutations fail explicitly.</summary>

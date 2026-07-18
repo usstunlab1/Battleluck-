@@ -1,5 +1,3 @@
-using Unity.Mathematics;
-
 public sealed class ManualShrinkState
 {
     public bool Enabled { get; set; } = true;

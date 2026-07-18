@@ -1,10 +1,7 @@
-using Unity.Entities;
-using Unity.Mathematics;
-using BattleLuck.Models;
-using ServantType = BattleLuck.Models.ServantType;
-using ServantFaction = BattleLuck.Models.ServantFaction;
 using ServantCommand = BattleLuck.Models.ServantCommand;
+using ServantFaction = BattleLuck.Models.ServantFaction;
 using ServantFormation = BattleLuck.Models.ServantFormation;
+using ServantType = BattleLuck.Models.ServantType;
 
 namespace BattleLuck.ECS.Actions.Components;
 

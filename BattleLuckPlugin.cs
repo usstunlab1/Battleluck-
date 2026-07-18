@@ -1,27 +1,20 @@
-using BepInEx;
-using BepInEx.Unity.IL2CPP;
-using HarmonyLib;
-using ProjectM;
-using Unity.Entities;
-using Unity.Mathematics;
 using BattleLuck.Core;
-using BattleLuck.Models;
-using BattleLuck.Utilities;
-using BattleLuck.ECS.Queries;
-using BattleLuck.Services;
-using BattleLuck.Services.Runtime;
-using BattleLuck.Services.Flow;
-using BattleLuck.Services.AI;
-using BattleLuck.Services.Modes;
 using BattleLuck.Core.Loaders;
 using BattleLuck.Core.Validation;
-using VampireCommandFramework;
+using BattleLuck.ECS.Queries;
+using BattleLuck.Services;
+using BattleLuck.Services.AI;
+using BattleLuck.Services.Modes;
+using BepInEx;
+using BepInEx.Configuration;
+using BepInEx.Unity.IL2CPP;
+using HarmonyLib;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BattleLuckPlugin.cs — main plugin entry point.
 // ─────────────────────────────────────────────────────────────────────────────
 
-[BepInPlugin("gg.battleluck", "BattleLuck", "1.0.0")]
+[BepInPlugin(BattleLuckPluginInfo.PluginGuid, BattleLuckPluginInfo.PluginName, BattleLuckPluginInfo.PluginVersion)]
 [BepInDependency("gg.deca.VampireCommandFramework")]
 public class BattleLuckPlugin : BasePlugin
 {
@@ -62,6 +55,122 @@ public class BattleLuckPlugin : BasePlugin
     static LocalAiRuntimeManager? _localAiRuntime;
     public static bool IsInitialized => Core.IsInitialized;
     public static bool IsDiscordBridgeEnabled => _discordBridge != null;
+
+    // BepInEx-style settings are bound here (moved from plugininfo.cs per request)
+    // Enums matching acceptable values
+    public enum DetourProvider { Default, Dobby, Funchook }
+    [System.Flags]
+    public enum LogChannel { None = 0, Info = 1, IL = 2, Warn = 4, Error = 8, Debug = 16, All = 31 }
+    public enum ConsoleOutRedirectType { Auto, ConsoleOut, StandardOut }
+    [System.Flags]
+    public enum LogLevel { None = 0, Fatal = 1, Error = 2, Warning = 4, Message = 8, Info = 16, Debug = 32, All = 63 }
+    public enum MonoModBackend { auto, dynamicmethod, methodbuilder, cecil }
+
+    // Section: [Caching]
+    static ConfigEntry<bool>? EnableAssemblyCache;
+    // Section: [Detours]
+    static ConfigEntry<DetourProvider>? DetourProviderType;
+    // Section: [Harmony.Logger]
+    static ConfigEntry<LogChannel>? HarmonyLogChannels;
+    // Section: [IL2CPP]
+    static ConfigEntry<bool>? UpdateInteropAssemblies;
+    static ConfigEntry<string>? UnityBaseLibrariesSource;
+    static ConfigEntry<string>? UnhollowerDeobfuscationRegex;
+    static ConfigEntry<bool>? ScanMethodRefs;
+    static ConfigEntry<bool>? DumpDummyAssemblies;
+    static ConfigEntry<string>? IL2CPPInteropAssembliesPath;
+    static ConfigEntry<bool>? PreloadIL2CPPInteropAssemblies;
+    static ConfigEntry<string>? GlobalMetadataPath;
+    // Section: [Logging]
+    static ConfigEntry<bool>? UnityLogListening;
+    // Section: [Logging.Console]
+    static ConfigEntry<bool>? ConsoleEnabled;
+    static ConfigEntry<bool>? ConsolePreventClose;
+    static ConfigEntry<bool>? ShiftJisEncoding;
+    static ConfigEntry<ConsoleOutRedirectType>? StandardOutType;
+    static ConfigEntry<LogLevel>? ConsoleLogLevels;
+    // Section: [Logging.Disk]
+    static ConfigEntry<bool>? DiskAppendLog;
+    static ConfigEntry<bool>? DiskEnabled;
+    static ConfigEntry<LogLevel>? DiskLogLevels;
+    static ConfigEntry<bool>? InstantFlushing;
+    static ConfigEntry<int>? ConcurrentFileLimit;
+    static ConfigEntry<bool>? WriteUnityLog;
+    // Section: [Preloader]
+    static ConfigEntry<MonoModBackend>? HarmonyBackend;
+    static ConfigEntry<bool>? DumpAssemblies;
+    static ConfigEntry<bool>? LoadDumpedAssemblies;
+    static ConfigEntry<bool>? BreakBeforeLoadAssemblies;
+
+    static void BindConfig(ConfigFile cfg)
+    {
+        // Caching
+        EnableAssemblyCache = cfg.Bind("Caching", "EnableAssemblyCache", true,
+            "Enable/disable assembly metadata cache. Speeds up discovery by caching metadata.");
+
+        // Detours
+        DetourProviderType = cfg.Bind("Detours", "DetourProviderType", DetourProvider.Default,
+            "The native provider to use for managed detours.");
+
+        // Harmony.Logger
+        HarmonyLogChannels = cfg.Bind("Harmony.Logger", "LogChannels", LogChannel.Warn | LogChannel.Error,
+            "Specifies which Harmony log channels to listen to.");
+
+        // IL2CPP
+        UpdateInteropAssemblies = cfg.Bind("IL2CPP", "UpdateInteropAssemblies", true,
+            "Run Il2CppInterop automatically to generate Il2Cpp support assemblies when outdated.");
+        UnityBaseLibrariesSource = cfg.Bind("IL2CPP", "UnityBaseLibrariesSource", "https://unity.bepinex.dev/libraries/{VERSION}.zip",
+            "URL to the ZIP of managed Unity base libraries.");
+        UnhollowerDeobfuscationRegex = cfg.Bind("IL2CPP", "UnhollowerDeobfuscationRegex", string.Empty,
+            "RegEx for Il2CppAssemblyUnhollower to rename obfuscated names.");
+        ScanMethodRefs = cfg.Bind("IL2CPP", "ScanMethodRefs", true,
+            "If enabled, Il2CppInterop will use xref to find dead methods and generate CallerCount.");
+        DumpDummyAssemblies = cfg.Bind("IL2CPP", "DumpDummyAssemblies", false,
+            "If enabled, BepInEx will save dummy assemblies generated by a Cpp2IL dumper into BepInEx/dummy.");
+        IL2CPPInteropAssembliesPath = cfg.Bind("IL2CPP", "IL2CPPInteropAssembliesPath", "{BepInEx}",
+            "Path to the folder where IL2CPPInterop assemblies are stored.");
+        PreloadIL2CPPInteropAssemblies = cfg.Bind("IL2CPP", "PreloadIL2CPPInteropAssemblies", true,
+            "Automatically load all interop assemblies before loading plugins.");
+        GlobalMetadataPath = cfg.Bind("IL2CPP", "GlobalMetadataPath", "{GameDataPath}/il2cpp_data/Metadata/global-metadata.dat",
+            "Path to the IL2CPP metadata file.");
+
+        // Logging
+        UnityLogListening = cfg.Bind("Logging", "UnityLogListening", true,
+            "Enables showing unity log messages in the BepInEx logging system.");
+
+        // Logging.Console
+        ConsoleEnabled = cfg.Bind("Logging.Console", "Enabled", true, "Enables showing a console for log output.");
+        ConsolePreventClose = cfg.Bind("Logging.Console", "PreventClose", false, "Prevent closing the console window.");
+        ShiftJisEncoding = cfg.Bind("Logging.Console", "ShiftJisEncoding", true, "If true, console uses Shift-JIS encoding; otherwise UTF-8.");
+        StandardOutType = cfg.Bind("Logging.Console", "StandardOutType", ConsoleOutRedirectType.Auto,
+            "Hints console manager which handle to assign as StandardOut.");
+        ConsoleLogLevels = cfg.Bind("Logging.Console", "LogLevels",
+            LogLevel.Fatal | LogLevel.Error | LogLevel.Warning | LogLevel.Message | LogLevel.Info,
+            "Which log levels to show in the console output.");
+
+        // Logging.Disk
+        DiskAppendLog = cfg.Bind("Logging.Disk", "AppendLog", true, "Appends to the log file on startup.");
+        DiskEnabled = cfg.Bind("Logging.Disk", "Enabled", true, "Enables writing log messages to disk.");
+        DiskLogLevels = cfg.Bind("Logging.Disk", "LogLevels",
+            LogLevel.Fatal | LogLevel.Error | LogLevel.Warning | LogLevel.Message | LogLevel.Info,
+            "Which log levels to write to disk.");
+        InstantFlushing = cfg.Bind("Logging.Disk", "InstantFlushing", false,
+            "Instantly writes any received log entries to disk (performance impact).");
+        ConcurrentFileLimit = cfg.Bind("Logging.Disk", "ConcurrentFileLimit", 5,
+            "Maximum number of concurrent log files written to disk.");
+        WriteUnityLog = cfg.Bind("Logging.Disk", "WriteUnityLog", false,
+            "Include Unity log messages in log file output.");
+
+        // Preloader
+        HarmonyBackend = cfg.Bind("Preloader", "HarmonyBackend", MonoModBackend.auto,
+            "Which MonoMod backend to use for Harmony patches.");
+        DumpAssemblies = cfg.Bind("Preloader", "DumpAssemblies", true,
+            "If enabled, save patched assemblies into BepInEx/DumpedAssemblies.");
+        LoadDumpedAssemblies = cfg.Bind("Preloader", "LoadDumpedAssemblies", true,
+            "If enabled, load patched assemblies from BepInEx/DumpedAssemblies instead of memory.");
+        BreakBeforeLoadAssemblies = cfg.Bind("Preloader", "BreakBeforeLoadAssemblies", true,
+            "If enabled, call Debugger.Break() once before loading patched assemblies.");
+    }
 
     public static void SetAIAssistant(AIAssistant? assistant)
     {
@@ -137,7 +246,14 @@ public class BattleLuckPlugin : BasePlugin
     public override void Load()
     {
         Log = base.Log;
-        Log.LogInfo("[BattleLuck] Loading...");
+
+        // Initialize and bind BepInEx .cfg entries locally
+        try { BindConfig(Config); }
+        catch (Exception cfgEx) { base.Log.LogWarning($"[BattleLuck] Failed to bind config entries: {cfgEx.Message}"); }
+
+        Log.LogInfo($"[BattleLuck] Loading {BattleLuckPluginInfo.PluginName} v{BattleLuckPluginInfo.PluginVersion} ({BattleLuckPluginInfo.PluginGuid})...");
+
+        // Continue normal boot
         ConfigLoader.EnsureDefaultsDeployed();
         ModeConfigLoader.EnsureWatcher();
         SchematicLoader.LoadAll();

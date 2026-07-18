@@ -4,8 +4,6 @@
 // PlayerContext with LastActivityUtc for background janitor tracking.
 // Renamed from the temporary FIXED suffix now that the fix is canonical.
 
-using System.Text.Json.Serialization;
-
 namespace BattleLuck.Models;
 
 /// <summary>

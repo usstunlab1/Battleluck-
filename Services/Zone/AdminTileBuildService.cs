@@ -1,6 +1,4 @@
 using ProjectM.Tiles;
-using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Transforms;
 
 namespace BattleLuck.Services.Zone;

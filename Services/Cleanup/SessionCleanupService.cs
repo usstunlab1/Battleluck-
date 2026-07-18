@@ -1,9 +1,4 @@
-using ProjectM;
 using ProjectM.CastleBuilding;
-using Stunlock.Core;
-using Unity.Collections;
-using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Transforms;
 
 /// <summary>

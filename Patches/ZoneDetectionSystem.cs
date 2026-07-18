@@ -1,7 +1,4 @@
-﻿using Unity.Entities;
-using Unity.Mathematics;
-
-/// <summary>
+﻿/// <summary>
 /// Periodically checks player positions against configured zones
 /// and fires enter/exit events when players cross zone boundaries.
 /// Not a Harmony patch — uses a tick-based polling approach.

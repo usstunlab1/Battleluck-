@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace BattleLuck.Models;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

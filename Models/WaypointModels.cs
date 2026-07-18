@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>
 /// Config models for dynamic waypoint movement and glow border scanning.
 /// </summary>

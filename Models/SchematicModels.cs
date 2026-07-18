@@ -1,6 +1,3 @@
-using System.Text.Json.Serialization;
-using Unity.Entities;
-
 namespace BattleLuck.Models;
 
 /// <summary>

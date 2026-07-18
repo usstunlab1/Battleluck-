@@ -1,5 +1,4 @@
 using System.Threading;
-using BattleLuck.Models;
 
 namespace BattleLuck.Services.Npc;
 

@@ -1,6 +1,4 @@
-﻿using ProjectM;
-using ProjectM.Scripting;
-using Unity.Entities;
+﻿using ProjectM.Scripting;
 
 /// <summary>
 /// Central static accessor for V Rising ECS singletons.

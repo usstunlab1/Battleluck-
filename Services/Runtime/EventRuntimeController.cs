@@ -1,7 +1,4 @@
 using BattleLuck.ECS.Events;
-using BattleLuck.Models;
-using BattleLuck.Services.Flow;
-using Unity.Entities;
 
 namespace BattleLuck.Services.Runtime;
 
@@ -42,7 +39,7 @@ public sealed class EventRuntimeController
             Zones = definition.Zones.Count,
             Objects = definition.Objects.Count,
             Glows = definition.Glows.Count,
-            EntityDefinitions = definition.VBloodList.Count,
+            EntityDefinitions = (definition.Entities.Count > 0 ? definition.Entities.Count : definition.VBloodList.Count),
             Phases = definition.Phases.Count,
             Triggers = definition.Triggers.Count,
             EventActions = definition.Actions.Count,
@@ -187,7 +184,11 @@ public sealed class EventRuntimeController
         if (phaseName.Equals("active", StringComparison.OrdinalIgnoreCase))
         {
             runtime.Started = true;
-            SpawnEventVBloods(runtime);
+            // Prefer unified entities[] when present; otherwise fall back to legacy VBlood list.
+            if (runtime.Definition.Entities.Count > 0)
+                SpawnEventEntities(runtime);
+            else
+                SpawnEventVBloods(runtime);
         }
 
         ExecuteActions(runtime, phase.Actions, $"phase:{phaseName}");
@@ -205,6 +206,80 @@ public sealed class EventRuntimeController
             }
 
             SpawnEventVBlood(runtime.Context.SessionId, definition);
+        }
+    }
+
+    void SpawnEventEntities(EventRuntimeSession runtime)
+    {
+        foreach (var entity in runtime.Definition.Entities)
+        {
+            // For the initial migration, spawn all configured entities at event start.
+            // Future enhancements can add per-entity spawn triggers.
+            if (string.IsNullOrWhiteSpace(entity.Prefab))
+                continue;
+
+            var spawner = new SpawnController();
+            var prefab = PrefabHelper.GetPrefabGuidDeep(entity.Prefab);
+            if (!prefab.HasValue || prefab.Value == PrefabGUID.Empty)
+            {
+                BattleLuckPlugin.LogWarning($"[EventEntities] Unknown prefab '{entity.Prefab}' for '{entity.Id}'.");
+                continue;
+            }
+
+            var position = new float3(entity.Position.X, entity.Position.Y, entity.Position.Z);
+
+            spawner.SpawnBoss(
+                prefab.Value,
+                position,
+                level: 0,
+                onSpawned:
+                entitySpawned =>
+                {
+                    if (!entitySpawned.Exists())
+                        return;
+
+                    // Register with unified NPC controller
+                    BattleLuckPlugin.NpcService?.RegisterNpc(
+                        runtime.Context.SessionId,
+                        entity.Id,
+                        entity.Prefab,
+                        prefab.Value,
+                        entitySpawned,
+                        position,
+                        entity.HomeRadius,
+                        preventDisable: true);
+
+                    // Apply initial behavior if specified
+                    var behavior = (entity.Behavior ?? "").Trim().ToLowerInvariant();
+                    var npcId = string.IsNullOrWhiteSpace(entity.Id) ? BattleLuckPlugin.NpcService?.GetLatest(runtime.Context.SessionId)?.NpcId : entity.Id;
+                    if (string.IsNullOrWhiteSpace(npcId)) return;
+
+                    switch (behavior)
+                    {
+                        case "hold" or "guard":
+                            BattleLuckPlugin.NpcService?.Hold(npcId!, Math.Max(2f, entity.HomeRadius <= 0 ? 8f : entity.HomeRadius));
+                            break;
+                        case "aggro":
+                            {
+                                var player = ResolveActionPlayer(runtime);
+                                if (player.Exists())
+                                    BattleLuckPlugin.NpcService?.Aggro(npcId!, player, pressureRange: 3f, leashRange: Math.Max(20f, entity.HomeRadius <= 0 ? 60f : entity.HomeRadius));
+                                break;
+                            }
+                        case "follow":
+                            {
+                                var player = ResolveActionPlayer(runtime);
+                                if (player.Exists())
+                                    BattleLuckPlugin.NpcService?.Follow(npcId!, player, followRange: 8f, leashRange: Math.Max(20f, entity.HomeRadius <= 0 ? 60f : entity.HomeRadius));
+                                break;
+                            }
+                        default:
+                            // release/wander left to later actions if needed
+                            break;
+                    }
+                });
+
+            BattleLuckPlugin.LogInfo($"[EventEntities] Spawned '{entity.Id}' ({entity.EntityType}) via NpcControlService.");
         }
     }
 

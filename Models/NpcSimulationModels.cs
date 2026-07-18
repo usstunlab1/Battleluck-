@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using Unity.Entities;
-using Unity.Mathematics;
-
 namespace BattleLuck.Models;
 
 /// <summary>

@@ -3,9 +3,6 @@
 // Lightweight in-process pub/sub bus for runtime events.
 // Pure C# — no BepInEx/VRising/Unity references.
 
-using System.Collections.Generic;
-using System.Linq;
-
 namespace BattleLuck.Services.Runtime;
 
 // ── Event envelope ────────────────────────────────────────────────────────────

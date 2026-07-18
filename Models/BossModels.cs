@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>Boss spawning configuration per mode.</summary>
 public sealed class BossesConfig
 {

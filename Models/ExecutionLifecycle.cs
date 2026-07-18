@@ -12,8 +12,6 @@
 //   Failed    → Submitted  (retry path)
 //   Invalid   → Submitted  (retry path)
 
-using System.Collections.Generic;
-
 namespace BattleLuck.Models;
 
 /// <summary>

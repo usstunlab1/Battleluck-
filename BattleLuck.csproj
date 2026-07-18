@@ -90,6 +90,14 @@
     <EmbeddedResource Remove="mcp-servers\**" />
     <EmbeddedResource Remove="my-first-site\**" />
     <EmbeddedResource Remove="NGG\**" />
+    <EmbeddedResource Include="Users\tools\audit\generate-kindred-allowlists.ps1" />
+    <EmbeddedResource Include="Users\tools\audit\summarize-audit.ps1" />
+    <EmbeddedResource Include="Users\tools\audit\validate-event-bundles.sh" />
+    <EmbeddedResource Include="Users\tools\export-kindredextract-allowlists.ps1" />
+    <EmbeddedResource Include="Users\tools\export-kindredextract-system-csv.ps1" />
+    <EmbeddedResource Include="Users\tools\extract-kindredextract-reference.ps1" />
+    <EmbeddedResource Include="Users\tools\README.md" />
+    <EmbeddedResource Include="Users\tools\validators\validate-json.sh" />
     <None Remove=".external\**" />
     <None Remove="gg\**" />
     <None Remove="google-services\**" />

@@ -1,5 +1,4 @@
 using HarmonyLib;
-using ProjectM;
 
 /// <summary>
 /// Periodic tick: hooks BuffSystem_Spawn_Server.OnUpdate which fires every server frame.

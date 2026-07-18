@@ -1,7 +1,3 @@
-using Stunlock.Core;
-using System.Collections.Generic;
-using System.Linq;
-
 /// <summary>
 /// Central prefab registry — single source of truth for ALL PrefabGUID constants.
 /// Referenced by kit system, glow system, boss spawns, border walls, and special items.

@@ -1,5 +1,3 @@
-using ProjectM;
-using Unity.Entities;
 namespace BattleLuck.Utilities;
 
 /// <summary>

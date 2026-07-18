@@ -1,5 +1,3 @@
-using System;
-
 namespace BattleLuck.Models
 {
     /// <summary>

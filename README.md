@@ -1,6 +1,5 @@
 # BattleLuck
 
-![BattleLuck roadmap](docs/assets/roadmap-header.png)
 
 BattleLuck is a server-side BepInEx IL2CPP plugin for V Rising dedicated servers. It provides configurable competitive and cooperative game events, managed player sessions, rollback-safe player state and loadouts, NPC and boss control, progression and death-prevention systems, teleports, zones, schematics, and an ECS-backed action pipeline.
 

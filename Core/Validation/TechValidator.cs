@@ -1,6 +1,3 @@
-using BattleLuck.Models;
-using System.Collections.Generic;
-
 namespace BattleLuck.Core.Validation;
 
 public sealed class TechValidator

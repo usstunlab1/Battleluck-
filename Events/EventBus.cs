@@ -1,5 +1,3 @@
-using Unity.Entities;
-
 /// <summary>
 /// Light Event Router (LER) — static Action&lt;T&gt; delegates for notifications,
 /// reactions, and cross-system signals. NOT for tick order, logic flow, or state authority.

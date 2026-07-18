@@ -1,6 +1,3 @@
-using Stunlock.Core;
-using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using Math = System.Math;

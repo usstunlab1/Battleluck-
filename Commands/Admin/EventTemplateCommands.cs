@@ -1,6 +1,3 @@
-using BattleLuck.Services.Runtime;
-using VampireCommandFramework;
-
 public static class EventTemplateCommands
 {
     [Command("event.create", description: "Create a custom event by cloning a template. Usage: .event.create <eventId> [templateId]", adminOnly: true)]

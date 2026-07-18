@@ -1,6 +1,3 @@
-using Unity.Entities;
-using Unity.Mathematics;
-
 /// <summary>
 /// Locks players to a specific Y height (floor) while inside arena zones.
 /// Call LockPlayerToFloor when a player enters; call Tick every server frame

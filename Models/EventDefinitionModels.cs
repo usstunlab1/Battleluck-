@@ -1,7 +1,3 @@
-using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
 namespace BattleLuck.Models;
 
 public sealed class UnifiedEventDefinition
@@ -23,6 +19,11 @@ public sealed class UnifiedEventDefinition
 
     [JsonPropertyName("glows")]
     public List<EventGlowDefinition> Glows { get; set; } = new();
+
+    // Canonical unified event-controlled entities collection
+    // Replaces legacy boss/VBlood-specific collections.
+    [JsonPropertyName("entities")]
+    public List<EventEntityDefinition> Entities { get; set; } = new();
 
     [JsonPropertyName("vBloodList")]
     public List<EventVBloodDefinition> VBloodList { get; set; } = new();
@@ -284,6 +285,48 @@ public sealed class EventGlowDefinition
 
     [JsonPropertyName("actions")]
     public List<EventActionDefinition> Actions { get; set; } = new();
+}
+
+/// <summary>
+/// Unified event-controlled entity definition (NPC, elite, vblood, servant, companion, wave, objective, merchant).
+/// </summary>
+public sealed class EventEntityDefinition
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    [JsonPropertyName("entityType")]
+    public string EntityType { get; set; } = "npc"; // npc | elite | vblood | servant | companion | wave | objective | merchant
+
+    [JsonPropertyName("prefab")]
+    public string Prefab { get; set; } = "";
+
+    [JsonPropertyName("position")]
+    public EventVector3 Position { get; set; } = new();
+
+    [JsonPropertyName("homeRadius")]
+    public float HomeRadius { get; set; } = 0f;
+
+    [JsonPropertyName("behavior")]
+    public string Behavior { get; set; } = "hold"; // hold | guard | follow | aggro | wander
+
+    [JsonPropertyName("spawnSequence")]
+    public string SpawnSequence { get; set; } = ""; // UUID sequence id
+
+    [JsonPropertyName("deathSequence")]
+    public string DeathSequence { get; set; } = ""; // UUID sequence id
+}
+
+public sealed class EventVector3
+{
+    [JsonPropertyName("x")]
+    public float X { get; set; }
+
+    [JsonPropertyName("y")]
+    public float Y { get; set; }
+
+    [JsonPropertyName("z")]
+    public float Z { get; set; }
 }
 
 public sealed class EventBossDefinition
