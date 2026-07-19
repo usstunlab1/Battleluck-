@@ -27,7 +27,7 @@ using VampireCommandFramework;
 // BattleLuckPlugin.cs — main plugin entry point.
 // ─────────────────────────────────────────────────────────────────────────────
 
-[BepInPlugin("gg.battleluck", "BattleLuck", "1.0.0")]
+[BepInPlugin(BattleLuckPluginInfo.PluginGuid, BattleLuckPluginInfo.PluginName, BattleLuckPluginInfo.PluginVersion)]
 [BepInDependency("gg.deca.VampireCommandFramework")]
 public class BattleLuckPlugin : BasePlugin
 {

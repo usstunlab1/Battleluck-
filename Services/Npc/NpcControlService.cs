@@ -3,20 +3,6 @@ using BattleLuck.Models;
 
 namespace BattleLuck.Services.Npc;
 
-public enum NpcControlMode
-{
-    Idle,
-    Hold,
-    Follow,
-    GoTo,
-    Aggro,
-    Patrol,
-    Guard,
-    Flee,
-    Wander,
-    Formation
-}
-
 public sealed class ControlledNpcEntry
 {
     public string NpcId { get; init; } = "";
@@ -28,7 +14,7 @@ public sealed class ControlledNpcEntry
     public float3 HomePosition { get; set; }
     public float3 TargetPosition { get; set; }
     public Entity TargetEntity { get; set; } = Entity.Null;
-    public NpcControlMode Mode { get; set; } = NpcControlMode.Idle;
+    public NpcBehaviorMode Mode { get; set; } = NpcBehaviorMode.Idle;
     public float HomeRadius { get; set; } = 35f;
     public float FollowRange { get; set; } = 6f;
     public float LeashRange { get; set; } = 80f;
@@ -44,7 +30,8 @@ public sealed class ControlledNpcEntry
     public float PatrolPauseUntilUtc { get; set; }
     public NpcGuardPost? GuardConfig { get; set; }
     public NpcFleeConfig? FleeConfig { get; set; }
-    public NpcControlMode? PreviousModeBeforeFlee { get; set; }
+    public DateTime FleeStartedUtc { get; set; }
+    public NpcBehaviorMode? PreviousModeBeforeFlee { get; set; }
     public NpcWanderConfig? WanderConfig { get; set; }
     public float WanderNextChangeUtc { get; set; }
     public List<NpcFormationSlot> FormationSlots { get; set; } = new();
@@ -171,7 +158,7 @@ public sealed class NpcControlService
             entry.TargetPosition = target.GetPosition();
             entry.FollowRange = System.Math.Clamp(followRange, 1f, 40f);
             entry.LeashRange = System.Math.Clamp(leashRange, entry.FollowRange + 1f, 500f);
-            entry.Mode = NpcControlMode.Follow;
+            entry.Mode = NpcBehaviorMode.Follow;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Follow npc='{npcId}' target={target.Index}:{target.Version} follow={followRange:F1} leash={leashRange:F1}.");
@@ -195,7 +182,7 @@ public sealed class NpcControlService
             entry.TargetPosition = target.GetPosition();
             entry.FollowRange = System.Math.Clamp(pressureRange, 1f, 30f);
             entry.LeashRange = System.Math.Clamp(leashRange, entry.FollowRange + 1f, 500f);
-            entry.Mode = NpcControlMode.Aggro;
+            entry.Mode = NpcBehaviorMode.Aggro;
         }
 
         TryTouchAggro(entry);
@@ -217,7 +204,7 @@ public sealed class NpcControlService
             entry.TargetPosition = entry.HomePosition;
             entry.TargetEntity = Entity.Null;
             entry.HomeRadius = System.Math.Clamp(radius, 1f, 150f);
-            entry.Mode = NpcControlMode.Hold;
+            entry.Mode = NpcBehaviorMode.Hold;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Hold npc='{npcId}' radius={radius:F1}.");
@@ -237,7 +224,7 @@ public sealed class NpcControlService
             entry.TargetEntity = Entity.Null;
             entry.TargetPosition = targetPosition;
             entry.FollowRange = System.Math.Clamp(arrivalRange, 0.5f, 20f);
-            entry.Mode = NpcControlMode.GoTo;
+            entry.Mode = NpcBehaviorMode.GoTo;
         }
 
         BattleLuckLogger.Info($"[NpcControl] GoTo npc='{npcId}' target=({targetPosition.x:F1},{targetPosition.y:F1},{targetPosition.z:F1}).");
@@ -254,7 +241,7 @@ public sealed class NpcControlService
         {
             entry.TargetEntity = Entity.Null;
             entry.TargetPosition = entry.Entity.Exists() ? entry.Entity.GetPosition() : entry.TargetPosition;
-            entry.Mode = NpcControlMode.Idle;
+            entry.Mode = NpcBehaviorMode.Idle;
             entry.PatrolWaypoints.Clear();
             entry.GuardConfig = null;
             entry.FleeConfig = null;
@@ -347,7 +334,7 @@ public sealed class NpcControlService
             entry.TargetEntity = Entity.Null;
             entry.TargetPosition = waypoints[0].Position;
             entry.HomePosition = waypoints[0].Position;
-            entry.Mode = NpcControlMode.Patrol;
+            entry.Mode = NpcBehaviorMode.Patrol;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Patrol npc='{npcId}' waypoints={waypoints.Count} loop={loop}.");
@@ -370,7 +357,7 @@ public sealed class NpcControlService
             entry.FollowRange = System.Math.Clamp(config.DetectionRadius, 1f, 100f);
             entry.LeashRange = System.Math.Clamp(config.ChaseRange, config.DetectionRadius + 1f, 500f);
             entry.GuardConfig = config;
-            entry.Mode = NpcControlMode.Guard;
+            entry.Mode = NpcBehaviorMode.Guard;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Guard npc='{npcId}' pos=({config.Position.x:F1},{config.Position.y:F1},{config.Position.z:F1}) detection={config.DetectionRadius:F1}.");
@@ -389,8 +376,9 @@ public sealed class NpcControlService
         {
             entry.PreviousModeBeforeFlee = entry.Mode;
             entry.FleeConfig = config;
+            entry.FleeStartedUtc = DateTime.UtcNow;
             entry.MoveSpeed = System.Math.Clamp(entry.MoveSpeed * config.FleeSpeedMultiplier, 0.5f, 120f);
-            entry.Mode = NpcControlMode.Flee;
+            entry.Mode = NpcBehaviorMode.Flee;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Flee npc='{npcId}' safe={config.SafeDistance:F1} duration={config.DurationSeconds:F1}s.");
@@ -411,7 +399,7 @@ public sealed class NpcControlService
             entry.WanderConfig = config;
             entry.WanderNextChangeUtc = (float)DateTime.UtcNow.ToOADate();
             entry.TargetEntity = Entity.Null;
-            entry.Mode = NpcControlMode.Wander;
+            entry.Mode = NpcBehaviorMode.Wander;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Wander npc='{npcId}' radius={config.Radius:F1}.");
@@ -431,7 +419,7 @@ public sealed class NpcControlService
             entry.FormationSlots = slots;
             entry.FormationLeaderId = leaderId;
             entry.FormationCenter = center;
-            entry.Mode = NpcControlMode.Formation;
+            entry.Mode = NpcBehaviorMode.Formation;
         }
 
         BattleLuckLogger.Info($"[NpcControl] Formation npc='{npcId}' slots={slots.Count} leader={leaderId ?? "center"}.");
@@ -534,6 +522,7 @@ public sealed class NpcControlService
                 .FirstOrDefault();
             return prefabMatch;
         }
+        return null;
     }
 
     bool TryGetByEntityLocked(Entity entity, out ControlledNpcEntry entry)
@@ -551,34 +540,34 @@ public sealed class NpcControlService
 
         switch (entry.Mode)
         {
-            case NpcControlMode.Follow:
+            case NpcBehaviorMode.Follow:
                 TickFollow(entry, deltaSeconds, aggressive: false);
                 break;
-            case NpcControlMode.Aggro:
+            case NpcBehaviorMode.Aggro:
                 TickFollow(entry, deltaSeconds, aggressive: true);
                 break;
-            case NpcControlMode.GoTo:
+            case NpcBehaviorMode.GoTo:
                 TickGoTo(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Hold:
+            case NpcBehaviorMode.Hold:
                 TickHold(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Patrol:
+            case NpcBehaviorMode.Patrol:
                 TickPatrol(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Guard:
+            case NpcBehaviorMode.Guard:
                 TickGuard(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Flee:
+            case NpcBehaviorMode.Flee:
                 TickFlee(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Wander:
+            case NpcBehaviorMode.Wander:
                 TickWander(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Formation:
+            case NpcBehaviorMode.Formation:
                 TickFormation(entry, deltaSeconds);
                 break;
-            case NpcControlMode.Idle:
+            case NpcBehaviorMode.Idle:
             default:
                 break;
         }
@@ -613,7 +602,7 @@ public sealed class NpcControlService
         if (dist <= entry.FollowRange)
         {
             entry.HomePosition = entry.TargetPosition;
-            entry.Mode = NpcControlMode.Hold;
+            entry.Mode = NpcBehaviorMode.Hold;
             return;
         }
 
@@ -637,7 +626,7 @@ public sealed class NpcControlService
     {
         if (entry.PatrolWaypoints.Count == 0)
         {
-            entry.Mode = NpcControlMode.Idle;
+            entry.Mode = NpcBehaviorMode.Idle;
             return;
         }
 
@@ -658,7 +647,7 @@ public sealed class NpcControlService
                 entry.PatrolCurrentIndex = 0;
                 if (!entry.PatrolWaypoints.Any(w => w.PauseSeconds > 0))
                 {
-                    entry.Mode = NpcControlMode.Hold;
+                    entry.Mode = NpcBehaviorMode.Hold;
                     entry.HomePosition = target;
                     return;
                 }
@@ -678,7 +667,7 @@ public sealed class NpcControlService
         var config = entry.GuardConfig;
         if (config == null)
         {
-            entry.Mode = NpcControlMode.Hold;
+            entry.Mode = NpcBehaviorMode.Hold;
             return;
         }
 
@@ -717,8 +706,7 @@ public sealed class NpcControlService
             return;
         }
 
-        var startUtc = DateTime.FromOADate(entry.FleeConfig != null ? 0f : entry.WanderNextChangeUtc);
-        if (DateTime.UtcNow - startUtc > TimeSpan.FromSeconds(config.DurationSeconds))
+        if (DateTime.UtcNow - entry.FleeStartedUtc > TimeSpan.FromSeconds(config.DurationSeconds))
         {
             ResumePreviousMode(entry);
             return;
@@ -751,7 +739,7 @@ public sealed class NpcControlService
         var config = entry.WanderConfig;
         if (config == null)
         {
-            entry.Mode = NpcControlMode.Hold;
+            entry.Mode = NpcBehaviorMode.Hold;
             return;
         }
 
@@ -759,16 +747,14 @@ public sealed class NpcControlService
         if (now < entry.WanderNextChangeUtc)
             return;
 
-        var pos = entry.Entity.GetPosition();
         var angle = (float)(System.Random.Shared.NextDouble() * System.Math.PI * 2);
         var radius = (float)(System.Random.Shared.NextDouble() * (config.Radius - 1f) + 1f);
         var target = new float3(
-            pos.x + math.cos(angle) * radius,
-            pos.y,
-            pos.z + math.sin(angle) * radius);
+            entry.HomePosition.x + math.cos(angle) * radius,
+            entry.HomePosition.y,
+            entry.HomePosition.z + math.sin(angle) * radius);
 
         entry.TargetPosition = target;
-        entry.HomePosition = pos;
         entry.WanderNextChangeUtc = (float)(now + System.Random.Shared.NextDouble() * (config.MaxPauseSeconds - config.MinPauseSeconds) + config.MinPauseSeconds);
         MoveToward(entry, target, deltaSeconds);
     }
@@ -782,7 +768,7 @@ public sealed class NpcControlService
         {
             if (!TryGet(entry.FormationLeaderId, out var leader) || !leader.Entity.Exists())
             {
-                entry.Mode = NpcControlMode.Hold;
+                entry.Mode = NpcBehaviorMode.Hold;
                 return;
             }
             var leaderPos = leader.Entity.GetPosition();
@@ -807,7 +793,7 @@ public sealed class NpcControlService
         lock (_lock)
         {
             entry.FleeConfig = null;
-            entry.Mode = entry.PreviousModeBeforeFlee ?? NpcControlMode.Hold;
+            entry.Mode = entry.PreviousModeBeforeFlee ?? NpcBehaviorMode.Hold;
             entry.PreviousModeBeforeFlee = null;
         }
     }

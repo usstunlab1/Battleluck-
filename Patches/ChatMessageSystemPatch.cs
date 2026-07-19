@@ -1,11 +1,11 @@
 using HarmonyLib;
 using Unity.Collections;
 using Unity.Entities;
-using BattleLuck.Services.AI;
 using BattleLuck.Commands;
 using BattleLuck.Models.Chat;
 using BattleLuck.Services.Chat;
 using ProjectM.Network;
+using System;
 using System.Threading.Tasks;
 using static ProjectM.ChatMessageSystem;
 
@@ -17,57 +17,52 @@ namespace BattleLuck.Patches
         [HarmonyPrefix]
         public static void OnUpdatePrefix(ProjectM.ChatMessageSystem __instance)
         {
+            // A void-returning prefix is equivalent to `return true`, allowing the original method to run.
+            // We must not block the original OnUpdate, or native chat will break.
             if (!VRisingCore.IsReady) return;
 
+            // The query name is from decompiling the game.
             var entities = __instance.__query_661171423_0.ToEntityArray(Allocator.Temp);
-
-            foreach (var entity in entities)
+            try
             {
-                if (!entity.TryGetComponent(out ChatMessageEvent chatEvent) || !entity.TryGetComponent(out FromCharacter fromCharacter)) continue;
-                if (!fromCharacter.User.TryGetComponent(out User user)) continue;
-
-                var steamId = user.PlatformId;
-                var message = chatEvent.MessageText.ToString();
-
-                // Handle .blch commands first
-                if (message.StartsWith(".blch"))
+                foreach (var entity in entities)
                 {
-                    BattleLuckCommandDispatcher.TryDispatchFromChatEvent(entity, chatEvent);
-                    continue;
-                }
+                    if (!entity.TryGetComponent(out ChatMessageEvent chatEvent) || !entity.TryGetComponent(out FromCharacter fromCharacter)) continue;
+                    if (!fromCharacter.User.TryGetComponent(out User user)) continue;
 
-                // Check if player is in AI channel
-                if (AiChannelState.GetChannel(steamId) == BattleLuckChatChannel.AI)
-                {
-                    // For AI channel: handle non-command messages
-                    if (!message.StartsWith("."))
+                    var steamId = user.PlatformId;
+                    var message = chatEvent.MessageText.ToString();
+
+                    // Highest priority: intercept non-command messages for players in the AI channel.
+                    if (AiChannelState.IsInAiChannel(steamId) && !message.StartsWith("."))
                     {
                         HandleAiChannelMessage(steamId, user, message, entity);
-                        // Entity is destroyed in HandleAiChannelMessage
+                        // HandleAiChannelMessage destroys the entity, so we are done with it.
                         continue;
                     }
-                    // Commands in AI channel still go through dispatcher
-                    else
+
+                    // Next: intercept all commands (e.g., .ai, .blch) for any player.
+                    if (message.StartsWith("."))
                     {
                         BattleLuckCommandDispatcher.TryDispatchFromChatEvent(entity, chatEvent);
+                        // Destroy the entity so the original system doesn't process it, preventing duplicate command handling or chat spam.
+                        VRisingCore.EntityManager.DestroyEntity(entity);
                         continue;
                     }
-                }
 
-                // For Native channel: let vanilla system handle the message unchanged
-                // Also handle other dot commands
-                if (message.StartsWith(".") && !message.StartsWith(".blch"))
-                {
-                    BattleLuckCommandDispatcher.TryDispatchFromChatEvent(entity, chatEvent);
+                    // If we reach here, it's a native, non-command message.
+                    // We do nothing and let the original OnUpdate handle it.
                 }
             }
-
-            entities.Dispose();
+            finally
+            {
+                entities.Dispose();
+            }
         }
 
         private static void HandleAiChannelMessage(ulong steamId, User sender, string message, Entity originalEntity)
         {
-            // Check for active request
+            // Check for active request to prevent spamming the AI provider.
             if (!AiChannelState.TryBeginRequest(steamId))
             {
                 NotificationHelper.NotifyPlayer(sender, "Your previous AI request is still processing.", NotificationHelper.NotificationLevel.Warning);
@@ -75,7 +70,8 @@ namespace BattleLuck.Patches
                 return;
             }
 
-            // Broadcast player message to all AI channel members (blue)
+            // Broadcast player message to all AI channel members (blue).
+            // This is safe to do directly as we are on the main thread here.
             var playerName = sender.CharacterName.ToString();
             var formattedMessage = NotificationHelper.ColorizeText($"[AI] {playerName}: {message}", "#66E3FF");
             foreach (var memberId in AiChannelState.GetAiChannelMembers())
@@ -87,7 +83,7 @@ namespace BattleLuck.Patches
                 }
             }
 
-            // Handle the AI query asynchronously
+            // Handle the AI query asynchronously on a background thread.
             _ = Task.Run(async () =>
             {
                 try
@@ -100,21 +96,32 @@ namespace BattleLuck.Patches
 
                     if (!string.IsNullOrWhiteSpace(response))
                     {
-                        var formattedResponse = NotificationHelper.ColorizeText($"[AI] BattleLuck: {response}", "#4DA6FF");
-                        foreach (var memberId in AiChannelState.GetAiChannelMembers())
+                        // Queue the response to be sent on the main thread to avoid race conditions with ECS.
+                        MainThreadDispatcher.Enqueue(() =>
                         {
-                            var memberEntity = VRisingCore.GetPlayerEntityBySteamId(memberId);
-                            if (memberEntity.Exists() && memberEntity.IsValidPlayer(out var memberUser))
+                            var formattedResponse = NotificationHelper.ColorizeText($"[AI] BattleLuck: {response}", "#4DA6FF");
+                            foreach (var memberId in AiChannelState.GetAiChannelMembers())
                             {
-                                NotificationHelper.NotifyPlayerRaw(memberUser, formattedResponse);
+                                var memberEntity = VRisingCore.GetPlayerEntityBySteamId(memberId);
+                                if (memberEntity.Exists() && memberEntity.IsValidPlayer(out var memberUser))
+                                {
+                                    NotificationHelper.NotifyPlayerRaw(memberUser, formattedResponse);
+                                }
                             }
-                        }
+                        });
                     }
                 }
                 catch (Exception ex)
                 {
-                    BattleLuckPlugin.LogWarning($"[AI Channel] Request failed for {steamId}: {ex.Message}");
-                    NotificationHelper.NotifyPlayer(sender, "Sorry, I encountered an error processing your request.", NotificationHelper.NotificationLevel.Error);
+                    // Also queue error notifications to the main thread.
+                    MainThreadDispatcher.Enqueue(() =>
+                    {
+                        BattleLuckPlugin.LogWarning($"[AI Channel] Request failed for {steamId}: {ex.Message}");
+                        if (VRisingCore.GetPlayerEntityBySteamId(steamId).IsValidPlayer(out var userToNotify))
+                        {
+                            NotificationHelper.NotifyPlayer(userToNotify, "Sorry, I encountered an error processing your request.", NotificationHelper.NotificationLevel.Error);
+                        }
+                    });
                 }
                 finally
                 {

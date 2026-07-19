@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using BattleLuck.Models.Chat;
@@ -10,8 +11,8 @@ namespace BattleLuck.Services.Chat;
 /// </summary>
 public static class AiChannelState
 {
-    private static readonly HashSet<ulong> _aiChannelMembers = new();
-    private static readonly HashSet<ulong> _playersWithActiveRequests = new();
+    private static readonly ConcurrentDictionary<ulong, byte> _aiChannelMembers = new();
+    private static readonly ConcurrentDictionary<ulong, byte> _playersWithActiveRequests = new();
 
     /// <summary>
     /// Gets the BattleLuck chat channel for a player.
@@ -19,7 +20,7 @@ public static class AiChannelState
     /// </summary>
     public static BattleLuckChatChannel GetChannel(ulong steamId)
     {
-        return _aiChannelMembers.Contains(steamId) ? BattleLuckChatChannel.AI : BattleLuckChatChannel.Native;
+        return _aiChannelMembers.ContainsKey(steamId) ? BattleLuckChatChannel.AI : BattleLuckChatChannel.Native;
     }
 
     /// <summary>
@@ -27,7 +28,7 @@ public static class AiChannelState
     /// </summary>
     public static void Add(ulong steamId)
     {
-        _aiChannelMembers.Add(steamId);
+        _aiChannelMembers.TryAdd(steamId, 0);
     }
 
     /// <summary>
@@ -35,8 +36,8 @@ public static class AiChannelState
     /// </summary>
     public static void Remove(ulong steamId)
     {
-        _aiChannelMembers.Remove(steamId);
-        _playersWithActiveRequests.Remove(steamId);
+        _aiChannelMembers.TryRemove(steamId, out _);
+        _playersWithActiveRequests.TryRemove(steamId, out _);
     }
 
     /// <summary>
@@ -53,7 +54,7 @@ public static class AiChannelState
     /// </summary>
     public static bool IsInAiChannel(ulong steamId)
     {
-        return _aiChannelMembers.Contains(steamId);
+        return _aiChannelMembers.ContainsKey(steamId);
     }
 
     /// <summary>
@@ -61,7 +62,7 @@ public static class AiChannelState
     /// </summary>
     public static List<ulong> GetAiChannelMembers()
     {
-        return _aiChannelMembers.ToList();
+        return _aiChannelMembers.Keys.ToList();
     }
 
     /// <summary>
@@ -69,7 +70,7 @@ public static class AiChannelState
     /// </summary>
     public static bool HasActiveRequest(ulong steamId)
     {
-        return _playersWithActiveRequests.Contains(steamId);
+        return _playersWithActiveRequests.ContainsKey(steamId);
     }
 
     /// <summary>
@@ -78,11 +79,8 @@ public static class AiChannelState
     /// </summary>
     public static bool TryBeginRequest(ulong steamId)
     {
-        if (_playersWithActiveRequests.Contains(steamId))
-            return false;
-        
-        _playersWithActiveRequests.Add(steamId);
-        return true;
+        // TryAdd returns true if the key was added, false if it already existed.
+        return _playersWithActiveRequests.TryAdd(steamId, 0);
     }
 
     /// <summary>
@@ -90,6 +88,6 @@ public static class AiChannelState
     /// </summary>
     public static void EndRequest(ulong steamId)
     {
-        _playersWithActiveRequests.Remove(steamId);
+        _playersWithActiveRequests.TryRemove(steamId, out _);
     }
 }

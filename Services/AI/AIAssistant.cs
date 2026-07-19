@@ -1767,18 +1767,10 @@ Do not propose strict-profile native construction, progression, or arbitrary Pro
         {
             try
             {
-                var names = new List<string>();
-                var type = typeof(Prefabs);
-                foreach (var field in type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.FlattenHierarchy))
-                {
-                    if (field.FieldType == typeof(PrefabGUID) || field.FieldType == typeof(PrefabGUID?))
-                    {
-                        var value = field.GetValue(null);
-                        if (value is PrefabGUID guid && guid != PrefabGUID.Empty)
-                            names.Add(field.Name);
-                    }
-                }
-                return names.OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).Take(120);
+                // Use the live prefab helper, which is more accurate than reflecting static Prefabs class.
+                return PrefabHelper.GetAllLive().Keys
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .Take(240);
             }
             catch
             {
@@ -1790,8 +1782,9 @@ Do not propose strict-profile native construction, progression, or arbitrary Pro
         {
             try
             {
-                var all = GetKnownPrefabNames().ToList();
-                return all.Where(n => n.StartsWith("Buff_", StringComparison.OrdinalIgnoreCase)).OrderBy(n => n).Distinct(StringComparer.OrdinalIgnoreCase).Take(120);
+                return PrefabHelper.GetAllLive().Keys
+                    .Where(n => n.StartsWith("Buff_", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(n => n).Take(120);
             }
             catch
             {
@@ -1803,23 +1796,13 @@ Do not propose strict-profile native construction, progression, or arbitrary Pro
         {
             try
             {
-                var type = typeof(ActionSequences);
-                var cacheField = type.GetField("_sequenceCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                if (cacheField?.GetValue(null) is System.Collections.IDictionary dict)
-                {
-                    var names = new List<string>();
-                    foreach (System.Collections.DictionaryEntry entry in dict)
-                        names.Add(entry.Key?.ToString() ?? string.Empty);
-                    return names.Where(n => !string.IsNullOrWhiteSpace(n)).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).Take(120);
-                }
-
-                var names2 = new List<string>();
-                foreach (var field in type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.FlattenHierarchy))
-                {
-                    if (field.FieldType == typeof(SequenceGUID) || field.FieldType == typeof(SequenceGUID?))
-                        names2.Add(field.Name);
-                }
-                return names2.OrderBy(n => n, StringComparer.OrdinalIgnoreCase).Distinct(StringComparer.OrdinalIgnoreCase).Take(120);
+                // Use the service that reads from custom-sequences.json, per P6.
+                var service = new CustomSequenceService();
+                return service.List()
+                    .Select(s => s.Id)
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+                    .Take(120);
             }
             catch
             {

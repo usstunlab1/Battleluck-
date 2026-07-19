@@ -944,7 +944,7 @@ public static class PlayerCommands
             var homeDist = npc.IsAlive ? math.distance(pos.xz, npc.HomePosition.xz) : -1f;
             var zoneDist = npc.IsAlive ? math.distance(pos.xz, zoneCenter.xz) : -1f;
             var rule = !npc.IsAlive ? "dead" :
-                npc.Mode is NpcControlMode.Follow or NpcControlMode.Aggro or NpcControlMode.GoTo || homeDist <= npc.HomeRadius * 1.75f
+                npc.Mode is NpcBehaviorMode.Follow or NpcBehaviorMode.Aggro or NpcBehaviorMode.GoTo || homeDist <= npc.HomeRadius * 1.75f
                     ? "OK"
                     : "LEASH?";
             ctx.Reply($"    {npc.NpcId}: {npc.Mode} {rule} prefab={npc.PrefabName} homeDist={homeDist:F0}/{npc.HomeRadius:F0} zoneDist={zoneDist:F0}");

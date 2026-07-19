@@ -237,8 +237,18 @@ public sealed class LiveEventOperatorService
         if (selected.Count == 0 && EventDefinitionLoader.CountActions(definition) == originalActionCount)
             selected.Add(BuildGeneratedAnnounceAction(request));
 
+        var setupPhase = EnsurePhase(definition, "setup");
         foreach (var action in selected)
-            definition.Actions.Add(new EventActionDefinition { Action = action });
+        {
+            if (IsSafeTopLevelFallbackAction(action))
+            {
+                AddUniqueAction(definition.Actions, action);
+            }
+            else
+            {
+                AddUniqueAction(setupPhase.Actions, action);
+            }
+        }
 
         return OperationResult<UnifiedEventDefinition>.Ok(definition);
     }
@@ -256,9 +266,6 @@ public sealed class LiveEventOperatorService
         void Add(string action)
         {
             if (selected.Count >= remaining || string.IsNullOrWhiteSpace(action) || !seen.Add(action))
-                return;
-
-            if (!IsSafeTopLevelFallbackAction(action))
                 return;
 
             var validation = _manifest.Validate(new EventActionDefinition { Action = action });
@@ -305,129 +312,6 @@ public sealed class LiveEventOperatorService
             || name.Equals("notify", StringComparison.OrdinalIgnoreCase)
             || name.Equals("send_message", StringComparison.OrdinalIgnoreCase);
     }
-
-    void ApplyLocalBuildAndCastleObjects(
-        UnifiedEventDefinition definition,
-        string request,
-        string modeId,
-        ActiveSession? session,
-        int remainingActions)
-    {
-        if (remainingActions < 2 || !LooksLikeBuildCastleRequest(request))
-            return;
-
-        var lower = request.ToLowerInvariant();
-        var center = ResolveEventCenter(definition, session);
-        var position = FormatVec3(center);
-        var schematicName = SelectCastleSchematic(lower);
-        var radius = SelectBuildRadius(lower);
-        var group = lower.Contains("floor") && !lower.Contains("wall") && !lower.Contains("castle")
-            ? "generated_floor_layout"
-            : "generated_castle_layout";
-
-        var obj = definition.Objects.FirstOrDefault(o => o.Group.Equals(group, StringComparison.OrdinalIgnoreCase));
-        if (obj == null)
-        {
-            obj = new EventObjectDefinition
-            {
-                Group = group,
-                Kind = "schematic",
-                Schematic = schematicName,
-                Position = center
-            };
-            definition.Objects.Add(obj);
-        }
-
-        obj.Kind = "schematic";
-        obj.Schematic = schematicName;
-        obj.Position = center;
-
-        AddUniqueAction(obj.Actions,
-            $"schematic.load:eventName={schematicName}|position={position}|radius={radius}|clearOld=true|spawnItems={WantsItems(lower).ToString().ToLowerInvariant()}");
-
-        if (lower.Contains("palette") || lower.Contains("pal") || lower.Contains("kindred"))
-        {
-            AddUniqueAction(obj.Actions, "palette.add:search=castle floor stone");
-            AddUniqueAction(obj.Actions, "palette.add:search=castle wall stone");
-        }
-
-        if (lower.Contains("wall"))
-            AddUniqueAction(obj.Actions, "build.search:filter=castle wall stone");
-        if (lower.Contains("floor") || lower.Contains("tile"))
-            AddUniqueAction(obj.Actions, "build.search:filter=castle floor stone");
-        if (lower.Contains("gate") || lower.Contains("door"))
-            AddUniqueAction(obj.Actions, "build.search:filter=castle gate door");
-        if (WantsItems(lower))
-            AddUniqueAction(obj.Actions, "announce:title=Items|message=Castle schematic includes template resource items. Capture a live castle schematic to preserve exact chests and item pickups.|color=#FFD166|level=info");
-
-        var cleanup = EnsurePhase(definition, "cleanup");
-        AddUniqueAction(cleanup.Actions, $"schematic.clear:eventName={schematicName}");
-    }
-
-    static bool LooksLikeBuildCastleRequest(string request)
-    {
-        var lower = request.ToLowerInvariant();
-        return ContainsAny(lower,
-            "build", "building", "castle", "palace", "fort", "base",
-            "wall", "floor", "tile", "gate", "door", "carpet",
-            "schematic", "kindred", "palette", "pal ",
-            "item", "items", "resource", "resources", "chest", "storage", "loot");
-    }
-
-    static string SelectCastleSchematic(string lower)
-    {
-        if ((lower.Contains("floor") || lower.Contains("carpet") || lower.Contains("arena")) &&
-            !lower.Contains("wall") &&
-            !lower.Contains("gate") &&
-            !lower.Contains("door") &&
-            !lower.Contains("chest") &&
-            !lower.Contains("item"))
-        {
-            return "arena_filled_floor_template";
-        }
-
-        return "castle_design_template";
-    }
-
-    static int SelectBuildRadius(string lower)
-    {
-        var match = System.Text.RegularExpressions.Regex.Match(lower, @"(?<n>\d{1,3})\s*(radius|tiles|size|wide|width)");
-        if (match.Success && int.TryParse(match.Groups["n"].Value, out var parsed))
-            return Math.Clamp(parsed, 5, 120);
-
-        if (lower.Contains("big") || lower.Contains("large") || lower.Contains("full"))
-            return 60;
-        if (lower.Contains("small"))
-            return 20;
-        return 35;
-    }
-
-    static bool WantsItems(string lower) =>
-        ContainsAny(lower, "item", "items", "resource", "resources", "chest", "storage", "loot", "wood", "stone");
-
-    static Vec3Config ResolveEventCenter(UnifiedEventDefinition definition, ActiveSession? session)
-    {
-        var zone = session?.Config?.Zones?.Zones?.FirstOrDefault(z => z.Hash == session.Context.ZoneHash);
-        if (zone != null)
-        {
-            var center = zone.Position;
-            if (Math.Abs(center.X) > 0.0001f || Math.Abs(center.Y) > 0.0001f || Math.Abs(center.Z) > 0.0001f)
-                return center;
-            return zone.TeleportSpawn;
-        }
-
-        var eventZone = definition.Zones.FirstOrDefault(z => z.Hash != 0);
-        if (eventZone != null)
-            return eventZone.Center;
-
-        return new Vec3Config { X = -2000, Y = 5, Z = -2800 };
-    }
-
-    static string FormatVec3(Vec3Config value) =>
-        string.Join(",",
-            value.X.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            value.Y.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            value.Z.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     static EventPhaseDefinition EnsurePhase(UnifiedEventDefinition definition, string name)
     {

@@ -3309,19 +3309,19 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
         return int.TryParse(raw, out var parsed) ? parsed : null;
     }
 
-    static NpcControlMode ParseNpcControlMode(string raw)
+    static NpcBehaviorMode ParseNpcControlMode(string raw)
     {
         return (raw ?? "").Trim().ToLowerInvariant() switch
         {
-            "guard" or "defender" or "defend" => NpcControlMode.Guard,
-            "chase" or "aggressive" or "attack" => NpcControlMode.Aggro,
-            "follow" => NpcControlMode.Follow,
-            "goto" or "move" => NpcControlMode.GoTo,
-            "hold" or "stay" => NpcControlMode.Hold,
-            "patrol" => NpcControlMode.Patrol,
-            "wander" => NpcControlMode.Wander,
-            "flee" => NpcControlMode.Flee,
-            _ => NpcControlMode.Idle
+            "guard" or "defender" or "defend" => NpcBehaviorMode.Guard,
+            "chase" or "aggressive" or "attack" => NpcBehaviorMode.Aggro,
+            "follow" => NpcBehaviorMode.Follow,
+            "goto" or "move" => NpcBehaviorMode.GoTo,
+            "hold" or "stay" => NpcBehaviorMode.Hold,
+            "patrol" => NpcBehaviorMode.Patrol,
+            "wander" => NpcBehaviorMode.Wander,
+            "flee" => NpcBehaviorMode.Flee,
+            _ => NpcBehaviorMode.Idle
         };
     }
 
@@ -3354,15 +3354,15 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
     static void ApplyInitialNpcMode(
         NpcControlService service,
         ControlledNpcEntry entry,
-        NpcControlMode mode,
+        NpcBehaviorMode mode,
         Entity target,
         float homeRadius)
     {
         _ = mode switch
         {
-            NpcControlMode.Aggro => service.Aggro(entry.NpcId, target, 3f, Math.Max(homeRadius * 2f, 80f)),
-            NpcControlMode.Follow => service.Follow(entry.NpcId, target, 6f, Math.Max(homeRadius * 2f, 80f)),
-            NpcControlMode.Guard or NpcControlMode.Hold => service.Hold(entry.NpcId, homeRadius),
+            NpcBehaviorMode.Aggro => service.Aggro(entry.NpcId, target, 3f, Math.Max(homeRadius * 2f, 80f)),
+            NpcBehaviorMode.Follow => service.Follow(entry.NpcId, target, 6f, Math.Max(homeRadius * 2f, 80f)),
+            NpcBehaviorMode.Guard or NpcBehaviorMode.Hold => service.Hold(entry.NpcId, homeRadius),
             _ => service.Release(entry.NpcId)
         };
     }
