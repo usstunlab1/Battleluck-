@@ -1,62 +1,51 @@
-using System;
 using BattleLuck.Models.Chat;
 using BattleLuck.Services.Chat;
-using BattleLuck.Commands;
 
 namespace BattleLuck.Commands.Chat;
 
 /// <summary>
-/// Commands for managing the BattleLuck AI chat channel.
-/// .blch next - Cycle to next channel (Native -> AI)
-/// .blch ai   - Set to AI channel
-/// .blch off  - Set to Native channel
-/// .blch current - Show current channel
+/// Selects between the client-managed native game channel and BattleLuck's
+/// shared AI channel. Native never replaces or rewrites Global, Local,
+/// Team/Clan, or Whisper; the client's current selection passes through.
 /// </summary>
 public static class AiChannelCommands
 {
-    [BattleLuckCommand("blch next", description: "Cycle to the next chat channel (Native -> AI)")]
-    public static void NextChannel(BattleLuckCommandContext ctx)
+    [BattleLuckCommand("blch", description: "Show the current BattleLuck chat channel")]
+    public static void Channel(BattleLuckCommandContext ctx) =>
+        ReplyCurrent(ctx);
+
+    [BattleLuckCommand("blch ai", description: "Enter the shared BattleLuck AI channel")]
+    public static void EnterAi(BattleLuckCommandContext ctx)
     {
-        var steamId = ctx.SenderSteamId;
-        var currentChannel = AiChannelState.GetChannel(steamId);
-        var nextChannel = currentChannel == BattleLuckChatChannel.Native 
-            ? BattleLuckChatChannel.AI 
-            : BattleLuckChatChannel.Native;
-        
-        SetChannelInternal(steamId, nextChannel);
-        ctx.Reply($"Chat channel set to: {nextChannel}");
+        AiChannelState.Enter(ctx.SenderSteamId);
+        ctx.Reply("BattleLuck chat channel: AI. Normal messages now stay in the blue AI room.");
     }
 
-    [BattleLuckCommand("blch ai", description: "Set chat channel to AI")]
-    public static void AiChannel(BattleLuckCommandContext ctx)
+    [BattleLuckCommand("blch off", description: "Leave the AI channel and return to native game chat")]
+    public static void LeaveAi(BattleLuckCommandContext ctx)
     {
-        SetChannelInternal(ctx.SenderSteamId, BattleLuckChatChannel.AI);
-        ctx.Reply("Chat channel set to: AI");
+        AiChannelState.Leave(ctx.SenderSteamId);
+        ctx.Reply("BattleLuck chat channel: Native. Your client-selected game channel is unchanged.");
     }
 
-    [BattleLuckCommand("blch off", description: "Set chat channel to Native (default)")]
-    public static void OffChannel(BattleLuckCommandContext ctx)
+    [BattleLuckCommand("blch next", description: "Toggle between Native and AI chat")]
+    public static void Next(BattleLuckCommandContext ctx)
     {
-        SetChannelInternal(ctx.SenderSteamId, BattleLuckChatChannel.Native);
-        ctx.Reply("Chat channel set to: Native");
+        var selected = AiChannelState.SelectNext(ctx.SenderSteamId);
+        ctx.Reply(selected == BattleLuckChatChannel.AI
+            ? "BattleLuck chat channel: AI. Normal messages now stay in the blue AI room."
+            : "BattleLuck chat channel: Native. Your client-selected game channel is unchanged.");
     }
 
-    [BattleLuckCommand("blch current", description: "Show current chat channel")]
-    public static void CurrentChannel(BattleLuckCommandContext ctx)
-    {
-        var currentChannel = AiChannelState.GetChannel(ctx.SenderSteamId);
-        ctx.Reply($"Current chat channel is: {currentChannel}");
-    }
+    [BattleLuckCommand("blch current", description: "Show the current BattleLuck chat channel")]
+    public static void Current(BattleLuckCommandContext ctx) =>
+        ReplyCurrent(ctx);
 
-    private static void SetChannelInternal(ulong steamId, BattleLuckChatChannel channel)
+    private static void ReplyCurrent(BattleLuckCommandContext ctx)
     {
-        if (channel == BattleLuckChatChannel.AI)
-        {
-            AiChannelState.Add(steamId);
-        }
-        else
-        {
-            AiChannelState.Remove(steamId);
-        }
+        var channel = AiChannelState.GetChannel(ctx.SenderSteamId);
+        ctx.Reply(channel == BattleLuckChatChannel.AI
+            ? "Current BattleLuck chat channel: AI."
+            : "Current BattleLuck chat channel: Native (client-selected Global, Local, Team/Clan, or Whisper).");
     }
 }
