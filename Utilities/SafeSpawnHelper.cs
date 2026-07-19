@@ -26,7 +26,7 @@ public static class SafeSpawnHelper
         bool isChestIntent =
             actionId.Contains("chest", StringComparison.OrdinalIgnoreCase);
 
-        var category = BattleLuck.Services.Runtime.PrefabRegistryServiceReal.GetCategory(prefabGuid) ?? string.Empty;
+        var category = BattleLuck.Services.Runtime.DefaultPrefabRegistryService.GetCategory(prefabGuid) ?? string.Empty;
         bool isUnitCategory =
             string.Equals(category, "Characters", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(category, "VBoss", StringComparison.OrdinalIgnoreCase);

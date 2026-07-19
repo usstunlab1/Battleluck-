@@ -91,7 +91,7 @@ public static class BossCommands
         if (!player.Exists()) { ctx.Reply("Sender character entity is unavailable."); return; }
 
         var session = FindSession(player.GetSteamId());
-        var result = new FlowActionExecutor(new PlayerStateController(), BattleLuckPlugin.GameModes)
+        var result = FlowActionExecutor.Shared
             .ExecuteViaRuntime(action, new FlowActionContext
             {
                 PlayerCharacter = player,

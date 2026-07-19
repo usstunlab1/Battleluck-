@@ -397,9 +397,10 @@ namespace BattleLuck.Services.Runtime
     #region Action Catalog Types
 
     /// <summary>
-    /// Action definition loaded from actions_catalog.json for action resolution.
+    /// Action catalog entry DTO for MCP transport.
+    /// Maps from the catalog ActionDefinition.
     /// </summary>
-    public class ActionDefinition
+    public class ActionCatalogEntryDto
     {
         public string ActionId { get; set; } = "";
         public string Action { get; set; } = "";
@@ -409,20 +410,20 @@ namespace BattleLuck.Services.Runtime
     }
 
     /// <summary>
-    /// Sequence definition loaded from actions_catalog.json.
+    /// Sequence definition DTO for MCP transport.
     /// </summary>
-    public class SequenceDefinition
+    public class SequenceDefinitionDto
     {
         public string SequenceId { get; set; } = "";
         public string Name { get; set; } = "";
         public string Description { get; set; } = "";
-        public List<SequenceStep> Steps { get; set; } = new();
+        public List<SequenceStepDto> Steps { get; set; } = new();
     }
 
     /// <summary>
-    /// Single step within a sequence.
+    /// Single step within a sequence (DTO for MCP transport).
     /// </summary>
-    public class SequenceStep
+    public class SequenceStepDto
     {
         public string Id { get; set; } = "";
         public string ActionId { get; set; } = "";

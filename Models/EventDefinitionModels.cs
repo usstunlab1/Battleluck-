@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using BattleLuck.Services.Runtime;
 
 namespace BattleLuck.Models;
 
@@ -211,7 +212,7 @@ public sealed class EventZoneDefinition
             IsSafe = Safe,
             BlockedActions = BlockedActions,
             Boundary = Boundary ?? new BoundaryConfig { Policy = BoundaryPolicy },
-            Schematic = Schematic == null ? null : new global::ZoneSchematic
+            Schematic = Schematic == null ? null : new ZoneSchematic
             {
                 Id = Schematic.Id,
                 LoadOnEnter = Schematic.LoadOnEnter,
@@ -499,6 +500,127 @@ public sealed class ActionManifestEntry
 
     [JsonPropertyName("handlerAvailable")]
     public bool HandlerAvailable { get; set; } = true;
+
+    // ── Capability metadata (folded from CapabilityRegistry) ────────────────
+
+    /// <summary>True when the action changes server/world state.</summary>
+    [JsonPropertyName("isMutating")]
+    public bool IsMutating { get; set; } = true;
+
+    /// <summary>True when the action can be undone with a compensating call.</summary>
+    [JsonPropertyName("isReversible")]
+    public bool IsReversible { get; set; }
+
+    /// <summary>True when running the action N times produces the same result as running it once.</summary>
+    [JsonPropertyName("isIdempotent")]
+    public bool IsIdempotent { get; set; }
+
+    /// <summary>Sources permitted to invoke without confirmation.</summary>
+    public ActionSourcePermissions AllowedSources { get; set; } = ActionSourcePermissions.Admin;
+
+    /// <summary>Sources that require explicit confirmation.</summary>
+    public ActionSourcePermissions ConfirmationRequiredSources { get; set; } = ActionSourcePermissions.None;
+
+    /// <summary>Session phases in which this action may execute.</summary>
+    public SessionPhaseAllowance AllowedPhases { get; set; } = SessionPhaseAllowance.Any;
+
+    // ── Server-only action contract ─────────────────────────────────────────
+
+    /// <summary>Availability: "server_only", "unsupported", or "client_required".</summary>
+    [JsonPropertyName("availability")]
+    public string Availability { get; set; } = "server_only";
+
+    /// <summary>Whether this action passes the registration gate.</summary>
+    [JsonPropertyName("executable")]
+    public bool Executable { get; set; } = true;
+
+    /// <summary>True when a client mod is required.</summary>
+    [JsonPropertyName("clientRequired")]
+    public bool ClientRequired { get; set; }
+
+    /// <summary>True when native server replication is used.</summary>
+    [JsonPropertyName("usesNativeReplication")]
+    public bool UsesNativeReplication { get; set; } = true;
+
+    /// <summary>True when the server-only contract is satisfied.</summary>
+    public bool IsServerContractValid =>
+        Executable &&
+        !ClientRequired &&
+        UsesNativeReplication &&
+        string.Equals(Availability, "server_only", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Human-readable reason the server contract is violated, or null.</summary>
+    public string? ServerContractViolationReason
+    {
+        get
+        {
+            if (!Executable) return "Action is marked as non-executable.";
+            if (ClientRequired) return "Action requires a client mod; server-only contract forbids it.";
+            if (!UsesNativeReplication) return "Action does not use native server replication.";
+            if (!string.Equals(Availability, "server_only", StringComparison.OrdinalIgnoreCase))
+                return $"Availability is '{Availability}'; expected 'server_only'.";
+            return null;
+        }
+    }
+
+    // ── Action resolution (from actions_catalog.json) ─────────────────────
+
+    /// <summary>Canonical action string template (e.g. "wall.build").</summary>
+    [JsonPropertyName("action")]
+    public string Action { get; set; } = "";
+
+    /// <summary>Default parameters from the catalog definition.</summary>
+    [JsonPropertyName("params")]
+    public Dictionary<string, JsonElement> Params { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Whether this action must run on the main thread.</summary>
+    [JsonPropertyName("mainThreadRequired")]
+    public bool MainThreadRequired { get; set; }
+
+    /// <summary>The action to invoke to reverse/rollback this action, if reversible.</summary>
+    [JsonPropertyName("rollbackAction")]
+    public string? RollbackAction { get; set; }
+
+    /// <summary>Handler type name responsible for executing this action.</summary>
+    [JsonPropertyName("handler")]
+    public string? Handler { get; set; }
+
+    /// <summary>Known side effects of executing this action.</summary>
+    [JsonPropertyName("sideEffects")]
+    public List<string> SideEffects { get; set; } = new();
+
+    // ── Permission helpers ──────────────────────────────────────────────────
+
+    public bool IsSourcePermitted(ActionSource source)
+    {
+        var flag = SourceToFlag(source);
+        return (AllowedSources & flag) != ActionSourcePermissions.None;
+    }
+
+    public bool RequiresConfirmation(ActionSource source)
+    {
+        var flag = SourceToFlag(source);
+        return (ConfirmationRequiredSources & flag) != ActionSourcePermissions.None;
+    }
+
+    public bool IsSourceAcknowledged(ActionSource source) =>
+        IsSourcePermitted(source) || RequiresConfirmation(source);
+
+    public bool IsPhaseAllowed(SessionPhaseAllowance phaseFlag) =>
+        (AllowedPhases & phaseFlag) != SessionPhaseAllowance.None;
+
+    private static ActionSourcePermissions SourceToFlag(ActionSource source) => source switch
+    {
+        ActionSource.Admin        => ActionSourcePermissions.Admin,
+        ActionSource.Player       => ActionSourcePermissions.Player,
+        ActionSource.AI           => ActionSourcePermissions.AI,
+        ActionSource.Webhook      => ActionSourcePermissions.Webhook,
+        ActionSource.MCP          => ActionSourcePermissions.MCP,
+        ActionSource.EventRuntime => ActionSourcePermissions.EventRuntime,
+        ActionSource.DevConsole   => ActionSourcePermissions.DevConsole,
+        ActionSource.System       => ActionSourcePermissions.System,
+        _                         => ActionSourcePermissions.None,
+    };
 }
 
 public sealed class EventValidationResult

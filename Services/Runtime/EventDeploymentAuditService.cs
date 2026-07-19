@@ -86,7 +86,7 @@ public sealed class EventDeploymentAuditService
                 EventId = string.IsNullOrWhiteSpace(eventId) ? "all" : SafeEventId(eventId),
                 Files = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["flow.json"] = status?.HasAllFiles == true,
+                    ["event.json"] = status?.HasAllFiles == true,
                     ["zones.json"] = status?.HasAllFiles == true,
                     ["kits.json"] = status?.HasAllFiles == true,
                     ["prompt.txt"] = status?.HasAllFiles == true
@@ -254,10 +254,14 @@ public sealed class EventDeploymentAuditService
     static Dictionary<string, string> CaptureFiles(string eventId)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var directory = Path.Combine(ConfigLoader.ConfigRoot, "events", SafeEventId(eventId));
+        var safeId = SafeEventId(eventId);
+        var directory = Path.Combine(ConfigLoader.ConfigRoot, "events", safeId);
+        var flatEventPath = Path.Combine(ConfigLoader.ConfigRoot, "events", $"{safeId}.json");
         foreach (var file in EventDeploymentService.RequiredFiles)
         {
-            var path = Path.Combine(directory, file);
+            var path = file.Equals("event.json", StringComparison.OrdinalIgnoreCase)
+                ? flatEventPath
+                : Path.Combine(directory, file);
             if (!File.Exists(path))
                 continue;
             try
@@ -318,7 +322,7 @@ public sealed class EventDeploymentAuditService
         "E_TICK" => "Use validated wait:<seconds> and tick:<event-second> markers.",
         "E_UUID_UNVERIFIED" => "Remove the sequence UUID from the executable catalog until a target-server dump confirms it.",
         "EGIST" => "Use a public HTTPS gist.github.com URL containing all four required files.",
-        "EZONEHASH" => "Choose a unique positive zone hash and keep flow.json and zones.json identical.",
+        "EZONEHASH" => "Choose a unique positive zone hash and keep event.json and zones.json identical.",
         "EACTIVE" => "End the active event before replacing or restoring its definition.",
         "ERUNTIMEREGISTER" => "Use the Safe-Stage workflow, inspect the server log, and verify KindredExtract references.",
         "EBACKUP" => "Check the latest backup manifest and restore only a verified known-good snapshot.",

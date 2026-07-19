@@ -17,8 +17,8 @@ namespace BattleLuck.ECS.Events;
 // system. Each event is intentionally self-contained — no shared mutable state.
 // ─────────────────────────────────────────────────────────────────────────────
 #region Group 1 — Death & Damage
-/// <summary>Fired when an entity dies on the server (DeathEventListenerSystem).</summary>
-public readonly record struct PlayerDeathEvent(Entity Died, Entity Killer, float Time);
+/// <summary>Fired when an entity dies on the server (DeathEventListenerSystem). Time is Unix milliseconds.</summary>
+public readonly record struct PlayerDeathEvent(Entity Died, Entity Killer, long Time);
 /// <summary>Fired when damage is dealt through DealDamageOnGameplayEvents.</summary>
 public readonly record struct DamageDealtEvent(Entity Source, Entity Target, float Amount, string Category);
 /// <summary>Fired when a kill credit is finalized (KillEventSystem).</summary>
@@ -95,4 +95,17 @@ public readonly record struct AiGroupProjectMTickEvent(string SourceSystem, Date
 public readonly record struct BattleLuckServerTickEvent(float DeltaSeconds, DateTime TimestampUtc);
 /// <summary>Fired after ProjectM's gameplay tick system updates.</summary>
 public readonly record struct ProjectMRuntimeTickEvent(string SourceSystem, DateTime TimestampUtc);
+#endregion
+
+#region Group 9 - Sequence lifecycle events
+/// <summary>Fired when a custom sequence starts execution.</summary>
+public readonly record struct SequenceStartedEvent(string SessionId, string SequenceId, DateTime StartedAtUtc);
+/// <summary>Fired when a sequence step begins.</summary>
+public readonly record struct SequenceStepStartedEvent(string SessionId, string SequenceId, int StepIndex, string StepLabel);
+/// <summary>Fired when a sequence step completes.</summary>
+public readonly record struct SequenceStepCompletedEvent(string SessionId, string SequenceId, int StepIndex, bool Success);
+/// <summary>Fired when a sequence fails.</summary>
+public readonly record struct SequenceFailedEvent(string SessionId, string SequenceId, string Reason);
+/// <summary>Fired when a sequence completes successfully.</summary>
+public readonly record struct SequenceCompletedEvent(string SessionId, string SequenceId);
 #endregion

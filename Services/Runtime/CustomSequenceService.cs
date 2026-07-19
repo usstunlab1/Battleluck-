@@ -340,17 +340,19 @@ public sealed class CustomSequenceService
             if (!step.Kind.Equals("action", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var due = step.AtSecond ?? (cursor + Math.Max(0, step.DelaySeconds));
-            var repeat = Math.Clamp(step.Repeat, 1, MaxActionsPerSequence);
-            for (var i = 0; i < repeat; i++)
-            {
-                run.Steps.Add(new CustomSequenceRuntimeStep
+                var due = step.AtSecond ?? (cursor + Math.Max(0, step.DelaySeconds));
+                var repeat = Math.Clamp(step.Repeat, 1, MaxActionsPerSequence);
+                for (var i = 0; i < repeat; i++)
                 {
-                    StepId = repeat == 1 ? step.StepId : $"{step.StepId}.{i + 1}",
-                    Action = step.Action,
-                    DueElapsedSeconds = due + (Math.Max(0, step.IntervalSeconds) * i)
-                });
-            }
+                    run.Steps.Add(new CustomSequenceRuntimeStep
+                    {
+                        StepId = repeat == 1 ? step.StepId : $"{step.StepId}.{i + 1}",
+                        Action = step.Action,
+                        DueElapsedSeconds = due + (Math.Max(0, step.IntervalSeconds) * i),
+                        StepIndex = run.Steps.Count,
+                        StepLabel = step.StepId
+                    });
+                }
 
             cursor = Math.Max(cursor, due + (Math.Max(0, step.IntervalSeconds) * Math.Max(0, repeat - 1)));
         }

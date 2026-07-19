@@ -1,4 +1,4 @@
-﻿using BattleLuck.ECS.Events;
+using BattleLuck.ECS.Events;
 using BattleLuck.Services.Runtime;
 using Unity.Entities;
 
@@ -57,7 +57,7 @@ internal static class DeathHook
             }
             catch (Exception ex)
             {
-                BattleLuckPlugin.LogWarning($"[DeathHook] Handler error: {ex.Message}");
+                BattleLuckPlugin.LogWarning($"[DeathHook] Handler error: {ex.ToString()}");
             }
         }
     }

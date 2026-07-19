@@ -381,7 +381,6 @@ internal static class CastlePolicyCommands
                "  .castlepolicy.list\n" +
                "  .castlepolicy.public <policyId>\n" +
                "  .castlepolicy.private <policyId>\n" +
-               "  .castlepolicy.allow <policyId> <steamId> [name]\n" +
                "  .castlepolicy.deny <policyId> <steamId> [name]\n" +
                "  .castlepolicy.territory.preview <public|private>\n" +
                "  .castlepolicy.territory.apply <public|private> confirm\n" +

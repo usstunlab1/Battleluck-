@@ -8,7 +8,7 @@ namespace BattleLuck.Services.Runtime
     /// <summary>
     /// Real implementation of session runtime service.
     /// </summary>
-    public class SessionRuntimeServiceReal : ISessionRuntimeService
+    public class DefaultSessionRuntimeService : ISessionRuntimeService
     {
         private SessionController? _sessionController;
         private readonly object _lock = new();

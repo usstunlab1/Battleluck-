@@ -12,7 +12,7 @@ namespace BattleLuck.Services.Runtime
     /// <summary>
     /// Prefab registry facade backed by BattleLuck's reflection/live-prefab helper and the external prefab archive.
     /// </summary>
-    public class PrefabRegistryServiceReal : IPrefabRegistryService
+    public class DefaultPrefabRegistryService : IPrefabRegistryService
     {
         private static PrefabArchive? _archive;
         private static readonly object _archiveLock = new();

@@ -122,6 +122,8 @@ public sealed class CustomSequenceRuntimeStep
     public string Action { get; set; } = "";
     public double DueElapsedSeconds { get; set; }
     public bool Executed { get; set; }
+    public int StepIndex { get; set; }
+    public string StepLabel { get; set; } = "";
 }
 
 public sealed class CustomSequenceExecutionReport

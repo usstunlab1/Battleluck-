@@ -1,4 +1,4 @@
-﻿using ProjectM;
+using ProjectM;
 using ProjectM.Network;
 using Stunlock.Core;
 using Unity.Entities;
@@ -19,6 +19,9 @@ namespace BattleLuck.Services
         static readonly string SnapshotDir = Path.Combine(
             BepInEx.Paths.BepInExRootPath, "data", "BattleLuck", "snapshots");
 
+        static readonly string RecoveryDir = Path.Combine(
+            BepInEx.Paths.BepInExRootPath, "config", "BattleLuck", "runtime", "player-recovery");
+
     static readonly JsonSerializerOptions JsonOpts = new()
     {
         WriteIndented = true,
@@ -30,6 +33,7 @@ namespace BattleLuck.Services
     public PlayerStateController()
     {
         Directory.CreateDirectory(SnapshotDir);
+        Directory.CreateDirectory(RecoveryDir);
     }
 
     /// <summary>Save full 13-category entity state for a player.</summary>
@@ -190,6 +194,7 @@ namespace BattleLuck.Services
     /// <summary>
     /// Hard event-entry boundary: preserve rollback state first, then remove the
     /// player's current inventory/equipment items before event kits or actions run.
+    /// Also creates a transaction record for disconnect recovery.
     /// </summary>
     public OperationResult PrepareForEventEntry(Entity character, int zoneHash, float3? returnPositionOverride = null, ulong steamIdOverride = 0, string eventRunId = "", string eventModeId = "")
     {
@@ -197,7 +202,25 @@ namespace BattleLuck.Services
         if (steamId == 0)
             return OperationResult.Fail("Player SteamID not found.");
 
+        // Create transaction record for disconnect recovery
+        var transaction = new PlayerEventTransaction
+        {
+            SteamId = steamId,
+            EventId = eventModeId,
+            ZoneHash = zoneHash,
+            State = PlayerEventState.SnapshotSaving
+        };
+        WriteTransaction(steamId, transaction);
+
         var savedNow = SaveSnapshotIfMissing(character, zoneHash, returnPositionOverride, steamId, eventRunId, eventModeId);
+        
+        // Update transaction after snapshot save
+        transaction.State = PlayerEventState.SnapshotSaved;
+        transaction.SnapshotPersisted = savedNow;
+        transaction.UpdatedUtc = DateTime.UtcNow;
+        WriteTransaction(steamId, transaction);
+
+        // Only clear inventory/abilities after snapshot is saved
         var removedAbilities = AbilityController.ClearAbilitySlots(character);
         var removedPassives = AbilityController.ClearPassiveSpells(character);
         var removed = ClearInventory(character);
@@ -209,6 +232,108 @@ namespace BattleLuck.Services
 
         return OperationResult.Ok();
     }
+
+    /// <summary>
+    /// Restore player state from a transaction record (used for disconnect recovery).
+    /// </summary>
+    public bool RestoreFromTransaction(ulong steamId, Entity character)
+    {
+        var transaction = GetTransaction(steamId);
+        if (transaction == null)
+            return false;
+
+        // Check if this was an incomplete entry
+        if (transaction.State is PlayerEventState.SnapshotSaving or PlayerEventState.SnapshotSaved or PlayerEventState.Preparing)
+        {
+            var restored = RestoreSnapshot(character, transaction.ZoneHash);
+            if (restored)
+            {
+                transaction.State = PlayerEventState.Restored;
+                transaction.UpdatedUtc = DateTime.UtcNow;
+                WriteTransaction(steamId, transaction);
+                DeleteTransaction(steamId);
+                BattleLuckPlugin.LogInfo($"[PlayerState] Restored player {steamId} from transaction after disconnect.");
+            }
+            return restored;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Update transaction state (called during entry flow progression).
+    /// </summary>
+    public void UpdateTransactionState(ulong steamId, PlayerEventState state, bool? kitApplied = null, bool? teleportCompleted = null, bool? pvpChanged = null, string? error = null)
+    {
+        var transaction = GetTransaction(steamId) ?? new PlayerEventTransaction { SteamId = steamId };
+        transaction.State = state;
+        transaction.UpdatedUtc = DateTime.UtcNow;
+        
+        if (kitApplied.HasValue)
+            transaction.EventKitApplied = kitApplied.Value;
+        if (teleportCompleted.HasValue)
+            transaction.TeleportCompleted = teleportCompleted.Value;
+        if (pvpChanged.HasValue)
+            transaction.PvpChanged = pvpChanged.Value;
+        if (error != null)
+            transaction.SnapshotId = error; // Store error in SnapshotId field for now
+
+        WriteTransaction(steamId, transaction);
+    }
+
+    /// <summary>
+    /// Get transaction for a player (for disconnect recovery).
+    /// </summary>
+    public PlayerEventTransaction? GetTransaction(ulong steamId)
+    {
+        var path = GetTransactionPath(steamId);
+        if (!File.Exists(path))
+            return null;
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<PlayerEventTransaction>(json, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+        }
+        catch (Exception ex)
+        {
+            BattleLuckPlugin.LogWarning($"[PlayerState] Failed to read transaction for {steamId}: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Write transaction to disk for persistence.
+    /// </summary>
+    void WriteTransaction(ulong steamId, PlayerEventTransaction transaction)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(transaction, JsonOpts);
+            File.WriteAllText(GetTransactionPath(steamId), json);
+        }
+        catch (Exception ex)
+        {
+            BattleLuckPlugin.LogWarning($"[PlayerState] Failed to write transaction for {steamId}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Delete transaction file after successful entry or recovery.
+    /// </summary>
+    void DeleteTransaction(ulong steamId)
+    {
+        var path = GetTransactionPath(steamId);
+        if (File.Exists(path))
+        {
+            try { File.Delete(path); } catch { }
+        }
+    }
+
+    static string GetTransactionPath(ulong steamId) => Path.Combine(RecoveryDir, $"{steamId}.json");
 
     /// <summary>Restore full entity state from snapshot in 13-step order.</summary>
     public bool RestoreSnapshot(Entity character, int zoneHash)

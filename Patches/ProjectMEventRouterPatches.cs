@@ -5,7 +5,6 @@ using BattleLuck.ECS.Events;
 using ProjectM;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProjectMEventRouterPatches.cs — Harmony postfix patches that feed the router.
@@ -18,7 +17,7 @@ using Unity.Mathematics;
 // This file is auto-applied via `_harmony.PatchAll(typeof(ProjectMEventRouterPatches).Assembly)`
 // in BattleLuckPlugin.Load(), after the router has been initialized.
 //
-// Phase 1: these patches only listen — they never modify the original behavior.
+// These patches only listen — they never modify the original behavior.
 // ─────────────────────────────────────────────────────────────────────────────
 
 [HarmonyPatch]
@@ -44,11 +43,15 @@ public static class ProjectMEventRouterPatches
 
                 Entity died = deathEvent.Died;
                 Entity killer = deathEvent.Killer;
-                float time = (float)DateTime.UtcNow.TimeOfDay.TotalSeconds; // Approximate time of event
 
-                if (!died.Exists()) continue;
+                // Filter to player deaths only — NPC deaths do not raise PlayerDeathEvent.
+                if (!died.Exists() || !died.IsPlayer()) continue;
 
-                ProjectMEventRouter.Instance?.RaisePlayerDeath(entity, new PlayerDeathEvent(died, killer, time));
+                // Use Unix milliseconds for a stable, timezone-safe timestamp
+                // that does not break across midnight.
+                long timeUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                ProjectMEventRouter.Instance?.RaisePlayerDeath(entity, new PlayerDeathEvent(died, killer, timeUnixMs));
             }
         }
         finally
@@ -58,26 +61,11 @@ public static class ProjectMEventRouterPatches
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Group 2 — ProjectM AI
+    // Group 2 — ProjectM AI (DISABLED)
+    //
+    // AI frame-level telemetry patches are intentionally disabled.
+    // BehaviourTreeSystem and AggroSystem fire every server frame and produce
+    // only heartbeat events without actionable payloads. AI planning runs
+    // through BattleLuck's controlled server tick instead.
     // ─────────────────────────────────────────────────────────────────────────
-
-    [HarmonyPatch(typeof(ProjectM.Behaviours.BehaviourTreeSystem), nameof(ProjectM.Behaviours.BehaviourTreeSystem.OnUpdate))]
-    [HarmonyPostfix]
-    private static void BehaviourTreeSystem_OnUpdate()
-    {
-        if (!VRisingCore.IsReady) return;
-
-        ProjectMEventRouter.Instance?.RaiseAiGroupProjectMTick(
-            new AiGroupProjectMTickEvent("ProjectM.Behaviours.BehaviourTreeSystem", DateTime.UtcNow));
-    }
-
-    [HarmonyPatch(typeof(ProjectM.AggroSystem), nameof(ProjectM.AggroSystem.OnUpdate))]
-    [HarmonyPostfix]
-    private static void AggroSystem_OnUpdate()
-    {
-        if (!VRisingCore.IsReady) return;
-
-        ProjectMEventRouter.Instance?.RaiseAiGroupProjectMTick(
-            new AiGroupProjectMTickEvent("ProjectM.AggroSystem", DateTime.UtcNow));
-    }
 }

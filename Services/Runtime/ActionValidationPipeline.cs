@@ -16,11 +16,11 @@ namespace BattleLuck.Services.Runtime;
 /// </summary>
 public sealed class ActionValidationPipeline : IActionValidationPipeline
 {
-    private readonly CapabilityRegistry _registry;
+    private readonly ActionManifestService _manifest;
 
-    public ActionValidationPipeline(CapabilityRegistry registry)
+    public ActionValidationPipeline(ActionManifestService manifest)
     {
-        _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        _manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
     }
 
     public Task<IReadOnlyList<ValidationStageResult>> ValidateAsync(
@@ -39,17 +39,17 @@ public sealed class ActionValidationPipeline : IActionValidationPipeline
 
         // Resolve capability descriptor for the remaining stages.
         // Null here means the action is unknown — already denied above.
-        var descriptor = _registry.TryGet(intent.ActionName);
+        _manifest.Entries.TryGetValue(intent.ActionName, out var entry);
 
         // ── Stage 1: Runtime state ────────────────────────────────────────────
-        var runtimeResult = RunRuntimeState(intent, context, descriptor);
+        var runtimeResult = RunRuntimeState(intent, context, entry);
         results.Add(runtimeResult);
 
         if (runtimeResult.Outcome == ValidationOutcome.Denied)
             return Task.FromResult<IReadOnlyList<ValidationStageResult>>(results);
 
         // ── Stage 2: Safety / policy ──────────────────────────────────────────
-        var policyResult = RunSafetyPolicy(intent, descriptor);
+        var policyResult = RunSafetyPolicy(intent, entry);
         results.Add(policyResult);
 
         return Task.FromResult<IReadOnlyList<ValidationStageResult>>(results);
@@ -62,9 +62,39 @@ public sealed class ActionValidationPipeline : IActionValidationPipeline
         if (string.IsNullOrWhiteSpace(intent.ActionName))
             return Denied(ValidationStage.StaticConfig, "Action name is empty or whitespace.");
 
-        if (!_registry.IsRegistered(intent.ActionName))
+        if (!_manifest.Entries.TryGetValue(intent.ActionName, out var entry))
             return Denied(ValidationStage.StaticConfig,
-                $"Unknown action '{intent.ActionName}'. Not present in capability registry.");
+                $"Unknown action '{intent.ActionName}'. Not present in action catalog.");
+
+        // Server-only contract gate: check availability and executable flags
+        // via the manifest entry.
+        if (!entry.IsServerContractValid)
+        {
+            return Denied(ValidationStage.StaticConfig,
+                $"Action '{intent.ActionName}' does not satisfy the server-only action contract: "
+                + entry.ServerContractViolationReason);
+        }
+
+        // ── Argument validation: required parameters ──────────────────────
+        var missing = new List<string>();
+        foreach (var required in entry.Required)
+        {
+            if (!intent.Parameters.TryGetValue(required, out var value) ||
+                string.IsNullOrWhiteSpace(value))
+            {
+                // Check if a default exists in the manifest entry.
+                if (!entry.Defaults.ContainsKey(required))
+                    missing.Add(required);
+            }
+        }
+
+        if (missing.Count > 0)
+        {
+            return Denied(ValidationStage.StaticConfig,
+                $"Action '{intent.ActionName}' is missing required parameter(s): "
+                + string.Join(", ", missing.Select(p => $"'{p}'"))
+                + ".");
+        }
 
         return Passed(ValidationStage.StaticConfig);
     }
@@ -72,27 +102,27 @@ public sealed class ActionValidationPipeline : IActionValidationPipeline
     private ValidationStageResult RunRuntimeState(
         RuntimeActionIntent intent,
         RuntimeActionContext context,
-        ActionCapabilityDescriptor? descriptor)
+        ActionManifestEntry? entry)
     {
-        if (descriptor == null)
-            return Skipped(ValidationStage.RuntimeState, "No descriptor; already denied by static config.");
+        if (entry == null)
+            return Skipped(ValidationStage.RuntimeState, "No entry; already denied by static config.");
 
         // Resolve the current session phase from context extras, if available.
         if (!context.Extras.TryGetValue("sessionPhase", out var phaseObj) || phaseObj == null)
         {
             // No phase info — skip phase check; the action may still be denied by policy.
             // This covers global (session-less) actions.
-            if (descriptor.AllowedPhases.HasFlag(SessionPhaseAllowance.NoSession))
+            if (entry.AllowedPhases.HasFlag(SessionPhaseAllowance.NoSession))
                 return Passed(ValidationStage.RuntimeState);
 
-            // If the descriptor requires a specific session phase but none is
+            // If the entry requires a specific session phase but none is
             // available, we conservatively allow it (state not checkable).
             return Passed(ValidationStage.RuntimeState);
         }
 
         if (phaseObj is SessionPhaseAllowance phaseFlag)
         {
-            if (!descriptor.IsPhaseAllowed(phaseFlag))
+            if (!entry.IsPhaseAllowed(phaseFlag))
                 return Denied(ValidationStage.RuntimeState,
                     $"Action '{intent.ActionName}' is not permitted in phase '{phaseFlag}'.");
         }
@@ -102,18 +132,18 @@ public sealed class ActionValidationPipeline : IActionValidationPipeline
 
     private ValidationStageResult RunSafetyPolicy(
         RuntimeActionIntent intent,
-        ActionCapabilityDescriptor? descriptor)
+        ActionManifestEntry? entry)
     {
-        if (descriptor == null)
-            return Skipped(ValidationStage.SafetyPolicy, "No descriptor; already denied by static config.");
+        if (entry == null)
+            return Skipped(ValidationStage.SafetyPolicy, "No entry; already denied by static config.");
 
         // Source permission check.
-        if (!descriptor.IsSourceAcknowledged(intent.Source))
+        if (!entry.IsSourceAcknowledged(intent.Source))
             return Denied(ValidationStage.SafetyPolicy,
                 $"Source '{intent.Source}' is not permitted to call action '{intent.ActionName}'.");
 
         // Confirmation gate: source requires confirmation.
-        if (descriptor.RequiresConfirmation(intent.Source))
+        if (entry.RequiresConfirmation(intent.Source))
             return new ValidationStageResult
             {
                 Stage = ValidationStage.SafetyPolicy,
@@ -123,15 +153,15 @@ public sealed class ActionValidationPipeline : IActionValidationPipeline
 
         // AI auto-run safety: mutating high-risk actions from AI must not auto-execute.
         if (intent.Source == ActionSource.AI
-            && descriptor.IsMutating
-            && descriptor.RiskLevel >= ActionRiskLevel.High)
+            && entry.IsMutating
+            && entry.RiskLevel.Equals("destructive", StringComparison.OrdinalIgnoreCase))
         {
             return new ValidationStageResult
             {
                 Stage = ValidationStage.SafetyPolicy,
                 Outcome = ValidationOutcome.RequiresConfirmation,
                 Reason = $"AI-originated action '{intent.ActionName}' has risk level "
-                       + $"'{descriptor.RiskLevel}' and requires confirmation.",
+                       + $"'{entry.RiskLevel}' and requires confirmation.",
             };
         }
 

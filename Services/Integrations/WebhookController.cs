@@ -301,7 +301,7 @@ public sealed class WebhookController : IDisposable
     void DispatchAction(WebhookRequest req)
     {
         BattleLuckPlugin.LogInfo($"[Webhook] Dispatching action: {req.Action}");
-        GameEvents.OnWebhookAction?.Invoke(new WebhookActionEvent
+        GameEvents.RaiseWebhookAction(new WebhookActionEvent
         {
             Action = req.Action,
             Parameters = req.Data ?? new Dictionary<string, object>()

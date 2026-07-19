@@ -37,12 +37,12 @@ public sealed class ConfigEditService
                  "session.json",
                  "zones.json",
                  "kit.json",
-                 "flow.json"
+                 "event.json"
          }
         },
         { "event", new[]
             {
-                "flow.json"
+                "event.json"
             }
          }
     };
@@ -210,7 +210,7 @@ public sealed class ConfigEditService
 
             if (!File.Exists(fullPath))
             {
-                if (string.Equals(fileName, "flow.json", StringComparison.OrdinalIgnoreCase) &&
+                if (string.Equals(fileName, "event.json", StringComparison.OrdinalIgnoreCase) &&
                     !string.IsNullOrWhiteSpace(modeId))
                 {
                     var stub = CreateEventStub(modeId);
@@ -245,8 +245,8 @@ public sealed class ConfigEditService
         if (string.IsNullOrWhiteSpace(modeId))
             throw new ArgumentException("modeId is required for mode scope");
 
-        if (string.Equals(fileName, "flow.json", StringComparison.OrdinalIgnoreCase))
-            return Path.Combine("events", modeId, "flow.json");
+        if (string.Equals(fileName, "event.json", StringComparison.OrdinalIgnoreCase))
+            return Path.Combine("events", $"{modeId}.json");
 
         return Path.Combine(modeId, fileName);
     }
@@ -407,7 +407,7 @@ public sealed class ConfigEditService
             }
 
             // mode scope
-            if (string.Equals(fileName, "flow.json", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(fileName, "event.json", StringComparison.OrdinalIgnoreCase))
                 return ValidateUnifiedEvent(updatedElement);
 
 return fileName switch

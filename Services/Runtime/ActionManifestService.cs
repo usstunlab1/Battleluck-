@@ -7,11 +7,20 @@ namespace BattleLuck.Services.Runtime;
 
 public sealed class ActionManifestService
 {
+    /// <summary>Shared singleton for static callers.</summary>
+    public static ActionManifestService Instance { get; } = new();
+
     readonly Dictionary<string, ActionManifestEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
+    readonly Dictionary<string, SequenceDefinition> _sequences = new(StringComparer.OrdinalIgnoreCase);
+    readonly Dictionary<string, string> _aliasMappings = new(StringComparer.OrdinalIgnoreCase);
     static readonly HashSet<string> StrictlyBlockedNativeMutations = new(StringComparer.OrdinalIgnoreCase)
     {
         "build.free", "build.spawn", "structure.spawn", "tile.place", "wall.build", "floor.place", "wall.destroy",
         "zone.border.place", "zone.border.place_all", "zone.border.remove", "zone.border.remove_all"
+    };
+    static readonly JsonSerializerOptions CatalogJsonOpts = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true
     };
 
     public ActionManifestService()
@@ -31,6 +40,8 @@ public sealed class ActionManifestService
     public void Reload()
     {
         _entries.Clear();
+        _sequences.Clear();
+        _aliasMappings.Clear();
         foreach (var action in FlowActionExecutor.SupportedActions)
         {
             if (string.IsNullOrWhiteSpace(action)) continue;
@@ -54,7 +65,79 @@ public sealed class ActionManifestService
             var path = Path.Combine(ConfigLoader.ConfigRoot, "actions_catalog.json");
             if (!File.Exists(path)) return;
 
-            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            var json = File.ReadAllText(path);
+            using var doc = JsonDocument.Parse(json);
+
+            // ── Load full action definitions from the "actions" array ────────
+            if (doc.RootElement.TryGetProperty("actions", out var actionsArray) && actionsArray.ValueKind == JsonValueKind.Array)
+            {
+                var catalog = JsonSerializer.Deserialize<ActionCatalog>(json, CatalogJsonOpts);
+                if (catalog != null)
+                {
+                    foreach (var def in catalog.Actions)
+                    {
+                        if (string.IsNullOrWhiteSpace(def.ActionId)) continue;
+
+                        if (!_entries.TryGetValue(def.ActionId, out var entry))
+                        {
+                            entry = new ActionManifestEntry { Name = def.ActionId };
+                            _entries[def.ActionId] = entry;
+                        }
+
+                        entry.Action = def.Action;
+                        entry.Params = new Dictionary<string, JsonElement>(def.Params, StringComparer.OrdinalIgnoreCase);
+                        entry.Category = string.IsNullOrWhiteSpace(def.Category) ? entry.Category : def.Category;
+                        entry.Description = string.IsNullOrWhiteSpace(def.Description) ? entry.Description : def.Description;
+                        entry.RiskLevel = string.IsNullOrWhiteSpace(def.RiskLevel) ? entry.RiskLevel : def.RiskLevel;
+                        entry.RequiresApproval = def.RequiresApproval;
+                        entry.RollbackAction = def.RollbackAction;
+                        entry.Handler = def.Handler;
+                        entry.MainThreadRequired = def.MainThreadRequired;
+                        entry.SideEffects = new List<string>(def.SideEffects);
+                        entry.Availability = def.Availability;
+                        entry.Executable = def.Executable;
+                        entry.ClientRequired = def.ClientRequired;
+                        entry.UsesNativeReplication = def.UsesNativeReplication;
+                        entry.IsReversible = def.Reversible;
+
+                        if (def.Aliases.Count > 0)
+                        {
+                            foreach (var alias in def.Aliases)
+                                if (!entry.Aliases.Contains(alias, StringComparer.OrdinalIgnoreCase))
+                                    entry.Aliases.Add(alias);
+                        }
+                        if (def.Required.Count > 0)
+                        {
+                            foreach (var r in def.Required)
+                                if (!entry.Required.Contains(r, StringComparer.OrdinalIgnoreCase))
+                                    entry.Required.Add(r);
+                        }
+                        if (def.Optional.Count > 0)
+                        {
+                            foreach (var o in def.Optional)
+                                if (!entry.Optional.Contains(o, StringComparer.OrdinalIgnoreCase))
+                                    entry.Optional.Add(o);
+                        }
+                    }
+
+                    // ── Load sequences ────────────────────────────────────────
+                    foreach (var seq in catalog.Sequences)
+                    {
+                        if (!string.IsNullOrWhiteSpace(seq.SequenceId))
+                            _sequences[seq.SequenceId] = seq;
+                    }
+
+                    // ── Load LLM alias mappings ──────────────────────────────
+                    if (catalog.LlmGuidance?.LegacyMappings != null)
+                    {
+                        foreach (var kvp in catalog.LlmGuidance.LegacyMappings)
+                            _aliasMappings[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+
+            // ── Load examples and metadata overlays ──────────────────────────
+            // ── Load examples overlay ────────────────────────────────────────
             if (doc.RootElement.TryGetProperty("examples", out var examples) && examples.ValueKind == JsonValueKind.Object)
             {
                 foreach (var category in examples.EnumerateObject())
@@ -80,6 +163,7 @@ public sealed class ActionManifestService
                 }
             }
 
+            // ── Load metadata overlay ────────────────────────────────────────
             if (doc.RootElement.TryGetProperty("metadata", out var metadata) && metadata.ValueKind == JsonValueKind.Object)
             {
                 foreach (var property in metadata.EnumerateObject())
@@ -119,6 +203,7 @@ public sealed class ActionManifestService
                     ReadStringArray(obj, "examples", entry.Examples);
                     ReadDefaults(obj, entry.Defaults);
                     ReadParamMetadata(obj, entry);
+                    ReadCapabilityMetadata(obj, entry);
                 }
             }
 
@@ -172,8 +257,116 @@ public sealed class ActionManifestService
         if (_entries.ContainsKey(trimmed))
             return trimmed;
 
+        // Check entry-level aliases.
         var alias = _entries.Values.FirstOrDefault(e => e.Aliases.Any(a => a.Equals(trimmed, StringComparison.OrdinalIgnoreCase)));
-        return alias?.Name ?? trimmed;
+        if (alias != null) return alias.Name;
+
+        // Check LLM legacy mappings.
+        if (_aliasMappings.TryGetValue(trimmed, out var canonical))
+            return canonical;
+
+        return trimmed;
+    }
+
+    /// <summary>
+    /// Normalize an action name using alias mappings. Drop-in replacement for
+    /// the former <c>ActionRegistry.Normalize</c>.
+    /// </summary>
+    public string Normalize(string name) => NormalizeActionName(name);
+
+    /// <summary>
+    /// Returns true when the action is registered or known via alias.
+    /// Drop-in replacement for the former <c>ActionRegistry.IsKnown</c>.
+    /// </summary>
+    public bool IsKnown(string actionName)
+    {
+        if (string.IsNullOrWhiteSpace(actionName))
+            return false;
+        var normalized = Normalize(actionName);
+        return _entries.ContainsKey(normalized) || LiveSystemRegistryService.TryGet(normalized, out _);
+    }
+
+    /// <summary>Try to get an action entry by id or alias.</summary>
+    public bool TryGetAction(string actionId, out ActionManifestEntry? entry)
+    {
+        AddLiveSystemEntries();
+        if (_entries.TryGetValue(actionId, out entry))
+            return true;
+        var normalized = Normalize(actionId);
+        return _entries.TryGetValue(normalized, out entry);
+    }
+
+    /// <summary>Try to get a sequence definition by id.</summary>
+    public bool TryGetSequence(string sequenceId, out SequenceDefinition? sequence)
+    {
+        if (string.IsNullOrWhiteSpace(sequenceId))
+        {
+            sequence = null;
+            return false;
+        }
+        return _sequences.TryGetValue(sequenceId, out sequence);
+    }
+
+    /// <summary>
+    /// Build an action string from a template and parameters.
+    /// Drop-in replacement for the former <c>ActionRegistry.BuildActionString</c>.
+    /// </summary>
+    public static string BuildActionString(string action, Dictionary<string, JsonElement> parameters)
+    {
+        if (string.IsNullOrWhiteSpace(action))
+            return string.Empty;
+
+        if (parameters == null || parameters.Count == 0)
+            return action.Trim();
+
+        var parts = new List<string>();
+        foreach (var kv in parameters)
+        {
+            var value = kv.Value.ValueKind switch
+            {
+                JsonValueKind.String => kv.Value.GetString() ?? "",
+                JsonValueKind.Number => kv.Value.GetRawText(),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                JsonValueKind.Null => "",
+                _ => kv.Value.GetRawText()
+            };
+            if (!string.IsNullOrWhiteSpace(value))
+                parts.Add($"{kv.Key}={value}");
+        }
+
+        return parts.Count > 0 ? $"{action.Trim()}:{string.Join("|", parts)}" : action.Trim();
+    }
+
+    /// <summary>
+    /// Resolve a sequence step to a full action string using catalog definitions.
+    /// Drop-in replacement for the former <c>ActionRegistry.TryResolveStepToActionString</c>.
+    /// </summary>
+    public bool TryResolveStepToActionString(SequenceStep step, out string actionString)
+    {
+        actionString = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(step.ActionId) && _entries.TryGetValue(step.ActionId, out var entry))
+        {
+            var mergedParams = new Dictionary<string, JsonElement>(entry.Params);
+            if (step.Params != null)
+            {
+                foreach (var kv in step.Params)
+                    mergedParams[kv.Key] = kv.Value;
+            }
+            actionString = BuildActionString(
+                !string.IsNullOrWhiteSpace(entry.Action) ? entry.Action : entry.Name,
+                mergedParams);
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(step.Action))
+        {
+            actionString = BuildActionString(step.Action, step.Params ?? new Dictionary<string, JsonElement>());
+            return true;
+        }
+
+        return false;
     }
 
     public OperationResult Validate(EventActionDefinition action)
@@ -366,6 +559,52 @@ public sealed class ActionManifestService
             target[property.Name] = property.Value.ValueKind == JsonValueKind.String
                 ? property.Value.GetString() ?? ""
                 : property.Value.ToString();
+    }
+
+    static void ReadCapabilityMetadata(JsonElement obj, ActionManifestEntry entry)
+    {
+        if (obj.TryGetProperty("isMutating", out var mutating) &&
+            (mutating.ValueKind == JsonValueKind.True || mutating.ValueKind == JsonValueKind.False))
+            entry.IsMutating = mutating.GetBoolean();
+        if (obj.TryGetProperty("isReversible", out var reversible) &&
+            (reversible.ValueKind == JsonValueKind.True || reversible.ValueKind == JsonValueKind.False))
+            entry.IsReversible = reversible.GetBoolean();
+        if (obj.TryGetProperty("isIdempotent", out var idempotent) &&
+            (idempotent.ValueKind == JsonValueKind.True || idempotent.ValueKind == JsonValueKind.False))
+            entry.IsIdempotent = idempotent.GetBoolean();
+        if (obj.TryGetProperty("executable", out var executable) &&
+            (executable.ValueKind == JsonValueKind.True || executable.ValueKind == JsonValueKind.False))
+            entry.Executable = executable.GetBoolean();
+        if (obj.TryGetProperty("clientRequired", out var clientReq) &&
+            (clientReq.ValueKind == JsonValueKind.True || clientReq.ValueKind == JsonValueKind.False))
+            entry.ClientRequired = clientReq.GetBoolean();
+        if (obj.TryGetProperty("usesNativeReplication", out var nativeRep) &&
+            (nativeRep.ValueKind == JsonValueKind.True || nativeRep.ValueKind == JsonValueKind.False))
+            entry.UsesNativeReplication = nativeRep.GetBoolean();
+        if (obj.TryGetProperty("availability", out var avail) && avail.ValueKind == JsonValueKind.String)
+            entry.Availability = avail.GetString() ?? entry.Availability;
+
+        // Derive AllowedSources from the "permission" string when present.
+        if (obj.TryGetProperty("permission", out var perm) && perm.ValueKind == JsonValueKind.String)
+        {
+            entry.AllowedSources = perm.GetString()?.ToLowerInvariant() switch
+            {
+                "any" or "all" => ActionSourcePermissions.All,
+                "admin" => ActionSourcePermissions.Admin | ActionSourcePermissions.System,
+                "admin_approval" => ActionSourcePermissions.Admin | ActionSourcePermissions.System,
+                "player" => ActionSourcePermissions.Admin | ActionSourcePermissions.Player | ActionSourcePermissions.System,
+                "system" => ActionSourcePermissions.System,
+                _ => entry.AllowedSources,
+            };
+        }
+
+        // Derive AllowedPhases from "eventAllowed" boolean.
+        if (obj.TryGetProperty("eventAllowed", out var eventAllowed) &&
+            (eventAllowed.ValueKind == JsonValueKind.True || eventAllowed.ValueKind == JsonValueKind.False))
+        {
+            if (!eventAllowed.GetBoolean())
+                entry.AllowedPhases = SessionPhaseAllowance.None;
+        }
     }
 
     static void ReadParamMetadata(JsonElement obj, ActionManifestEntry entry)

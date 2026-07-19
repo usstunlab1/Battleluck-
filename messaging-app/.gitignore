@@ -1,0 +1,17 @@
+# Environment variables - keep private
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

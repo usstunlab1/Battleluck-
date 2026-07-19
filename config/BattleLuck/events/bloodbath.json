@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "id": "bloodbath",
+    "displayName": "Bloodbath",
+    "enabled": true,
+    "version": "1"
+  },
+  "rules": {
+    "minPlayers": 1,
+    "maxPlayers": 4,
+    "enablePvP": true,
+    "enableVBloods": false,
+    "enableEliteMobs": false,
+    "matchDurationMinutes": 10,
+    "allowLateJoin": false,
+    "allowAdminSoloTest": true,
+    "eliminationMode": true,
+    "livesPerPlayer": 3,
+    "zoneEnterRule": "auto_enter"
+  },
+  "zones": [
+    {
+      "name": "Bloodbath Arena",
+      "type": "bloodbath",
+      "hash": 2002,
+      "priority": 1,
+      "kitId": "bloodbath",
+      "center": { "x": -2000, "y": 5, "z": -2800 },
+      "teleportSpawn": { "x": -2000, "y": 5, "z": -2800 },
+      "radius": 100,
+      "exitRadius": 110,
+      "safe": false,
+      "blockedActions": [],
+      "boundaryPolicy": "dot_only",
+      "boundary": {
+        "policy": "dot_only",
+        "dot": {
+          "enabled": true,
+          "warningRadiusPercent": 0.8,
+          "dangerRadiusPercent": 0.95,
+          "teleportOnExit": true
+        },
+        "walls": {
+          "enabled": false,
+          "height": 15,
+          "spacing": 5,
+          "floorSpacing": 2.5,
+          "batchSize": 2,
+          "spawnWalls": false,
+          "spawnFloors": false,
+          "requireOnlineAdmin": true,
+          "wallPrefab": "TM_Castle_Wall_Tier02_Stone",
+          "floorPrefab": "TM_Castle_Floor_Foundation_Stone03",
+          "buffs": [],
+          "timers": [],
+          "glow": { "enabled": false }
+        }
+      }
+    }
+  ],
+  "phases": [
+    {
+      "name": "setup",
+      "durationSeconds": 0,
+      "actions": [
+        { "type": "pvp.enable" },
+        { "type": "kit.apply", "params": { "kitId": "bloodbath" } }
+      ]
+    }
+  ]
+}

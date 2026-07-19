@@ -27,7 +27,7 @@ public static class EventReferenceAllowlistValidator
         var result = new EventReferenceValidationResult();
         var allowlists = LoadAllowlists();
 
-        foreach (var file in new[] { "flow.json", "zones.json", "kits.json" })
+        foreach (var file in new[] { "event.json", "zones.json", "kits.json" })
         {
             if (!files.TryGetValue(file, out var text) || string.IsNullOrWhiteSpace(text))
                 continue;

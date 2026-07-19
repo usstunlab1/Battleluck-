@@ -201,176 +201,176 @@ public sealed class AiActionPipeline
     {
         return await ExecuteAsync(intent, context, dryRunOnly: true, cancellationToken);
     }
-}
 
-/// <summary>Zone validation for action constraints and AI rules.</summary>
-public sealed class ZoneValidator
-{
-    public bool Validate(RuntimeActionIntent intent, RuntimeActionContext context, out string? error)
+    /// <summary>Zone validation for action constraints and AI rules.</summary>
+    private sealed class ZoneValidator
     {
-        error = null;
-
-        // Check zone context
-        if (context.ZoneDefinition != null)
+        public bool Validate(RuntimeActionIntent intent, RuntimeActionContext context, out string? error)
         {
-            // Check zone-wide blocked actions
-            if (!string.IsNullOrEmpty(intent.ActionName) &&
-                context.ZoneDefinition.BlockedActions?.Count > 0)
-            {
-                var actionName = intent.ActionName.Split(':')[0].Trim();
-                foreach (var blocked in context.ZoneDefinition.BlockedActions)
-                {
-                    if (actionName.Equals(blocked, StringComparison.OrdinalIgnoreCase) ||
-                        actionName.StartsWith(blocked.Split('.')[0], StringComparison.OrdinalIgnoreCase))
-                    {
-                        error = $"Action '{intent.ActionName}' is blocked in zone '{context.ZoneDefinition.Name}'.";
-                        return false;
-                    }
-                }
-            }
+            error = null;
 
-            // Check AI-specific rules if present
-            if (context.ZoneDefinition.AiRules != null && intent.Source == ActionSource.AI)
+            // Check zone context
+            if (context.ZoneDefinition != null)
             {
-                var aiRules = context.ZoneDefinition.AiRules;
-                var actionName = intent.ActionName.Split(':')[0].Trim();
-
-                // Blocked actions take precedence
-                if (aiRules.BlockedActions?.Count > 0)
+                // Check zone-wide blocked actions
+                if (!string.IsNullOrEmpty(intent.ActionName) &&
+                    context.ZoneDefinition.BlockedActions?.Count > 0)
                 {
-                    foreach (var blocked in aiRules.BlockedActions)
+                    var actionName = intent.ActionName.Split(':')[0].Trim();
+                    foreach (var blocked in context.ZoneDefinition.BlockedActions)
                     {
                         if (actionName.Equals(blocked, StringComparison.OrdinalIgnoreCase) ||
                             actionName.StartsWith(blocked.Split('.')[0], StringComparison.OrdinalIgnoreCase))
                         {
-                            error = $"AI action '{intent.ActionName}' is blocked by zone AI rules.";
+                            error = $"Action '{intent.ActionName}' is blocked in zone '{context.ZoneDefinition.Name}'.";
                             return false;
                         }
                     }
                 }
 
-                // Allowed actions list restricts if non-empty
-                if (aiRules.AllowedActions?.Count > 0)
+                // Check AI-specific rules if present
+                if (context.ZoneDefinition.AiRules != null && intent.Source == ActionSource.AI)
                 {
-                    bool isAllowed = false;
-                    foreach (var allowed in aiRules.AllowedActions)
+                    var aiRules = context.ZoneDefinition.AiRules;
+                    var actionName = intent.ActionName.Split(':')[0].Trim();
+
+                    // Blocked actions take precedence
+                    if (aiRules.BlockedActions?.Count > 0)
                     {
-                        if (actionName.Equals(allowed, StringComparison.OrdinalIgnoreCase) ||
-                            actionName.StartsWith(allowed.Split('.')[0], StringComparison.OrdinalIgnoreCase))
+                        foreach (var blocked in aiRules.BlockedActions)
                         {
-                            isAllowed = true;
-                            break;
+                            if (actionName.Equals(blocked, StringComparison.OrdinalIgnoreCase) ||
+                                actionName.StartsWith(blocked.Split('.')[0], StringComparison.OrdinalIgnoreCase))
+                            {
+                                error = $"AI action '{intent.ActionName}' is blocked by zone AI rules.";
+                                return false;
+                            }
                         }
                     }
 
-                    if (!isAllowed)
+                    // Allowed actions list restricts if non-empty
+                    if (aiRules.AllowedActions?.Count > 0)
                     {
-                        error = $"AI action '{intent.ActionName}' is not in zone allowed actions list.";
+                        bool isAllowed = false;
+                        foreach (var allowed in aiRules.AllowedActions)
+                        {
+                            if (actionName.Equals(allowed, StringComparison.OrdinalIgnoreCase) ||
+                                actionName.StartsWith(allowed.Split('.')[0], StringComparison.OrdinalIgnoreCase))
+                            {
+                                isAllowed = true;
+                                break;
+                            }
+                        }
+
+                        if (!isAllowed)
+                        {
+                            error = $"AI action '{intent.ActionName}' is not in zone allowed actions list.";
+                            return false;
+                        }
+                    }
+
+                    // Check if AI can execute autonomously
+                    if (!aiRules.AllowAutonomousExecution)
+                    {
+                        error = $"AI autonomous execution is disabled in zone '{context.ZoneDefinition.Name}'.";
                         return false;
                     }
                 }
+            }
 
-                // Check if AI can execute autonomously
-                if (!aiRules.AllowAutonomousExecution)
+            return true;
+        }
+    }
+
+    /// <summary>Risk validation for action safety and approval requirements.</summary>
+    private sealed class RiskValidator
+    {
+        /// <summary>
+        /// Validates action risk against source permissions.
+        /// Returns false if the action requires approval and source is not authorized.
+        /// </summary>
+        public bool Validate(RuntimeActionIntent intent, RuntimeActionContext context, out string? error)
+        {
+            error = null;
+
+            // Get risk level from manifest
+            var actionName = intent.ActionName.Split(':')[0].Trim();
+            var validation = new ActionManifestService().Validate(new EventActionDefinition { Action = actionName });
+
+            var requiresApproval = !validation.Success ||
+                (intent.Source == ActionSource.AI || intent.Source == ActionSource.Webhook) &&
+                !IsSafeAction(actionName);
+
+            // Check if action requires admin approval
+            if (requiresApproval && intent.Source != ActionSource.Admin)
+            {
+                // Check if source has admin privileges (for now, only Admin source is allowed)
+                error = $"Action '{intent.ActionName}' requires admin approval (risk: controlled/destructive).";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>Determines if an action is universally safe for any source.</summary>
+        static bool IsSafeAction(string actionName)
+        {
+            var safeActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "announce", "notification", "notify", "send_message",
+                "query", "count", "timer.start", "timer.stop",
+                "system.find", "system.search", "prefab.query"
+            };
+
+            return actionName.StartsWith("query", StringComparison.Ordinal) ||
+                   safeActions.Contains(actionName);
+        }
+    }
+
+    /// <summary>Tech validation for action constraints (standalone validator).</summary>
+    private sealed class ActionTechValidator : ISpanFormattable
+    {
+        /// <summary>
+        /// Validates tech constraints for a specific action.
+        /// </summary>
+        public (bool Valid, TechDefinition? ConflictingTech, string? Error) ValidateTechForAction(
+            RuntimeActionIntent intent,
+            RuntimeActionContext context)
+        {
+            // Check if action references tech-restricted operations
+            var actionName = intent.ActionName.Split(':')[0].Trim();
+
+            // Load active techs for this session
+            if (context.ZoneDefinition?.AiRules?.AllowedTechs?.Count > 0 &&
+                intent.Source == ActionSource.AI)
+            {
+                // AI can only use techs that are in the allowed list
+                var techId = intent.Parameters.GetValueOrDefault("techId", "") ?? "";
+                if (!string.IsNullOrWhiteSpace(techId) &&
+                    !context.ZoneDefinition.AiRules.AllowedTechs.Contains(techId, StringComparer.OrdinalIgnoreCase))
                 {
-                    error = $"AI autonomous execution is disabled in zone '{context.ZoneDefinition.Name}'.";
-                    return false;
+                    return (false, null, $"Tech '{techId}' is not in zone allowed techs list.");
                 }
             }
+
+            return (true, null, null);
         }
 
-        return true;
-    }
-}
-
-/// <summary>Risk validation for action safety and approval requirements.</summary>
-public sealed class RiskValidator
-{
-    /// <summary>
-    /// Validates action risk against source permissions.
-    /// Returns false if the action requires approval and source is not authorized.
-    /// </summary>
-    public bool Validate(RuntimeActionIntent intent, RuntimeActionContext context, out string? error)
-    {
-        error = null;
-
-        // Get risk level from manifest
-        var actionName = intent.ActionName.Split(':')[0].Trim();
-        var validation = new ActionManifestService().Validate(new EventActionDefinition { Action = actionName });
-        
-        var requiresApproval = !validation.Success || 
-            (intent.Source == ActionSource.AI || intent.Source == ActionSource.Webhook) &&
-            !IsSafeAction(actionName);
-
-        // Check if action requires admin approval
-        if (requiresApproval && intent.Source != ActionSource.Admin)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
-            // Check if source has admin privileges (for now, only Admin source is allowed)
-            error = $"Action '{intent.ActionName}' requires admin approval (risk: controlled/destructive).";
-            return false;
+            FormattableString formattable = $"";
+            return formattable.ToString(formatProvider);
         }
 
-        return true;
-    }
-
-    /// <summary>Determines if an action is universally safe for any source.</summary>
-    static bool IsSafeAction(string actionName)
-    {
-        var safeActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format,
+            IFormatProvider? provider)
         {
-            "announce", "notification", "notify", "send_message",
-            "query", "count", "timer.start", "timer.stop",
-            "system.find", "system.search", "prefab.query"
-        };
-
-        return actionName.StartsWith("query", StringComparison.Ordinal) ||
-               safeActions.Contains(actionName);
-    }
-}
-
-/// <summary>Tech validation for action constraints (standalone validator).</summary>
-public sealed class ActionTechValidator : ISpanFormattable
-{
-    /// <summary>
-    /// Validates tech constraints for a specific action.
-    /// </summary>
-    public (bool Valid, TechDefinition? ConflictingTech, string? Error) ValidateTechForAction(
-        RuntimeActionIntent intent,
-        RuntimeActionContext context)
-    {
-        // Check if action references tech-restricted operations
-        var actionName = intent.ActionName.Split(':')[0].Trim();
-        
-        // Load active techs for this session
-        if (context.ZoneDefinition?.AiRules?.AllowedTechs?.Count > 0 &&
-            intent.Source == ActionSource.AI)
-        {
-            // AI can only use techs that are in the allowed list
-            var techId = intent.Parameters.GetValueOrDefault("techId", "") ?? "";
-            if (!string.IsNullOrWhiteSpace(techId) &&
-                !context.ZoneDefinition.AiRules.AllowedTechs.Contains(techId, StringComparer.OrdinalIgnoreCase))
-            {
-                return (false, null, $"Tech '{techId}' is not in zone allowed techs list.");
-            }
+            return destination.TryWrite(provider, $"", out charsWritten);
         }
 
-        return (true, null, null);
-    }
-
-    public string ToString(string? format, IFormatProvider? formatProvider)
-    {
-        FormattableString formattable = $"";
-        return formattable.ToString(formatProvider);
-    }
-
-    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format,
-        IFormatProvider? provider)
-    {
-        return destination.TryWrite(provider, $"", out charsWritten);
-    }
-
-    public override string ToString()
-    {
-        return $"";
+        public override string ToString()
+        {
+            return $"";
+        }
     }
 }

@@ -34,14 +34,14 @@ public sealed class EloController
 
         if (ctx != null)
         {
-            GameEvents.OnEloUpdate?.Invoke(new EloUpdateEvent
+            GameEvents.RaiseEloUpdate(new EloUpdateEvent
             {
                 SessionId = ctx.SessionId,
                 SteamId = winnerSteamId,
                 OldElo = winnerOld,
                 NewElo = winnerNew
             });
-            GameEvents.OnEloUpdate?.Invoke(new EloUpdateEvent
+            GameEvents.RaiseEloUpdate(new EloUpdateEvent
             {
                 SessionId = ctx.SessionId,
                 SteamId = loserSteamId,

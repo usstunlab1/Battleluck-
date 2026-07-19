@@ -38,7 +38,7 @@ public static class EventTemplateCommands
         }
 
         ctx.Reply($"Created custom event '{result.Value.DisplayName}' as '{result.Value.ModeId}' from '{result.Value.TemplateId}' (zone hash {result.Value.ZoneHash}).");
-        ctx.Reply($"Edit config/BattleLuck/events/{result.Value.ModeId}/flow.json, zones.json, kits.json, and prompt.txt, then run .event.start {result.Value.ModeId}.");
+        ctx.Reply($"Edit config/BattleLuck/events/{result.Value.ModeId}.json (and zones.json, kits.json, prompt.txt in events/{result.Value.ModeId}/), then run .event.start {result.Value.ModeId}.");
         ctx.Reply("The cloned event keeps Bloodbath's kit, entry/exit lifecycle, rollback snapshot flow, and action validation until you customize it. Move the copied zone center/teleportSpawn before use if it should be a separate arena.");
         ctx.Reply("IMPORTANT: invalid JSON, prefabs, actions, or native ECS operations may crash/restart the server. Back up and validate before testing. AI can save the issue and suggest a safer approach while running; player snapshots remain on disk for restore, but an abrupt crash may interrupt cleanup, so verify rollback after restart.");
     }

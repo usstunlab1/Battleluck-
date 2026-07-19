@@ -129,7 +129,12 @@ public static class ModeCommands
         }
 
         var entity = ctx.Event.SenderCharacterEntity;
-        session.ForceStart(modeId, entity);
+        var result = session.ForceStart(modeId, entity);
+        if (!result.Success)
+        {
+            ctx.Reply($"mode.start failed: {result.Error}");
+            return;
+        }
         ctx.Reply($"Entering {mode.DisplayName}; forced start is queued after build checks and the 10s stun countdown.");
     }
 

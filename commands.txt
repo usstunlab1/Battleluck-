@@ -1,40 +1,121 @@
-# BattleLuck Project Commands - Copy with . prefix
-# ================================================
+# BattleLuck Commands — all prefixed with . in chat
+# [A] = admin-only
 
-# Build & Compile
-. dotnet build BattleLuck.csproj
-. dotnet build --configuration Release
-. dotnet clean
-. dotnet restore
+## SESSION
+.toggleenter [mode]    toggleleave    .exit    .start [A]
+.pause    .resume    .autoend    .setwinner    .rollback [A]
 
-# Test Commands
-. dotnet test BattleLuck.Tests/BattleLuck.Tests.csproj
-. dotnet test --collect:"XPlat Code Coverage"
+## EVENTS
+event.create  event.start  event.end  event.endall  event.status
+event.forceenter  event.forceexit  event.clearburning  event.schematic.export
+.warevent_start  .warevent_end  .eventstatus [A]
 
-# Docker Commands (for AI runtime)
-. docker-compose -f docker-compose.ai.yml up -d
-. docker-compose -f docker-compose.ai.yml down
-. docker-compose -f docker-compose.ai.yml build
-. docker-compose -f docker-compose.ai.yml logs -f
+## MODES
+mode.start  mode.end  modelist  modeinfo  modepolicy  .entermode
 
-# Git Commands
-. git status
-. git add .
-. git commit -m "message"
-. git push
-. git pull
-. git log --oneline -10
+## FLOW
+flow.list  flow.status  flow.catalog  flow.examples  flow.clear
+flow.move  flow.reorder  flow.persist  flow.scale  flow.undo
+flow.ai.propose  flow.ai.apply
 
-# Project Analysis
-. dotnet list package
-. dotnet list reference
-. dotnet --info
+## NPC
+spawn  despawn  follow  hold  stay  release  goto  goto.pos
+aggro  patrol  guard  flee  wander  formation  team  faction
+speed  rename  near  status  status.session  buffs  components
+copyability  copybuff
 
-# Run AI Assets (Python)
-. cd ai-assets
-. pip install -r requirements.txt
-. python app.py
+## BOSS
+spawn  despawn  despawn_all  list  follow_target  clear_follow
+goto  goto.pos  return_home
 
-# Run from project root
-. cd c:\Users\ahmad\OneDrive\Desktop\BL
-. dotnet run --project BattleLuck.csproj
+## SPAWN
+.wave  .npc  .boss  .structure  .spawnwave  .spawntest
+
+## MOUNT
+mount.summon  mount.dismiss
+
+## PLAYER
+.heal  .blood  .level.max  .stun  .pvp.enable  .pvp.disable
+.death.prevent  .death.allow  .revive.grant  .revive.reset
+.swapteam [A]  .swapteam.ai [A]  .swapcharacter  .kick [A]  .force
+
+## KIT & EQUIPMENT
+.kit  .kit.weapons  .kit.armor  .kit.clear
+.equip.restrict  .equip.unrestrict  .ability.slot
+
+## INVENTORY
+.pull  .stash  .stashnpc  .sort  .salvage  .craftpull
+.emptytrash  .autotrash  .autotrash.status  .logistics.toggle
+
+## BUFFS
+buff.apply  buff.remove  buff.clear  .list.buffs  .scanbufs
+.zone.buff.apply  .zone.buff.remove  .glow.enable  .glow.disable
+
+## SCHEMATICS
+schematic.load  loadat  loadatpos  clear  clear.radius  destroy.radius
+capture  list  info  markers.clear  deleteallschematicentities  removeschematicrange
+.build.search  .build.check  .build.s  .findtiles  .grid
+
+## PALETTE & PREFABS
+palette.add  remove  list  clear  next  prev    (shortcuts: pal.a/r/l/c)
+.prefabs.list  .prefabs.abilities  .prefabs.buffs  .scanprefabs
+.scanitems  .searchprefab  .validateprefabs  .discoverkits
+
+## SEQUENCES
+sequence.play  run  stop  list  show  preview  add  create  delete  gather
+.action  .actions  .actions.status [A]
+
+## AI [A]
+.ai  .ai.status  .ai.reload  .ai.test  .ai.behavior  .ai.event
+.ai.actions.review  .ai.boss.aggro  .ai.boss.deaggro  .ai.set_behavior
+.ai.group.ask/auto/policy/status  .ai.list.buffs/prefabs/sequences
+.ai.project.list/order  .ai.sequence.add/create/delete/execute/gather/list/preview/show
+.aiadmin  .aistatus
+
+## CASTLE POLICY
+.castlepolicy  .help  .target [A]  .status  .public  .private
+.remove [A]  .list  .allow  .deny  .territory.preview  .territory.apply [A]
+
+## CLAN TASKS
+.activityclan (.ac)  .clantask.cancel [A]  .clantask.complete [A]  .clantask.progress [A]
+
+## MERCHANT
+merchant.run  give  list  reload
+
+## SCORE & PROGRESSION
+.score  .score.add  .score.reset  .progression.research
+.progression.vbloods  .elo
+
+## STATE
+snapshot.save  snapshot.restore
+
+## TELEPORT
+.tp  .tp.dev  .tp.zone
+
+## TEAMS
+.teamcreate  .teaminvite  .teamaccept  .teamleave  .teamlist
+
+## ADMIN & DEBUG
+.bstatus [A]  .director [A]  .sessiondirector [A]  .reload [A]
+.help  .notify  .debugabilities [A]  .debugslots [A]
+
+## DEV [A]
+.dev.enter  .dev.exit  .dev.flow  .dev.test  .dev.test.all
+
+## SYSTEM REFERENCE [A]
+.bl.system.find  .bl.system.search  .bl.system.register  .bl.system.list
+
+## EXPORT [A]
+.exportmods  .exportplugins  .exportprefabs
+
+## LLM [A]
+.llm
+
+## ROADMAP
+.roadmap.show  .roadmap.status  .roadmap.prompt  .roadmap.reload [A]
+
+## ZONE INFO
+.zoneinfo  .sc.i  .sc.l  .sc.la  .sc.lp
+
+## MUTATORS
+.mutatorenable  .mutatordisable  .mutatorlist  .mutatorclear

@@ -164,13 +164,18 @@ public sealed class CompanionService
                 _npcService.Hold(entityId, radius);
                 return OperationResult.Ok();
             case "patrol":
-                _npcService.Patrol(entityId, new List<float3>());
+                _npcService.Patrol(entityId, new List<NpcPatrolWaypoint>());
                 return OperationResult.Ok();
             case "wander":
-                _npcService.Wander(entityId, radius);
+                _npcService.Wander(entityId, new NpcWanderConfig { Radius = radius });
                 return OperationResult.Ok();
             case "flee":
-                _npcService.Flee(entityId, targetSteamId.HasValue ? PlayerEntityHelper.GetEntityBySteamId(targetSteamId.Value) : Entity.Null, radius);
+                _npcService.Flee(entityId, new NpcFleeConfig
+                {
+                    FromEntity = targetSteamId.HasValue ? PlayerEntityHelper.GetEntityBySteamId(targetSteamId.Value) : null,
+                    SafeDistance = radius,
+                    DurationSeconds = 10f
+                });
                 return OperationResult.Ok();
             case "assist":
                 _npcService.Follow(entityId, Entity.Null, radius, 80f);

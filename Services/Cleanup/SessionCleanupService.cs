@@ -28,8 +28,9 @@ public sealed class SessionCleanupService
         public int DestroyedProjectiles;
         public int DestroyedTraps;
         public int StrippedBuffs;
-        public int SkippedPlayers;
+        public int PlayersAffected;
         public int TotalAffected;
+        public long ElapsedMilliseconds;
     }
 
     // Well-known transient buff prefabs to strip from players on cleanup.
@@ -80,6 +81,7 @@ public sealed class SessionCleanupService
         float r = radius;
         float rSq = r * r;
 
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             DespawnTracked(report, zoneHash);
@@ -87,11 +89,13 @@ public sealed class SessionCleanupService
             StripPlayerBuffsInZone(center, rSq, report);
 
             report.TotalAffected = report.DestroyedEntities + report.StrippedBuffs;
+            sw.Stop();
+            report.ElapsedMilliseconds = sw.ElapsedMilliseconds;
             LogReport(report, r, center);
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[SessionCleanup] CleanupZone failed: {ex.Message}");
+            BattleLuckPlugin.LogWarning($"[SessionCleanup] CleanupZone failed: {ex.ToString()}");
         }
         return report;
     }
@@ -117,7 +121,7 @@ public sealed class SessionCleanupService
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[SessionCleanup] CleanupAllNonPlayer failed: {ex.Message}");
+            BattleLuckPlugin.LogWarning($"[SessionCleanup] CleanupAllNonPlayer failed: {ex.ToString()}");
         }
         return report;
     }
@@ -143,6 +147,22 @@ public sealed class SessionCleanupService
     }
 
     // ── Query setup ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Reset cached ECS queries so the next <see cref="Ensure()"/> call rebuilds them.
+    /// Call after the server world changes (e.g. scene reload, plugin re-init).
+    /// </summary>
+    public void RebuildQueries()
+    {
+        _init = false;
+        _wallsFloorsQ = default;
+        _spawnedQ = default;
+        _npcQ = default;
+        _itemQ = default;
+        _projectileQ = default;
+        _platformTileQ = default;
+        BattleLuckPlugin.LogInfo("[SessionCleanup] Queries invalidated — will rebuild on next use.");
+    }
 
     void Ensure()
     {
@@ -361,7 +381,7 @@ public sealed class SessionCleanupService
                 if (!player.Exists() || !player.IsPlayer()) continue;
                 if (!WithinXZ(player, em, center, rSq)) continue;
 
-                report.SkippedPlayers++;
+                report.PlayersAffected++;
                 int stripped = 0;
                 foreach (var buffPrefab in GetTransientBuffsToStrip())
                 {
@@ -409,7 +429,7 @@ public sealed class SessionCleanupService
             $"platforms={r.DestroyedPlatforms} spawned={r.DestroyedSpawned} " +
             $"npcs={r.DestroyedNpcs} items={r.DestroyedItems} " +
             $"projectiles={r.DestroyedProjectiles} traps={r.DestroyedTraps} " +
-            $"buffs={r.StrippedBuffs} playersAffected={r.SkippedPlayers} " +
-            $"total={r.TotalAffected}.");
+            $"buffs={r.StrippedBuffs} playersAffected={r.PlayersAffected} " +
+            $"total={r.TotalAffected} elapsed={r.ElapsedMilliseconds}ms.");
     }
 }

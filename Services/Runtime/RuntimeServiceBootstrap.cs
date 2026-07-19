@@ -9,11 +9,10 @@ namespace BattleLuck.Services.Runtime
     /// </summary>
     public class RuntimeServiceBootstrapImpl : IRuntimeServiceBootstrap
     {
-        private readonly EcsQueryServiceReal _ecsQueryService = new();
-        private readonly PrefabRegistryServiceReal _prefabRegistry = new();
-        private readonly SessionRuntimeServiceReal _sessionRuntime = new();
-        private readonly FlowValidationServiceReal _flowValidation = new();
-        private readonly CapabilityRegistry _capabilityRegistry = new();
+        private readonly DefaultEcsQueryService _ecsQueryService = new();
+        private readonly DefaultPrefabRegistryService _prefabRegistry = new();
+        private readonly DefaultSessionRuntimeService _sessionRuntime = new();
+        private readonly DefaultFlowValidationService _flowValidation = new();
         private readonly McpRuntimeEventBus _eventBus = new();
         private readonly SnapshotServiceImpl _snapshotService;
         private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
@@ -22,7 +21,6 @@ namespace BattleLuck.Services.Runtime
         public IPrefabRegistryService PrefabRegistry => _prefabRegistry;
         public ISessionRuntimeService SessionRuntime => _sessionRuntime;
         public IFlowValidationService FlowValidation => _flowValidation;
-        public ICapabilityRegistry CapabilityRegistry => _capabilityRegistry;
         public IMcpRuntimeEventBus EventBus => _eventBus;
         public ISnapshotService SnapshotService => _snapshotService;
 

@@ -229,9 +229,8 @@ public sealed class DefaultEventBundleTests
     }
 
     static IEnumerable<(string Mode, string Path)> EnumerateFlowFiles() =>
-        Directory.EnumerateDirectories(EventsRoot)
-            .Select(directory => (Mode: Path.GetFileName(directory), Path: Path.Combine(directory, "flow.json")))
-            .Where(item => File.Exists(item.Path));
+        Directory.EnumerateFiles(EventsRoot, "*.json", SearchOption.TopDirectoryOnly)
+            .Select(path => (Mode: Path.GetFileNameWithoutExtension(path), Path: path));
 
     static IEnumerable<string> EnumerateSchematicFiles()
     {

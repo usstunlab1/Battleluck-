@@ -72,10 +72,7 @@ public sealed class GameModeRegistry
             return modes;
 
         var seenModeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var paths = Directory.EnumerateFiles(eventsRoot, "*.json", SearchOption.TopDirectoryOnly)
-            .Concat(Directory.EnumerateDirectories(eventsRoot)
-                .Select(directory => Path.Combine(directory, "flow.json"))
-                .Where(File.Exists));
+        var paths = Directory.EnumerateFiles(eventsRoot, "*.json", SearchOption.TopDirectoryOnly);
 
         foreach (var path in paths)
         {

@@ -52,7 +52,7 @@ public static class ActionRegistryValidator
     /// </summary>
     public static string NormalizeActionName(string actionName)
     {
-        return BattleLuck.Services.Runtime.ActionRegistry.Normalize(actionName);
+        return ActionManifestService.Instance.Normalize(actionName);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public static class ActionRegistryValidator
     /// </summary>
     public static bool IsKnown(string actionName)
     {
-        return BattleLuck.Services.Runtime.ActionRegistry.IsKnown(actionName);
+        return ActionManifestService.Instance.IsKnown(actionName);
     }
 
     /// <summary>
