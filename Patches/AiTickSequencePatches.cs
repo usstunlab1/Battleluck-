@@ -7,9 +7,8 @@ using ProjectM.Sequencer;
 namespace BattleLuck.Patches;
 
 /// <summary>
-/// DISABLED: AI frame-level telemetry generates events every ProjectM frame
-/// without actionable payloads. AI planning runs through BattleLuck's
-/// controlled server tick instead.
+/// Read-only hooks for AI planning telemetry. The hooks do not execute actions;
+/// event/runtime work remains queued through the normal server tick boundary.
 /// </summary>
 // [HarmonyPatch]
 internal static class AiTickSequencePatches

@@ -4,6 +4,32 @@ BattleLuck ships with a local-first Game Session Director workflow. The LLM is n
 
 The recommended published setup is a local OpenAI-compatible Llama endpoint, with hosted providers disabled unless a server owner intentionally configures them.
 
+## How AI works after installation
+
+AI is server-side. Players only install BattleLuck; they do not install a second
+plugin, model, or API client. Every installation exposes `.ai` and `.aistatus`.
+
+- The server reads `BepInEx/config/BattleLuck/ai_config.json` at startup.
+- A configured local Llama/Ollama-compatible endpoint provides full LLM replies.
+- A hosted provider (Cloudflare or Google) is optional and requires the owner to
+  supply credentials through config/environment variables.
+- If no provider is reachable, BattleLuck keeps a simple local fallback for basic
+  command/catalog guidance; it does not pretend that a full model is available.
+- Player `.ai` chat is advice-only. Admin previews and approvals are required for
+  live actions, event edits, NPC/boss control, and config writes.
+- A normal `.ai <message>` opens a bounded interactive conversation with up to
+  four AI replies. `.ai end` closes it early; ordinary chat is never forwarded
+  while no session is active.
+- `.ai history [items]` exposes transient in-memory items from the last 24 hours;
+  `.ai tasks <goal>` runs the catalog-backed planner and stores a reviewable task,
+  but never executes the proposed actions.
+- Network calls run asynchronously. Approved ProjectM/Unity mutations are queued
+  to the server main thread. Conversation history is disabled by default.
+
+The owner can inspect the active provider with `.aistatus` and reload settings with
+`.ai.reload` (admin). A typical local setup is: start the endpoint, ensure the
+configured model is installed, then run `.ai.reload` and `.ai.status`.
+
 ## Supported Runtime
 
 Default endpoint:
@@ -102,6 +128,39 @@ The LLM should follow this loop:
 7. **Execute** — the server validates the approved operation and dispatches native-world work on its main thread.
 8. **Rollback** — use `.ai rollback` / `.ai event rollback <operationId>` for pending proposals; rollback cannot undo an action that already ran.
 
+### No-code event deployment
+
+Admins can deploy an editable event without C# or shell scripts:
+
+```text
+.ai event deploy <eventId> <https-gist-url>
+.ai event status [eventId]
+.ai event audit [eventId]
+.ai event rollback <eventId>
+```
+
+These deployment, status, audit, and rollback commands remain available when
+an optional LLM provider is offline; the provider is used for drafting and
+explanation, not for the deterministic safety checks.
+
+`deploy` accepts only an HTTPS GitHub Gist containing `flow.json`, `zones.json`,
+`kits.json`, and `prompt.txt`. BattleLuck downloads to staging, validates JSON,
+catalog actions, prompt policy, kit references, and zone-hash uniqueness, backs up
+the current event, then registers it. It does not start the match. Status is
+read-only for all players; deploy and deployment rollback require an authenticated
+admin. Each backup has a SHA-256 `manifest.json`; rollback verifies it before
+restoring. `.ai event audit [eventId]` reads `logs/event_audit.jsonl` and reports
+recurring error codes with deterministic remediation hints. A deployment rollback
+restores files, not a native action that already ran. Audit recommendations never
+change validators or execute actions automatically.
+
+Rollback scope is explicit: `.ai event rollback <eventId>` is for event files;
+`.ai rollback player <name|steamId> <timestamp|runId>` restores one exact online player's event snapshot;
+`.ai rollback server players confirm` restores all online event snapshots; and
+`.ai rollback server purge <eventId> [backupId] confirm` deletes only a BattleLuck
+deployment backup. The plugin cannot safely invoke the host's full V Rising
+SaveFileManager restore, so it must never claim a whole-world rollback completed.
+
 ### Good Admin Prompt
 
 ```
@@ -162,6 +221,20 @@ Never publish:
 - Downloaded model weights
 - Server-specific player snapshots
 
+### Pre-Publish Scan
+
+```powershell
+rg -n "cfat[_]" .
+rg -n "cfut[_]" .
+rg -n "discord[.]com/api/webhooks" .
+rg -n "CLOUDFLARE_AI_API_TOKEN\s*[^\s#]+"
+rg -n "GOOGLE_AI_API_KEY\s*[^\s#]+"
+git status --short
+dotnet build .\BattleLuck.sln --no-restore /p:DeployBattleLuck=false
+```
+
+If anything real appears, remove it and rotate the exposed credential.
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -171,6 +244,15 @@ Never publish:
 | AI invents action names | Use `.ai catalog search <text>` and keep `use_actions_catalog=true` |
 | AI tries to apply risky changes directly | Reject the proposal; all risky writes must go through preview/approve |
 | Local model is too weak for large JSON | Use a larger local model or split the request into smaller event edits |
+
+## References
+
+- Meta Llama model and prompt format docs: https://www.llama.com/docs/model-cards-and-prompt-formats/
+- Running Meta Llama on Windows: https://www.llama.com/docs/llama-everywhere/running-meta-llama-on-windows/
+- llama.cpp server docs: https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md
+- OpenAI prompt engineering guide: https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-openai-api
+- Anthropic prompt engineering guide: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+- OWASP LLM Top 10: https://owasp.org/www-project-top-10-for-large-language-model-applications/
 
 ## Prompt Artifacts
 
@@ -199,3 +281,11 @@ If the file is missing or fails to load, `AIAssistant` falls back to a hardcoded
 - The operator prompt contains placeholders that are populated at runtime. Do not edit the placeholders themselves.
 - Never publish the operator prompt with sensitive data — it reads from config files only.
 - The developer prompt is intended for local AI coding tools, not for production deployment.
+
+## Related Documentation
+
+- [Developer Guide](developer/README.md) — Architecture and ECS patterns
+- [Developer AI Prompt](DEVELOPER_AI_PROMPT.md) — AI coding assistant prompt for C# development
+- [AI Prompt Reference](AI_PROMPT_REFERENCE.md) — Knowledge bank with glossary, examples, and troubleshooting
+- [Publishing Checklist](PUBLISHING_CHECKLIST.md) — Release requirements and secret scan
+- [Deployments](deployments/README.md) — AI service setup and configuration

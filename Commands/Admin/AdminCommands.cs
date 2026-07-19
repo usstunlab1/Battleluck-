@@ -330,6 +330,9 @@ public static class AdminCommands
         }
     }
 
+    [Command("sc.l", description: "Alias for .schematic.list", adminOnly: true)]
+    public static void ListSchematicsAlias(ChatCommandContext ctx) => ListSchematics(ctx);
+
     [Command("event.schematic.export", description: "Export an event schematic as JSON. Usage: .event.schematic.export <id>", adminOnly: true)]
     public static void ExportSchematic(ChatCommandContext ctx, string id)
     {
@@ -351,9 +354,20 @@ public static class AdminCommands
         LoadSchematicAt(ctx, eventName, center, clearRadius, spawnItems, scope, structureFilter);
     }
 
+    [Command("sc.lp", description: "Alias for .schematic.loadatpos", adminOnly: true)]
+    public static void LoadSchematicAtPositionAlias(ChatCommandContext ctx, string eventName, float clearRadius = 0f, float heightOffset = 0f, bool spawnItems = true, string scope = "", string structureFilter = "")
+        => LoadSchematicAtPosition(ctx, eventName, clearRadius, heightOffset, spawnItems, scope, structureFilter);
+
     [Command("schematic.loadat", description: "Load a schematic at coordinates without cropping it. Usage: .schematic.loadat <eventName> <x> <y> <z> [clearRadius=0] [spawnItems=true] [scope=all|structures_only|items_only|world_map] [structureFilter=type1,type2]", adminOnly: true)]
     public static void LoadSchematicAtCoordinates(ChatCommandContext ctx, string eventName, float x, float y, float z, float clearRadius = 0f, bool spawnItems = true, string scope = "", string structureFilter = "")
         => LoadSchematicAt(ctx, eventName, new float3(x, y, z), clearRadius, spawnItems, scope, structureFilter);
+
+    [Command("sc.la", description: "Alias for .schematic.loadat", adminOnly: true)]
+    public static void LoadSchematicAtCoordinatesAlias(ChatCommandContext ctx, string eventName, float x, float y, float z, float clearRadius = 0f, bool spawnItems = true, string scope = "", string structureFilter = "")
+        => LoadSchematicAtCoordinates(ctx, eventName, x, y, z, clearRadius, spawnItems, scope, structureFilter);
+
+    [Command("schematic.removeschematicrange", description: "Alias for .schematic.clear.radius", adminOnly: true)]
+    public static void RemoveSchematicRange(ChatCommandContext ctx, float radius = 60f) => ClearSchematicRadius(ctx, radius);
 
     [Command("schematic.deleteallschematicentities", description: "Clear every tracked schematic/manual-build entity", adminOnly: true)]
     public static void DeleteAllSchematicEntities(ChatCommandContext ctx)
@@ -396,6 +410,9 @@ public static class AdminCommands
             ctx.Reply($"  markers: {string.Join(", ", schematic.MapMarkers.Select(m => m.Label))}");
     }
 
+    [Command("sc.i", description: "Alias for .schematic.info", adminOnly: true)]
+    public static void SchematicInfoAlias(ChatCommandContext ctx, string eventName) => SchematicInfo(ctx, eventName);
+
     [Command("build.search", description: "Search live build/tile prefabs. Usage: .build.search <filter> [page]", adminOnly: true)]
     public static void BuildSearch(ChatCommandContext ctx, string filter, int page = 1)
     {
@@ -410,6 +427,9 @@ public static class AdminCommands
         foreach (var kv in results)
             ctx.Reply($"  <color=yellow>{kv.Key}</color> = {kv.Value.GuidHash}");
     }
+
+    [Command("build.s", description: "Alias for .build.search", adminOnly: true)]
+    public static void BuildSearchAlias(ChatCommandContext ctx, string filter, int page = 1) => BuildSearch(ctx, filter, page);
 
     [Command("build.check", description: "Show nearest build/tile prefab at cursor/player position. Usage: .build.check [radius]", adminOnly: true)]
     public static void BuildCheck(ChatCommandContext ctx, float radius = 5f)
@@ -435,6 +455,9 @@ public static class AdminCommands
             : $"Palette add failed: {result.Error}");
     }
 
+    [Command("pal.a", description: "Alias for .palette.add", adminOnly: true)]
+    public static void PaletteAddAlias(ChatCommandContext ctx, string searchTerm) => PaletteAdd(ctx, searchTerm);
+
     [Command("palette.remove", description: "Remove entries from your build palette. Usage: .palette.remove <searchterm>", adminOnly: true)]
     public static void PaletteRemove(ChatCommandContext ctx, string searchTerm)
     {
@@ -442,6 +465,9 @@ public static class AdminCommands
         var result = BuildPaletteService.Remove(ownerId, searchTerm);
         ctx.Reply(result.Success ? "Palette entry removed." : $"Palette remove failed: {result.Error}");
     }
+
+    [Command("pal.r", description: "Alias for .palette.remove", adminOnly: true)]
+    public static void PaletteRemoveAlias(ChatCommandContext ctx, string searchTerm) => PaletteRemove(ctx, searchTerm);
 
     [Command("palette.list", description: "List your build palette", adminOnly: true)]
     public static void PaletteList(ChatCommandContext ctx)
@@ -1235,7 +1261,7 @@ public static class AdminCommands
                 ctx.Reply($"Replaying AI flow in active session {replayContext.SessionId} ({replayContext.ModeId}).");
             }
 
-            GameEvents.RaiseModeStarted(new ModeStartedEvent
+            GameEvents.OnModeStarted?.Invoke(new ModeStartedEvent
             {
                 SessionId = replayContext.SessionId,
                 ModeId = replayContext.ModeId,
@@ -1244,7 +1270,7 @@ public static class AdminCommands
             // Note: AiEventMode.EmitCoreAiTestSequence was removed; test flows use session.json declarative config.
             var leaderboard = replayContext.Scores.GetLeaderboard();
             var topPlayer = leaderboard.Count > 0 ? leaderboard[0] : 0UL;
-            GameEvents.RaiseModeEnded(new ModeEndedEvent
+            GameEvents.OnModeEnded?.Invoke(new ModeEndedEvent
             {
                 SessionId = replayContext.SessionId,
                 ModeId = replayContext.ModeId,

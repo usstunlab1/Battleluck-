@@ -8,7 +8,7 @@ namespace BattleLuck.Services.Runtime
     /// Compile-safe ECS query facade. It avoids direct APIs that are absent in the
     /// pinned V Rising assemblies and returns conservative runtime snapshots.
     /// </summary>
-    public class DefaultEcsQueryService : IEcsQueryService
+    public class EcsQueryServiceReal : IEcsQueryService
     {
         public Task<EntitySnapshotDto?> InspectEntityAsync(int entityIndex) =>
             Task.FromResult<EntitySnapshotDto?>(null);

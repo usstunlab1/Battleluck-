@@ -1,0 +1,140 @@
+Subject: [PATCH] Uncommitted changes before Checkout at 17/07/2026 08:53 م
+---
+Index: BattleLuck.Tests/Services/PlayerStateControllerTests.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/BattleLuck.Tests/Services/PlayerStateControllerTests.cs b/BattleLuck.Tests/Services/PlayerStateControllerTests.cs
+new file mode 100644
+--- /dev/null	(date 1784335980395)
++++ b/BattleLuck.Tests/Services/PlayerStateControllerTests.cs	(date 1784335980395)
+@@ -0,0 +1,128 @@
++using System;
++using System.IO;
++using System.Reflection;
++using System.Text.Json;
++using BattleLuck.Models;
++using BattleLuck.Services;
++using FluentAssertions;
++using Xunit;
++
++namespace BattleLuck.Tests.Services;
++
++public class PlayerStateControllerTests : IDisposable
++{
++    private readonly string _snapshotDir;
++
++    public PlayerStateControllerTests()
++    {
++        _snapshotDir = Path.Combine(AppContext.BaseDirectory, "data", "BattleLuck", "snapshots");
++        if (Directory.Exists(_snapshotDir))
++        {
++            try { Directory.Delete(_snapshotDir, true); } catch { }
++        }
++    }
++
++    public void Dispose()
++    {
++        if (Directory.Exists(_snapshotDir))
++        {
++            try { Directory.Delete(_snapshotDir, true); } catch { }
++        }
++    }
++
++    [Fact(Skip = "Requires Unity runtime; skipped in unit environment")]
++    public void Test_SnapshotFileNaming_And_Fallback_Logic()
++    {
++        var controller = new PlayerStateController();
++        ulong steamId = 76561198000000001;
++
++        // Clear any prior snapshots
++        controller.ClearSnapshot(steamId);
++
++        // Verify initially no snapshots exist
++        controller.HasSnapshot(steamId).Should().BeFalse();
++        controller.HasSnapshot(steamId, isEvent: true).Should().BeFalse();
++        controller.HasSnapshot(steamId, isEvent: false).Should().BeFalse();
++
++        // 1. Manually write a mock event snapshot file
++        var eventSnap = new PlayerSnapshot
++        {
++            Version = 2,
++            PlayerId = steamId.ToString(),
++            Timestamp = DateTime.UtcNow,
++            ZoneHash = 100 // Event
++        };
++        var eventPath = Path.Combine(_snapshotDir, $"{steamId}_event.json");
++        Directory.CreateDirectory(Path.GetDirectoryName(eventPath)!);
++        File.WriteAllText(eventPath, JsonSerializer.Serialize(eventSnap, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
++
++        // 2. Manually write a mock regular snapshot file
++        var regularSnap = new PlayerSnapshot
++        {
++            Version = 2,
++            PlayerId = steamId.ToString(),
++            Timestamp = DateTime.UtcNow,
++            ZoneHash = 0 // Regular play
++        };
++        var regularPath = Path.Combine(_snapshotDir, $"{steamId}_regular.json");
++        File.WriteAllText(regularPath, JsonSerializer.Serialize(regularSnap, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
++
++        // Verify both are detected
++        controller.HasSnapshot(steamId).Should().BeTrue();
++        controller.HasSnapshot(steamId, isEvent: true).Should().BeTrue();
++        controller.HasSnapshot(steamId, isEvent: false).Should().BeTrue();
++
++        // Get snapshot
++        var loadedEvent = controller.GetSnapshot(steamId, isEvent: true);
++        loadedEvent.Should().NotBeNull();
++        loadedEvent!.ZoneHash.Should().Be(100);
++
++        var loadedRegular = controller.GetSnapshot(steamId, isEvent: false);
++        loadedRegular.Should().NotBeNull();
++        loadedRegular!.ZoneHash.Should().Be(0);
++
++        // Verify ListSnapshots
++        var list = controller.ListSnapshots();
++        list.Should().HaveCount(2);
++
++        // Verify ClearSnapshot
++        controller.ClearSnapshot(steamId);
++        controller.HasSnapshot(steamId).Should().BeFalse();
++        File.Exists(eventPath).Should().BeFalse();
++        File.Exists(regularPath).Should().BeFalse();
++    }
++
++    [Fact(Skip = "Requires Unity runtime; skipped in unit environment")]
++    public void Test_OldStyleSnapshot_Fallback()
++    {
++        var controller = new PlayerStateController();
++        ulong steamId = 76561198000000002;
++
++        controller.ClearSnapshot(steamId);
++
++        // Manually write an old style file {steamId}.json with zoneHash > 0 (event)
++        var oldSnap = new PlayerSnapshot
++        {
++            Version = 2,
++            PlayerId = steamId.ToString(),
++            Timestamp = DateTime.UtcNow,
++            ZoneHash = 42 // Event
++        };
++        var oldPath = Path.Combine(_snapshotDir, $"{steamId}.json");
++        Directory.CreateDirectory(Path.GetDirectoryName(oldPath)!);
++        File.WriteAllText(oldPath, JsonSerializer.Serialize(oldSnap, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
++
++        // GetSnapshot(isEvent: true) should find it from fallback
++        var loadedEvent = controller.GetSnapshot(steamId, isEvent: true);
++        loadedEvent.Should().NotBeNull();
++        loadedEvent!.ZoneHash.Should().Be(42);
++
++        // GetSnapshot(isEvent: false) should NOT find it (since its zoneHash is > 0)
++        var loadedRegular = controller.GetSnapshot(steamId, isEvent: false);
++        loadedRegular.Should().BeNull();
++
++        // Clean up
++        controller.ClearSnapshot(steamId);
++        File.Exists(oldPath).Should().BeFalse();
++    }
++}

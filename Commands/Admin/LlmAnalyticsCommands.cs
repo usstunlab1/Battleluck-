@@ -1,7 +1,8 @@
 using System.Text.Json;
 using BattleLuck.Core;
 using BattleLuck.Models;
-using BattleLuck.Core.Validation;
+using BattleLuck.Commands;
+using static BattleLuck.Core.Validation.ZoneValidator;
 
 namespace BattleLuck.Commands.Admin;
 
@@ -39,7 +40,7 @@ public sealed class LlmAnalyticsCommands
 
         var issues = new List<string>();
         issues.AddRange(ActionRegistryValidator.Validate(intent.ModeId, config));
-        issues.AddRange(ZoneValidator.Validate(intent.ModeId, config));
+        issues.AddRange(Validate(intent.ModeId, config));
         issues.AddRange(KitValidator.Validate(intent.ModeId, config));
         issues.AddRange(PrefabValidator.Validate(intent.ModeId, config));
         issues.AddRange(SchematicValidator.Validate(intent.ModeId, config));

@@ -283,7 +283,7 @@ public sealed class DiscordBridgeController : IDisposable
         }
 
         // Fire event for external handlers
-        GameEvents.RaiseDiscordCommand(new DiscordCommandEvent
+        GameEvents.OnDiscordCommand?.Invoke(new DiscordCommandEvent
         {
             Command = command,
             DiscordUserId = discordUserId,

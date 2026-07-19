@@ -6,7 +6,7 @@
   "autoEnter": {
     "enabled": true,
     "enterOnConnect": false,
-    "enterOnSpawn": false,
+    "enterOnSpawn": true,
     "exitOnDisconnect": true,
     "tickIntervalMs": 250,
     "spawnResolveTimeoutMs": 15000
@@ -37,22 +37,9 @@
       "radius": 100,
       "exitRadius": 110,
       "isSafe": false,
-      "blockedActions": [
-        "entity.destroy",
-        "schematic.load",
-        "schematic.load_at",
-        "blueprint.load",
-        "build.floor",
-        "build.wall",
-        "build.tile",
-        "build.platform",
-        "build.object",
-        "progression.modify",
-        "tech.modify",
-        "mode.end"
-      ],
+      "blockedActions": [],
       "boundary": {
-        "policy": "dot_only",
+        "policy": "dot_and_walls",
         "dot": {
           "enabled": true,
           "warningRadiusPercent": 0.8,
@@ -87,52 +74,52 @@
         "points": [
           {
             "x": -2000,
-            "y": 5,
+            "y": 20,
             "z": -2800
           },
           {
             "x": -1980,
-            "y": 5,
+            "y": 20,
             "z": -2780
           },
           {
             "x": -1960,
-            "y": 5,
+            "y": 20,
             "z": -2800
           },
           {
             "x": -1980,
-            "y": 5,
+            "y": 20,
             "z": -2820
           },
           {
             "x": -2000,
-            "y": 5,
+            "y": 20,
             "z": -2840
           },
           {
             "x": -2020,
-            "y": 5,
+            "y": 20,
             "z": -2820
           },
           {
             "x": -2040,
-            "y": 5,
+            "y": 20,
             "z": -2800
           },
           {
             "x": -2020,
-            "y": 5,
+            "y": 20,
             "z": -2780
           },
           {
             "x": -2000,
-            "y": 5,
+            "y": 20,
             "z": -2760
           },
           {
             "x": -2000,
-            "y": 5,
+            "y": 20,
             "z": -2800
           }
         ],
@@ -154,7 +141,7 @@
         "gridSize": 5,
         "tileSpacing": 2.5,
         "heightOffset": 0.1,
-        "glowEdge": false,
+        "glowEdge": true,
         "totalTiles": 25
       },
       "lootCrates": {
@@ -165,8 +152,15 @@
         "spawnAtCenter": true,
         "lockedUntilKills": 3,
         "winnerOnly": true,
-        "containerPrefab": "",
-        "crateTypes": []
+        "containerPrefab": "Chain_Container_WorldChest_Iron_01",
+        "crateTypes": [
+          {
+            "type": "winner_gold",
+            "weight": 100,
+            "prefab": "Item_Ingredient_Mineral_GoldBar",
+            "amount": 100
+          }
+        ]
       }
     }
   ]

@@ -64,7 +64,7 @@ namespace BattleLuck.Core
             string.IsNullOrWhiteSpace(provider) ? "auto" : provider.Trim().ToLowerInvariant();
 
         private static bool IsLlamaProvider(string provider) =>
-            provider is "llama" or "llama_api" or "meta_llama" or "ollama";
+            provider is "llama" or "llama_api" or "meta_llama";
 
         private static bool IsGoogleProvider(string provider) =>
             provider is "google" or "google_ai";
@@ -547,8 +547,7 @@ namespace BattleLuck.Core
         string BuildProviderUnavailableNotice()
         {
             var llamaError = _llamaAiService?.LastError ?? "";
-            if (_llamaAiService?.IsCrashed == true ||
-                llamaError.Contains("CUDA", StringComparison.OrdinalIgnoreCase) ||
+            if (llamaError.Contains("CUDA", StringComparison.OrdinalIgnoreCase) ||
                 llamaError.Contains("unsupported toolchain", StringComparison.OrdinalIgnoreCase) ||
                 llamaError.Contains("PTX", StringComparison.OrdinalIgnoreCase))
             {
@@ -557,7 +556,6 @@ namespace BattleLuck.Core
 
             return "AI provider unavailable. Static fallback cannot execute commands or generate event changes.";
         }
-
 
         private static string SearchCatalogLine(string query)
         {
@@ -800,7 +798,7 @@ Return exactly one valid JSON object. Its keys must be exactly the filenames sup
 
 Preserve unrelated data. Keep JSON value types intact. Do not remove required fields or resize an array unless the request explicitly asks to add or remove an item. Use only actions present in the supplied read-only catalog summary.
 
-When the supplied file is `event.json`, use the unified event schema exactly:
+When the supplied file is `flow.json` (or the legacy `event.json` envelope), use the unified event schema exactly:
 - `zones`, `objects`, `glows`, `bosses`, `phases`, `timers`, and `triggers` are arrays.
 - Rules use `enablePvP`, `matchDurationMinutes`, `allowLateJoin`, boolean `eliminationMode`, and `livesPerPlayer`.
 - A phase uses `name`, `durationSeconds`, and `actions`. Its duration is an elapsed-time trigger, not a sequential lifecycle.
@@ -914,7 +912,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                     {
                         new
                         {
-                            title = "Ã°Å¸Â¤â€“ BattleLuck AI Chat",
+                            title = "🤖 BattleLuck AI Chat",
                             color = 0x5865F2,
                             fields = new[]
                             {
@@ -931,11 +929,11 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var result = await _webhookHttp.PostAsync(webhookUri, content);
                 if (!result.IsSuccessStatusCode)
-                    BattleLuckLogger.Warning($"[AIÃ¢â€ â€™Discord] Webhook returned {result.StatusCode}");
+                    BattleLuckLogger.Warning($"[AI→Discord] Webhook returned {result.StatusCode}");
             }
             catch (Exception ex)
             {
-                BattleLuckLogger.Warning($"[AIÃ¢â€ â€™Discord] Forward failed: {ex.Message}");
+                BattleLuckLogger.Warning($"[AI→Discord] Forward failed: {ex.Message}");
             }
         }
 
@@ -962,11 +960,11 @@ This response is a proposal payload. It does not itself authorize or confirm a l
 
                 var result = await _webhookHttp.SendAsync(request);
                 if (!result.IsSuccessStatusCode)
-                    BattleLuckLogger.Warning($"[AIÃ¢â€ â€™Sidecar] Log returned {result.StatusCode}");
+                    BattleLuckLogger.Warning($"[AI→Sidecar] Log returned {result.StatusCode}");
             }
             catch (Exception ex)
             {
-                BattleLuckLogger.Warning($"[AIÃ¢â€ â€™Sidecar] Forward failed: {ex.Message}");
+                BattleLuckLogger.Warning($"[AI→Sidecar] Forward failed: {ex.Message}");
             }
         }
 
@@ -980,7 +978,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
 
                 BattleLuckPlugin.LogInfo($"[AI][{safeSource}] {steamId} Q: {compactQuery} | A: {compactResponse}");
 
-                var discordMessage = $"Ã°Å¸Â¤â€“ [{safeSource}] {steamId}\nQ: {compactQuery}\nA: {compactResponse}";
+                var discordMessage = $"🤖 [{safeSource}] {steamId}\nQ: {compactQuery}\nA: {compactResponse}";
                 BattleLuckPlugin.PostToDiscordLogs(discordMessage);
                 BattleLuckPlugin.PostToDiscordChatVip(discordMessage);
 
@@ -1081,7 +1079,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                     var message = await GenerateContextualMessage(context, "scoring_encouragement", e);
                     if (!string.IsNullOrEmpty(message))
                     {
-                        BroadcastToPlayer(e.SteamId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                        BroadcastToPlayer(e.SteamId, $"🤖 AI Assistant: {message}");
                     }
                 }
             });
@@ -1102,7 +1100,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                     var message = await GenerateContextualMessage(context, "elimination_advice", e);
                     if (!string.IsNullOrEmpty(message))
                     {
-                        BroadcastToPlayer(e.SteamId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                        BroadcastToPlayer(e.SteamId, $"🤖 AI Assistant: {message}");
                     }
                 }
             });
@@ -1130,7 +1128,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                             var message = await GenerateContextualMessage(context, "mode_start_tips", e);
                             if (!string.IsNullOrEmpty(message))
                             {
-                                BroadcastToPlayer(playerId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                                BroadcastToPlayer(playerId, $"🤖 AI Assistant: {message}");
                             }
                         }
                     }
@@ -1158,7 +1156,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                         var message = await GenerateContextualMessage(context, "match_summary", e);
                         if (!string.IsNullOrEmpty(message))
                         {
-                            BroadcastToPlayer(playerId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                            BroadcastToPlayer(playerId, $"🤖 AI Assistant: {message}");
                         }
                     }
                 }
@@ -1510,12 +1508,6 @@ Provide gameplay help only. Do not provide admin commands, config-edit instructi
         {
             if (_llamaAiService == null || !_llamaAiService.IsEnabled)
                 return null;
-
-            if (_llamaAiService.IsCrashed)
-            {
-                BattleLuckLogger.Warning($"{context}: Llama server is in crashed back-off state (likely CUDA toolchain mismatch). Skipping until recovery. LastError={_llamaAiService.LastError}");
-                return null;
-            }
 
             var response = await _llamaAiService.GetChatCompletionAsync(messages, temperature, maxTokens);
             if (!string.IsNullOrWhiteSpace(response))

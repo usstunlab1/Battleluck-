@@ -12,9 +12,9 @@ Authenticated admins use these paths:
 .ai create <eventId> [templateId]  # clone an editable event, default Bloodbath
 .ai action <catalog action>          # validate and preview a live action
 .ai approve [operationId]            # execute the latest or named live-action preview
-.ai event request <change>           # generate a proposed events/<eventId>.json
+.ai event request <change>           # generate a proposed events/<mode>/flow.json
 .ai event preview <operationId>      # inspect the pending proposal
-.ai event approve <operationId>      # write and reload the proposed event.json
+.ai event approve <operationId>      # write and reload the proposed flow.json
 .ai rollback [operationId]           # discard a pending live action or restore a pending config proposal
 .ai catalog search <text>            # search the registered catalog
 .aistatus                            # inspect configured providers and runtime health
@@ -60,7 +60,7 @@ Use only actions and parameters accepted by the current `actions_catalog.json` a
 The runtime loads the canonical file at:
 
 ```text
-config/BattleLuck/events/<eventId>.json
+config/BattleLuck/events/<modeId>/flow.json
 ```
 
 The important shapes are:

@@ -12,7 +12,7 @@ namespace BattleLuck.Services.Runtime;
 public sealed class EventTemplateService
 {
     static readonly Regex ValidId = new("^[a-z0-9][a-z0-9_-]{1,31}$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    static readonly string[] TemplateFiles = { "zones.json", "kits.json", "prompt.txt" };
+    static readonly string[] TemplateFiles = { "flow.json", "zones.json", "kits.json", "prompt.txt" };
 
     public OperationResult<CustomEventResult> CreateFromTemplate(
         string modeId,
@@ -31,24 +31,24 @@ public sealed class EventTemplateService
 
         var eventsRoot = Path.Combine(ConfigLoader.ConfigRoot, "events");
         var sourceDirectory = Path.Combine(eventsRoot, templateId);
-        var sourceEvent = Path.Combine(eventsRoot, $"{templateId}.json");
+        var targetDirectory = Path.Combine(eventsRoot, modeId);
+        var sourceFlow = Path.Combine(sourceDirectory, "flow.json");
 
-        if (!File.Exists(sourceEvent))
-            return OperationResult<CustomEventResult>.Fail($"Template event '{templateId}' was not found at '{sourceEvent}'.");
-        if (File.Exists(Path.Combine(eventsRoot, $"{modeId}.json")))
+        if (!File.Exists(sourceFlow))
+            return OperationResult<CustomEventResult>.Fail($"Template event '{templateId}' was not found at '{sourceFlow}'.");
+        if (Directory.Exists(targetDirectory) || File.Exists(Path.Combine(eventsRoot, $"{modeId}.json")))
             return OperationResult<CustomEventResult>.Fail($"Event '{modeId}' already exists.");
 
         var resolvedDisplayName = string.IsNullOrWhiteSpace(displayName)
             ? ToDisplayName(modeId)
             : displayName.Trim();
-        var sourceZoneHash = ReadFirstZoneHash(sourceEvent);
+        var sourceZoneHash = ReadFirstZoneHash(sourceFlow);
         var targetZoneHash = FindUniqueZoneHash(eventsRoot);
         var stagingDirectory = Path.Combine(eventsRoot, $".{modeId}.creating-{Guid.NewGuid():N}");
 
         try
         {
             Directory.CreateDirectory(stagingDirectory);
-            // Copy supporting files from template subdirectory
             foreach (var fileName in TemplateFiles)
             {
                 var source = Path.Combine(sourceDirectory, fileName);
@@ -56,20 +56,11 @@ public sealed class EventTemplateService
                     File.Copy(source, Path.Combine(stagingDirectory, fileName));
             }
 
-            // Rewrite event definition and write to canonical flat path
-            RewriteEvent(sourceEvent, Path.Combine(eventsRoot, $"{modeId}.json"), modeId, templateId, resolvedDisplayName, sourceZoneHash, targetZoneHash);
+            RewriteFlow(Path.Combine(stagingDirectory, "flow.json"), modeId, templateId, resolvedDisplayName, sourceZoneHash, targetZoneHash);
             RewriteZones(Path.Combine(stagingDirectory, "zones.json"), modeId, templateId, sourceZoneHash, targetZoneHash);
             RewritePrompt(Path.Combine(stagingDirectory, "prompt.txt"), modeId, templateId, resolvedDisplayName);
 
-            // Move supporting files to event subdirectory
-            var targetDirectory = Path.Combine(eventsRoot, modeId);
-            Directory.CreateDirectory(targetDirectory);
-            foreach (var fileName in TemplateFiles)
-            {
-                var src = Path.Combine(stagingDirectory, fileName);
-                if (File.Exists(src))
-                    File.Move(src, Path.Combine(targetDirectory, fileName), overwrite: true);
-            }
+            Directory.Move(stagingDirectory, targetDirectory);
             KitController.ClearCache();
             ConfigLoader.InvalidateCache();
 
@@ -77,7 +68,7 @@ public sealed class EventTemplateService
                 modeId,
                 resolvedDisplayName,
                 templateId,
-                Path.Combine(eventsRoot, $"{modeId}.json"),
+                Path.Combine(targetDirectory, "flow.json"),
                 targetZoneHash));
         }
         catch (Exception ex)
@@ -97,10 +88,10 @@ public sealed class EventTemplateService
         }
     }
 
-    static void RewriteEvent(string sourcePath, string targetPath, string modeId, string templateId, string displayName, int sourceZoneHash, int targetZoneHash)
+    static void RewriteFlow(string path, string modeId, string templateId, string displayName, int sourceZoneHash, int targetZoneHash)
     {
-        var definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(File.ReadAllText(sourcePath), ConfigLoader.JsonOptions)
-            ?? throw new InvalidDataException("Template event.json is empty or invalid.");
+        var definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(File.ReadAllText(path), ConfigLoader.JsonOptions)
+            ?? throw new InvalidDataException("Template flow.json is empty or invalid.");
 
         definition.Metadata.Id = modeId;
         definition.Metadata.DisplayName = displayName;
@@ -131,7 +122,7 @@ public sealed class EventTemplateService
             ReplaceZoneHashParameter(action, "targetZoneHash", sourceZoneHash, targetZoneHash);
         }
 
-        File.WriteAllText(targetPath, JsonSerializer.Serialize(definition, ConfigLoader.JsonOptions));
+        File.WriteAllText(path, JsonSerializer.Serialize(definition, ConfigLoader.JsonOptions));
     }
 
     static void RewriteZones(string path, string modeId, string templateId, int sourceZoneHash, int targetZoneHash)
@@ -205,11 +196,11 @@ public sealed class EventTemplateService
         }
     }
 
-    static int ReadFirstZoneHash(string eventPath)
+    static int ReadFirstZoneHash(string flowPath)
     {
         try
         {
-            var definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(File.ReadAllText(eventPath), ConfigLoader.JsonOptions);
+            var definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(File.ReadAllText(flowPath), ConfigLoader.JsonOptions);
             return definition?.Zones.FirstOrDefault()?.Hash ?? 0;
         }
         catch
@@ -223,7 +214,10 @@ public sealed class EventTemplateService
         var used = new HashSet<int>();
         if (Directory.Exists(eventsRoot))
         {
-            var paths = Directory.EnumerateFiles(eventsRoot, "*.json", SearchOption.TopDirectoryOnly);
+            var paths = Directory.EnumerateFiles(eventsRoot, "*.json", SearchOption.TopDirectoryOnly)
+                .Concat(Directory.EnumerateDirectories(eventsRoot)
+                    .Select(directory => Path.Combine(directory, "flow.json"))
+                    .Where(File.Exists));
 
             foreach (var path in paths)
             {
@@ -264,4 +258,4 @@ public sealed class EventTemplateService
     }
 }
 
-public sealed record CustomEventResult(string ModeId, string DisplayName, string TemplateId, string EventPath, int ZoneHash);
+public sealed record CustomEventResult(string ModeId, string DisplayName, string TemplateId, string FlowPath, int ZoneHash);

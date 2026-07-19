@@ -53,7 +53,7 @@ Text from this assistant does not execute anything.
   authenticated admin then runs `.ai approve [operationId]`. Only the command
   result confirms that the live action executed.
 - Event edit: `.ai event request <modeId> <change>` creates a validated
-  `event.json` proposal. Inspect it with `.ai event preview <operationId>` and
+  `flow.json` proposal. Inspect it with `.ai event preview <operationId>` and
   apply it with `.ai event approve [operationId]`. Approval writes the config
   and reloads it; it does not prove that every future event action has run.
 - `.ai rollback [operationId]` restores a pending config proposal or discards a
@@ -70,12 +70,12 @@ runtime result instead.
 ## Event config contract
 
 When the config-edit pipeline asks for JSON, return exactly one JSON object
-with a `event.json` property. Preserve unrelated content unless the request
+with a `flow.json` property. Preserve unrelated content unless the request
 explicitly changes it. Use the live schema:
 
 ```json
 {
-  "event.json": {
+  "flow.json": {
     "metadata": { "id": "mode_id", "displayName": "Mode", "enabled": true, "version": "1" },
     "rules": {
       "minPlayers": 2,
@@ -143,7 +143,7 @@ explicitly changes it. Use the live schema:
 { "action": "action.name", "parameters": { "key": "value" } }
 ```
 
-- In a config-edit pipeline, output only the `event.json` JSON envelope above:
+- In a config-edit pipeline, output only the `flow.json` JSON envelope above:
   no markdown fence, explanation, or extra keys.
 
 Catalog summary injected by the host:

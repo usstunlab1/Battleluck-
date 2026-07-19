@@ -18,9 +18,14 @@ public sealed class EventDefinitionLoader
         definition = null;
         validation = new EventValidationResult();
 
-        var path = Path.Combine(EventsRoot, $"{modeId}.json");
+        var path = Path.Combine(EventsRoot, modeId, "flow.json");
         if (!File.Exists(path))
-            return false;
+        {
+            // Fallback to legacy path for transition
+            path = Path.Combine(EventsRoot, $"{modeId}.json");
+            if (!File.Exists(path))
+                return false;
+        }
 
         try
         {
@@ -111,12 +116,14 @@ public sealed class EventDefinitionLoader
         var prompt = new PromptContextLoader().Load(modeId);
         if (prompt != null || !string.IsNullOrWhiteSpace(definition.Metadata.Prompt))
         {
-            config.EventPrompt ??= new EventPromptDefinition();
-            config.EventPrompt.EventId = modeId;
-            config.EventPrompt.AllowedActions = prompt?.AllowedActions ?? new List<string>();
-            config.EventPrompt.BlockedActions = prompt?.BlockedActions ?? new List<string>();
-            config.EventPrompt.AllowedTechs = prompt?.AllowedTechs ?? new List<string>();
-            config.EventPrompt.Body = !string.IsNullOrWhiteSpace(prompt?.Narrative) ? prompt.Narrative : definition.Metadata.Prompt;
+            config.EventPrompt = new EventPromptDefinition
+            {
+                EventId = modeId,
+                AllowedActions = prompt?.AllowedActions ?? new List<string>(),
+                BlockedActions = prompt?.BlockedActions ?? new List<string>(),
+                AllowedTechs = prompt?.AllowedTechs ?? new List<string>(),
+                Body = !string.IsNullOrWhiteSpace(prompt?.Narrative) ? prompt.Narrative : definition.Metadata.Prompt
+            };
 
             if (prompt != null)
             {
@@ -174,17 +181,17 @@ public sealed class EventDefinitionLoader
         };
 
         if (rules.AdminTestMinPlayers.HasValue)
-            target.AdminTestMinPlayers = rules.AdminTestMinPlayers;
+            target.AdminTestMinPlayers = Math.Max(1, rules.AdminTestMinPlayers.Value);
         if (rules.AllowAdminSoloTest.HasValue)
-            target.AllowAdminSoloTest = rules.AllowAdminSoloTest;
+            target.AllowAdminSoloTest = rules.AllowAdminSoloTest.Value;
         if (rules.RequireReadyCheck.HasValue)
-            target.RequireReadyCheck = rules.RequireReadyCheck;
+            target.RequireReadyCheck = rules.RequireReadyCheck.Value;
         if (rules.RestrictGear.HasValue)
-            target.RestrictGear = rules.RestrictGear;
+            target.RestrictGear = rules.RestrictGear.Value;
         if (rules.ShareLoot.HasValue)
-            target.ShareLoot = rules.ShareLoot;
+            target.ShareLoot = rules.ShareLoot.Value;
         if (rules.ResetOnExit.HasValue)
-            target.ResetOnExit = rules.ResetOnExit;
+            target.ResetOnExit = rules.ResetOnExit.Value;
 
         return target;
     }

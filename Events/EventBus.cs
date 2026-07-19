@@ -53,35 +53,15 @@ public static class GameEvents
     // Discord Bridge
     public static Action<DiscordCommandEvent>? OnDiscordCommand;
 
-    // ── Raise methods (canonical publish entry points) ──────────────────
-
     /// <summary>Publish a committed zone entry without allowing one subscriber to break the lifecycle.</summary>
     public static void RaiseZoneEnter(ZoneEnterEvent value) => SafeInvoke(OnZoneEnter, value, nameof(OnZoneEnter));
 
     /// <summary>Publish a completed zone exit without allowing one subscriber to invalidate restoration.</summary>
     public static void RaiseZoneExit(ZoneExitEvent value) => SafeInvoke(OnZoneExit, value, nameof(OnZoneExit));
 
-    public static void RaiseModeStarted(ModeStartedEvent value) => SafeInvoke(OnModeStarted, value, nameof(OnModeStarted));
-    public static void RaiseModeEnded(ModeEndedEvent value) => SafeInvoke(OnModeEnded, value, nameof(OnModeEnded));
-    public static void RaiseRoundEnded(RoundEndedEvent value) => SafeInvoke(OnRoundEnded, value, nameof(OnRoundEnded));
-    public static void RaisePlayerScored(PlayerScoredEvent value) => SafeInvoke(OnPlayerScored, value, nameof(OnPlayerScored));
-    public static void RaiseWaveStarted(WaveStartedEvent value) => SafeInvoke(OnWaveStarted, value, nameof(OnWaveStarted));
-    public static void RaiseWaveCleared(WaveClearedEvent value) => SafeInvoke(OnWaveCleared, value, nameof(OnWaveCleared));
-    public static void RaiseWaveFinal(WaveFinalEvent value) => SafeInvoke(OnWaveFinal, value, nameof(OnWaveFinal));
-    public static void RaiseObjectiveCaptured(ObjectiveCapturedEvent value) => SafeInvoke(OnObjectiveCaptured, value, nameof(OnObjectiveCaptured));
-    public static void RaiseZoneShrink(ZoneShrinkEvent value) => SafeInvoke(OnZoneShrink, value, nameof(OnZoneShrink));
-    public static void RaiseRealityChanged(RealityStateChanged value) => SafeInvoke(OnRealityChanged, value, nameof(OnRealityChanged));
-    public static void RaiseBossSpawned(BossSpawnedEvent value) => SafeInvoke(OnBossSpawned, value, nameof(OnBossSpawned));
-    public static void RaisePlatformStateChanged(PlatformStateChanged value) => SafeInvoke(OnPlatformStateChanged, value, nameof(OnPlatformStateChanged));
-    public static void RaiseCrateCollected(CrateCollectedEvent value) => SafeInvoke(OnCrateCollected, value, nameof(OnCrateCollected));
-    public static void RaisePlayerEliminated(PlayerEliminatedEvent value) => SafeInvoke(OnPlayerEliminated, value, nameof(OnPlayerEliminated));
-    public static void RaisePlayerLeft(PlayerLeftEvent value) => SafeInvoke(OnPlayerLeft, value, nameof(OnPlayerLeft));
-    public static void RaiseActionPerformed(ActionPerformedEvent value) => SafeInvoke(OnActionPerformed, value, nameof(OnActionPerformed));
-    public static void RaiseBloodFrenzyActivated(BloodFrenzyActivatedEvent value) => SafeInvoke(OnBloodFrenzyActivated, value, nameof(OnBloodFrenzyActivated));
-    public static void RaiseBloodFrenzyBounty(BloodFrenzyBountyEvent value) => SafeInvoke(OnBloodFrenzyBounty, value, nameof(OnBloodFrenzyBounty));
-    public static void RaiseEloUpdate(EloUpdateEvent value) => SafeInvoke(OnEloUpdate, value, nameof(OnEloUpdate));
-    public static void RaiseWebhookAction(WebhookActionEvent value) => SafeInvoke(OnWebhookAction, value, nameof(OnWebhookAction));
-    public static void RaiseDiscordCommand(DiscordCommandEvent value) => SafeInvoke(OnDiscordCommand, value, nameof(OnDiscordCommand));
+    /// <summary>Publish canonical managed elimination exactly once.</summary>
+    public static void RaisePlayerEliminated(PlayerEliminatedEvent value) =>
+        SafeInvoke(OnPlayerEliminated, value, nameof(OnPlayerEliminated));
 
     static void SafeInvoke<T>(Action<T>? handlers, T value, string eventName)
     {
@@ -91,7 +71,7 @@ public static class GameEvents
         foreach (Action<T> handler in handlers.GetInvocationList())
         {
             try { handler(value); }
-            catch (Exception ex) { BattleLuckPlugin.LogWarning($"[GameEvents] {eventName} subscriber failed: {ex}"); }
+            catch (Exception ex) { BattleLuckPlugin.LogWarning($"[GameEvents] {eventName} subscriber failed: {ex.Message}"); }
         }
     }
 

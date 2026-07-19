@@ -1,9 +1,5 @@
 # Changelog
 
-## 1.1.2
-
-- Added `commands.txt` quick reference file with copy-paste friendly commands for build, test, docker, git, and project analysis.
-
 ## 1.0.0
 
 - Consolidated server event, NPC, action, progression, teleport, schematic, and catalog services.

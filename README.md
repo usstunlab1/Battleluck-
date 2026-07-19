@@ -1,79 +1,392 @@
 # BattleLuck
 
-BattleLuck is a server-side BepInEx IL2CPP plugin for V Rising dedicated servers. It provides configurable competitive and cooperative game events, managed player sessions, rollback-safe player state, NPC and boss control, progression, death-prevention, teleports, schematics, and an ECS-backed action pipeline.
+![BattleLuck roadmap](docs/assets/roadmap-header.png)
 
-Optional local AI assists with event authoring, catalog search, and admin guidance. AI chat is advice-only for players; all live mutations require admin approval and execute on the server main thread.
+BattleLuck is a server-side BepInEx IL2CPP plugin for V Rising dedicated servers. It provides configurable competitive and cooperative game events, managed player sessions, rollback-safe player state and loadouts, NPC and boss control, progression and death-prevention systems, teleports, zones, schematics, and an ECS-backed action pipeline.
+
+Event behavior is defined through configuration and validated before execution. Optional local AI tools can assist with verified action discovery, event authoring, runtime announcements, and approval-gated configuration changes. Network-based AI work runs asynchronously, while ProjectM and Unity ECS mutations are dispatched to the server main thread.
 
 ## Install
 
-1. Install BepInEx and [VampireCommandFramework](https://thunderstore.io/c/v-rising/p/deca/VampireCommandFramework/) on the dedicated server.
-2. Copy the package into `BepInEx/` or use a Thunderstore mod manager.
-3. Start the server. The DLL extracts default config files to `BepInEx/config/BattleLuck/`.
-4. Edit event definitions in `BepInEx/config/BattleLuck/events/<eventId>/`.
-5. Use `.help` in game to see commands for your permission level.
+1. Install BepInEx for V Rising on the dedicated server.
+2. Install the package with a Thunderstore-compatible mod manager, or copy the package files into the server's `BepInEx` folder.
+3. Start the server once. `BattleLuck.dll` extracts missing default config files and
+   optional helper tools to `BepInEx/config/BattleLuck/` and
+   `BepInEx/config/BattleLuck/tools/`.
+4. Edit files under `BepInEx/config/BattleLuck/`, including event definitions inside `BepInEx/config/BattleLuck/events/<eventId>/`.
+5. Use `.help` in game to see the commands available to your permission level.
 
-Extraction is additive — the DLL never overwrites existing config, so upgrades preserve server-owner changes.
+Extraction is additive: the DLL never overwrites an existing config, event, prompt,
+or tool file, so upgrades preserve server-owner changes. Provider credentials and
+`.env` files are not embedded in the DLL; configure those locally on the server.
 
-## AI
+AI is server-owned and local-first. Every installation includes the `.ai` command
+surface, but no model weights or provider credentials are bundled. A server owner
+can run a local Llama/Ollama-compatible endpoint or explicitly configure a hosted
+provider; without one, BattleLuck uses its simple local fallback for basic help and
+catalog guidance. Live actions and event edits still require admin approval.
 
-AI is server-owned and local-first. No model weights or credentials are bundled in the mod.
+### How AI works for every installation
 
-- The server reads `ai_config.json` and starts the configured provider or local fallback.
-- Players use `.ai <question>` for advice-only chat (up to 4 replies per session).
-- Admins use catalog search, preview, and approval before any live mutation.
-- Use `.aistatus` to check provider health; `.ai.reload` to refresh config.
-- Hosted AI, Discord, and webhook integrations are opt-in.
+1. Install BattleLuck on the dedicated server; players do not need a separate AI
+   client or model download.
+2. The server reads `BepInEx/config/BattleLuck/ai_config.json` and starts the
+   configured provider or local fallback. The owner can run `.ai.status` or
+   `.aistatus` to see the active provider and health.
+3. Players can use `.ai <question>` for server-side advice. Player chat is
+   advice-only and cannot change events, NPCs, inventory, or world state.
+4. Admins use catalog search and preview commands. Only an explicit approval sends
+   a validated operation to the server main-thread runtime.
+5. Hosted AI, Discord, MCP, and sidecar integrations are opt-in. If enabled, the
+   configured provider receives the prompt; conversation history remains off by
+   default and no credentials are stored in the mod package.
 
-See [LLM Guide](docs/LLM_GUIDE.md) for provider setup and the prompt contract.
+## 📣 Coming soon — next week
 
-## Features
+🚧 **BattleLuck AI Chat channel** is planned for next week. It will be a new,
+dedicated channel in the existing BattleLuck chat/server, so players can keep AI
+questions and responses separate from match play without joining a second server
+or installing another mod. It will use the same `.ai` permissions, provider, and
+approval pipeline already described above.
 
-- Action-driven event runtime with configurable modes (Bloodbath, Colosseum, custom events).
-- NPC control, boss commands, and safe action reachability checks.
-- Player event sessions, loadouts, progression, death-prevention charges, and native-backed rollback snapshots.
-- Teleport services, schematics, zone detection, and verified data catalogs.
-- Optional local LLM for event authoring with approval gates and main-thread-safe execution.
-- Server-only action contract: every registered action is server-side, works with unmodified clients, and uses native replication.
+The channel remains part of the same chat integration, but uses a separate
+route so messages can be filtered independently. Planned message markers start
+each message and make the channel easy to scan:
+
+- `📣 [ANNOUNCE]` — server and event notices.
+- `🤖 [AI]` — questions, guidance, and approved AI previews.
+- `⚔️ [EVENT]` — match starts, phases, and results.
+- `🛡️ [ADMIN]` — approval and rollback status (admin-only details).
+
+This is a roadmap item, not a current command or configuration option. Until the
+channel ships, use `.ai` in the normal game chat and `.aistatus` for provider
+health.
+
+## Included features
+
+- An action-driven event runtime framework with configurable example modes.
+  Unified modes without explicit legacy flows use the managed snapshot, kit,
+  team, teleport, death, and restore lifecycle. Shipped locations, prefabs,
+  spawns, and cleanup still require live-server validation before production use.
+- NPC control, boss commands, generic actions, and safe action reachability checks.
+- Player event sessions, loadouts, progression, death-prevention charges, native-backed rollback snapshots, and restore-on-exit flows.
+- Teleport services, spatial points, borders, schematics, and verified data catalogs.
+- Optional local LLM prompts for event and mod authoring with approval gates and main-thread-safe execution.
 
 ### Event and mode terminology
 
-`modeId` and `eventId` refer to the same configuration concept (e.g. `bloodbath`, `colosseum`). The name `modeId` is retained for backward compatibility.
+In BattleLuck, a mode is an event definition. The identifiers `modeId` and
+`eventId` refer to the same configuration concept, such as `bloodbath`,
+`colosseum`, or `trial_of_all_actions`.
+
+The name `modeId` is retained in models, JSON files, commands, and APIs for
+backward compatibility. A running instance of an event is identified separately
+by its `sessionId` or event run identifier.
 
 ```text
-ModeId / EventId = bloodbath          # the configuration
-SessionId        = a specific run      # an instance
-ZoneHash         = the zone used       # the location
+ModeId / EventId = bloodbath
+SessionId        = a specific run of bloodbath
+ZoneHash         = the zone used for that run
 ```
 
-## Build
+## 🌐 Open-source / self-hosted game operations
+
+BattleLuck is V Rising-first and can run entirely on your own server. The plugin,
+event files, action catalog, rollback state, and optional AI provider stay under
+the server owner's control; there is no required hosted control plane.
+
+### 🌟 Featured projects
+
+- **[BepInEx](https://github.com/BepInEx/BepInEx)** + **[Harmony](https://github.com/pardeike/Harmony)** — plugin loading and safe game-system patches.
+- **[VampireCommandFramework](https://thunderstore.io/c/v-rising/p/deca/VampireCommandFramework/)** — V Rising chat commands used by BattleLuck.
+- **[Ollama](https://github.com/ollama/ollama)** or **[llama.cpp](https://github.com/ggml-org/llama.cpp)** — private local LLM hosting for `.ai`.
+- **[Docker Compose](https://docs.docker.com/compose/)** — optional one-command local AI runtime from `docker-compose.ai.yml`.
+- **BattleLuck action catalog** — V Rising events, NPC control, sequences, ticks, approvals, and native-backed rollback in this repository.
+
+### ⚔️ Install and deploy from this repository
 
 ```powershell
-dotnet build BattleLuck.sln -c Release
-
-# Deploy to server
-dotnet build BattleLuck.sln -c Release /p:DeployBattleLuck=true `
-  /p:ServerPluginPath="C:\Path\to\BepInEx\plugins\BattleLuck" `
-  /p:ServerConfigPath="C:\Path\to\BepInEx\config\BattleLuck"
+git clone https://github.com/usstunlab1/Battleluck.git
+Set-Location Battleluck
+dotnet restore
+dotnet build .\BattleLuck.sln -c Release /p:DeployBattleLuck=false
 ```
+
+Deploy directly to a server after installing BepInEx and VampireCommandFramework:
+
+```powershell
+dotnet build .\BattleLuck.sln -c Release `
+  /p:DeployBattleLuck=true `
+  /p:ServerPluginPath="C:\Path\to\VRising_Server\BepInEx\plugins\BattleLuck" `
+  /p:ServerConfigPath="C:\Path\to\VRising_Server\BepInEx\config\BattleLuck"
+```
+
+For a private AI provider, run `docker compose -f docker-compose.ai.yml up -d`,
+confirm `http://127.0.0.1:11434` is reachable from the V Rising server, then use
+`.ai.reload` in game. `127.0.0.1` is correct when Ollama is installed on the same
+server as V Rising. If Ollama runs on another host, set `llama_api.base_url` to
+`http://<AI-SERVER-PRIVATE-IP>:11434` instead and allow that private network
+connection through the firewall. Players never need to connect to this endpoint.
+See the [self-hosted operations guide](docs/OPEN_SOURCE_SELF_HOSTED.md) for
+provider, packaging, and release details.
+
+### 🚀 Other games
+
+**V Rising is the only shipped game adapter today.** The action/catalog boundary
+is intentionally separated from game-specific ECS code so future adapters can be
+added without changing the `.ai`, approval, task, sequence, and rollback workflow.
+Unity ECS/BepInEx games are the next planned adapter family; Unreal, Source, and
+other games are roadmap ideas only and are not supported by this release.
+
+## ☁️ Multi-cloud and on-premise
+
+BattleLuck is cloud-provider-neutral: deploy the same plugin, event configuration,
+action catalog, and AI approval pipeline on a Windows or Linux V Rising dedicated
+server hosted by any cloud provider—or on your own hardware. No cloud SDK is
+required in the plugin, so moving providers normally only changes the server path,
+network rules, storage backup, and optional provider credentials.
+
+Snapshots, event definitions, custom sequences, and integrations remain portable
+files under `BepInEx/config/BattleLuck/`. Keep those files and the server's backup
+policy under your control; do not copy secrets or active player data into a public
+repository. See the [self-hosted operations guide](docs/OPEN_SOURCE_SELF_HOSTED.md)
+for the deployment contract.
 
 ## Commands
 
-`.help` is the live permission-aware source of truth. The primary interface is `.ai`; all other commands are optional admin tools for events, NPCs, schematics, and integrations.
+`.ai` is the primary BattleLuck interface. All commands use the `.` prefix, and
+`.help` is the live permission-aware source of truth. Other commands are optional,
+admin-only tools for servers that enable the corresponding event, NPC, schematic,
+roadmap, or integration features.
 
-See the [User Guide](docs/user/README.md) for the full categorized command reference.
+### Primary AI commands
 
-## Documentation
+Permission labels: **public** commands are read-only/advice-oriented;
+**admin** commands create previews or perform approved runtime/config operations.
 
-- [User guide](docs/user/README.md) — commands, configuration, event creation, troubleshooting
-- [Developer guide](docs/developer/README.md) — architecture, ECS patterns, build setup
-- [AI and prompt guide](docs/LLM_GUIDE.md) — provider setup, director loop, security
-- [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
+```text
+.help                          Show available commands [public]
+.ai <message>                  Ask for advice; player chat cannot mutate state [public]
+.ai end                       End the four-reply AI conversation [public]
+.ai history [items]            Show your in-memory AI history from the last 24 hours [public]
+.ai tasks                      List your recent AI planning tasks [public]
+.ai tasks <goal>               Create a catalog-backed plan (preview only) [admin]
+.aistatus                      Show provider/runtime status [public, read-only]
+.ai catalog search <text>      Search the verified action catalog [admin]
+.ai action <catalog action>    Preview one runtime action [admin]
+.ai create <eventId> [template] Clone an event, default Bloodbath [admin]
+.ai event deploy <id> <gist>   Stage, validate, back up, and register an event [admin]
+.ai event status [id]          Show deployment/file status [public]
+.ai event audit [id]            Summarize deployment outcomes and recommendations [admin]
+.ai event rollback <eventId>   Restore the latest known-good event backup [admin]
+.ai event request <change>     Draft a validated event edit [admin]
+.ai event review <mode>        Review an event without writing files [admin]
+.ai event preview <id>         Inspect a pending proposal [admin]
+.ai event approve <id>         Apply an approved event proposal [admin]
+.ai approve [id]               Execute an approved live-action proposal [admin]
+.ai event rollback <operationId> Roll back a pending event proposal [admin]
+.ai rollback [id]              Discard a pending live-action proposal [admin]
+.ai.status                     Show detailed AI provider status [admin]
+.ai.reload                     Reload AI configuration [admin]
+```
+
+Process: search the catalog, request a preview, inspect the operation id, approve
+it, then let the server execute approved actions through its main-thread pipeline.
+An interactive `.ai <message>` conversation allows up to four AI replies; use
+`.ai end` to close it early. `.ai history [items]` shows transient conversation
+items from the last 24 hours, while `.ai tasks <goal>` stores a planner proposal
+for admin review without executing it. Rollback/discard only applies to pending
+proposals; it cannot undo an action that already ran. Use `.help` to discover the
+full `.ai` surface for the installation.
+
+### Action catalog and system reachability
+
+`config/BattleLuck/actions_catalog.json` is the action source of truth. It contains
+registered names, metadata, parameters, examples, categories, and reusable
+sequences; the runtime also adds verified aliases from the live system registry.
+Use `.ai catalog search <text>` before proposing an action. Actions may come from
+any catalog category or verified ProjectM/Unity system reference, but every action
+must have a runtime handler, pass validation, and remain approval-gated. A
+`system.*` alias records a verified system reference; it does not invoke arbitrary
+native ECS code through reflection.
+
+The current catalog includes 202 registered action names, 34 example categories,
+and built-in sequence definitions. The live catalog/search result is authoritative
+when the server is running.
+
+### Developer ticks and sequences
+
+Developers can build reusable action sequences from catalog actions. Sequence steps
+may include `wait:<seconds>` and `tick:<event-second>` markers; the unified event
+runtime schedules them on the session clock. The server tick drains queued AI and
+ECS work on the main thread, and `runtime_inject` entries are checked on the next
+event tick.
+
+```text
+.ai.sequence.gather <name> <search text>                 [admin]
+.ai.sequence.create <name> <action; wait:5; tick:30; action> [admin]
+.ai.sequence.preview <name> <steps>                      [admin]
+.ai.sequence.execute <name>                              [admin]
+```
+
+Use `.ai.sequence.show/list/add/delete` to maintain named sequences, then invoke a
+validated sequence with `sequence.custom.play:sequenceId=<id>|schedule=true` from
+an event phase, timer, trigger, or approved live action.
+
+These managed custom sequences do not depend on the native ProjectM
+`SequencerUpdateGroup` Harmony hook. That telemetry hook is disabled for the
+current game API until a stable patch target is verified on a live server.
+
+### Optional event and server commands
+
+These are not required for the primary AI workflow and may be unavailable to
+non-admins or when a feature is disabled:
+
+```text
+.toggleenter [modeName]        Join an event zone
+.toggleleave                   Leave an event and restore your state
+.exit                          Force-exit the current event
+.score                         Show the current scoreboard
+.elo                           Show Colosseum rating
+.reload                        Reload all BattleLuck configuration (admin)
+.start                         Force-start a prepared event session (admin)
+.rollback <operationId>        Roll back a pending operation (admin)
+.swapteam [closest|balance]    Balance or move event teams (admin)
+.swapteam.ai [options]         Balance teams + AI announcement; NPC AI coming soon (admin)
+.event.create <eventId>        Clone Bloodbath into a custom event (admin)
+.event.start <mode> [force]    Start an event; high-load windows require force=true (admin)
+.event.end <mode>              End a mode's active sessions (admin)
+.event.status                  Show active events and player counts (admin)
+.modelist                      List registered modes (admin)
+.bstatus                       Show live runtime status (admin)
+.npc.near [radius] [limit]      List nearby controlled NPCs (admin)
+.npc.spawn <prefab> [count]     Spawn controlled NPCs (admin)
+.npc.follow <npcId> [target]    Make an NPC follow a target (admin)
+.npc.goto <npcId> [x y z]       Move an NPC (admin)
+.npc.despawn <npcId|all>        Despawn controlled NPCs (admin)
+.boss.spawn <prefab> [id]       Spawn a controlled boss/NPC (admin)
+.boss.list                      List controlled bosses/NPCs (admin)
+.roadmap.status                 Show roadmap milestones (admin)
+.roadmap.prompt <llm|developer> Show the active prompt contract (admin)
+.schematic.list                 List loaded arena schematics (admin)
+.schematic.capture <name>       Capture a nearby schematic (admin)
+```
+
+### Create your own Bloodbath-style event
+
+Admins can create a complete editable event without adding C# code:
+
+```text
+.event.create shadow_hunt bloodbath
+```
+
+#### Process overview
+
+The command creates `config/BattleLuck/events/shadow_hunt/`, copies
+`flow.json`, `zones.json`, `kits.json`, and `prompt.txt`, assigns a unique zone
+hash, and registers the event with the live runtime. Customize the copied zone
+center, kits, actions, phases, timers, and prompt, then run:
+
+```text
+.event.start shadow_hunt
+```
+
+#### ⚠️ Stability and recovery warning
+
+Creating the folder is a hot file-and-registration operation. Starting an edited
+event executes its actions in the V Rising server, so invalid JSON, prefabs,
+actions, or native ECS operations may hang, crash, or restart the server. Back up
+the server, run `.ai event review shadow_hunt`, and test in a private arena before
+inviting players.
+
+#### AI recovery and safety protocol
+
+While the process is alive, BattleLuck records the AI operation/approval trail in
+`BepInEx/config/BattleLuck/ai_operations.log`; the AI can use that context to
+recommend a safer alternative. The one-day `.ai history` and `.ai tasks` views are
+in-memory and may be lost by a hard crash. Before event mutations, BattleLuck
+writes each player's pre-event state to
+`BepInEx/data/BattleLuck/snapshots/<steamId>.json`. Normal exit or an explicit
+restore uses that snapshot. A hard crash can stop cleanup before it executes, so
+after restart inspect the logs and restore affected players before retrying;
+automatic rollback during an abrupt process termination is not guaranteed.
+
+#### Safe-stage approach
+
+For a busy server, copy the template and edit the four files while the server is
+offline or in a low-load/standby window. Review the event with `.ai event review
+<eventId>`, keep a backup of `config/BattleLuck/events/`, and use the server's
+controlled reload command only after the files pass review. This keeps risky
+registration and native action execution out of peak player traffic.
+
+#### No-code AI controller
+
+Any player can ask `.ai` for guidance or use the read-only status request. Only
+admins can deploy or roll back files; no admin needs to write C#:
+
+```text
+.ai event deploy shadow_hunt https://gist.github.com/owner/gist-id
+.ai event status shadow_hunt
+.ai event audit shadow_hunt
+.ai event rollback shadow_hunt
+```
+
+`deploy` downloads `flow.json`, `zones.json`, `kits.json`, and `prompt.txt` from
+an HTTPS GitHub Gist, validates the declarative actions, prompt policy, JSON, kit
+references, and zone hashes, backs up the current event under
+`BepInEx/config/BattleLuck/backups/<eventId>/`, then stages and registers it. It
+does not start the event. Each backup contains `manifest.json` with file sizes
+and SHA-256 hashes. `status` is read-only and available to all players;
+`rollback` verifies that manifest before restoring the latest known-good
+deployment. `.ai event audit [eventId]` summarizes the JSONL audit trail and
+suggests deterministic fixes from recurring error codes. A rollback restores
+files, not a live action that already executed.
+
+The offline validator is available at `tools/validators/validate-json.sh` and
+the matching schemas are in `config/BattleLuck/events/schemas/`. The plugin
+performs these dependency-free checks itself when the event is staged. These
+deployment, status, audit, and rollback commands are deterministic and do not
+require an external LLM provider to be online; the optional LLM only helps
+admins draft or explain changes.
+
+Use `.ai event deploy <eventId> <https-gist-url> --dry-run` to validate a bundle
+without writing a backup or registering it. The audit record reports
+`deploy_dry_run`, `registerOk=false`, and `exit=0` when validation passes.
+
+#### Rollback scopes
+
+```text
+.ai event rollback <eventId>                           # event definition backup
+.ai rollback player <name|steamId> <timestamp|runId>   # exact snapshot selector
+.ai rollback server status                            # count online/offline event snapshots
+.ai rollback server players confirm                   # restore all online event snapshots
+.ai rollback server purge <eventId> [backupId] confirm # delete a BattleLuck backup
+```
+
+The player/server commands restore `BepInEx/data/BattleLuck/snapshots/` state;
+offline snapshots remain on disk and are reported as pending. A full V Rising
+world/server-save rollback is owned by the dedicated server's SaveFileManager
+and host backup tooling, so BattleLuck does not pretend to restore or delete it.
+The `purge` command can delete only a named BattleLuck deployment backup after
+the explicit `confirm` token; it never deletes the host's world save.
+
+KindredExtract remains a developer reference tool: use `.dump p`/`.dump eq` to
+verify prefab names and queries before publishing the Gist. BattleLuck does not
+execute arbitrary KindredExtract code or treat a Gist as trusted native code.
 
 ## Support
 
-Maintainer: **coyoteq1**
-Discord: <https://discord.gg/uJ2ehWv4gR>
+Maintainer: **coyoteq1 — Ahmadtllal**  
+Discord support: <https://discord.gg/uJ2ehWv4gR>
+
+## Documentation
+
+- [User guide](docs/user/README.md)
+- [Developer guide](docs/developer/README.md)
+- [AI and prompt guide](docs/LLM_GUIDE.md)
+- [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
+- [V Rising Mod Wiki: licensing](https://wiki.vrisingmods.com/dev/licensing.html)
 
 ## License
 
-GNU Affero General Public License v3. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+BattleLuck is licensed under the GNU Affero General Public License, version 3 or any later version. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

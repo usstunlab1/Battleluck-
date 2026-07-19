@@ -91,32 +91,6 @@ public sealed record RuntimeActionIntent
 
     /// <summary>UTC timestamp when the intent was created.</summary>
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
-
-    // ── Command/AI execution context fields ──────────────────────────────────
-
-    /// <summary>Name of the command that produced this intent (if from a command). Null for AI/direct.</summary>
-    public string? CommandName { get; init; }
-
-    /// <summary>Event ID this intent is scoped to. Null for global actions.</summary>
-    public string? EventId { get; init; }
-
-    /// <summary>Whether this originated from the server console (trusted source).</summary>
-    public bool IsConsoleRequest { get; init; }
-
-    /// <summary>Approval operation ID if this intent was pre-approved. Null otherwise.</summary>
-    public string? ApprovalId { get; init; }
-
-    /// <summary>Effective permission level of the requester at submission time.</summary>
-    public ActionPermissionLevel Permission { get; init; } = ActionPermissionLevel.Readonly;
-}
-
-/// <summary>Effective permission level for action requesters.</summary>
-public enum ActionPermissionLevel
-{
-    Readonly = 0,
-    Mutation,
-    Admin,
-    Dangerous,
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────

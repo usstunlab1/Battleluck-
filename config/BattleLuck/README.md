@@ -66,7 +66,8 @@ Admins can clone the Bloodbath lifecycle and customize it without compiling a ne
 
 ### Process overview
 
-The command creates `events/shadow_hunt.json` with supporting files in `events/shadow_hunt/` (`zones.json`, `kits.json`, and `prompt.txt`), assigns a unique zone hash,
+The command creates `events/shadow_hunt/` with independent `flow.json`,
+`zones.json`, `kits.json`, and `prompt.txt` files, assigns a unique zone hash,
 and registers the event immediately. Change the copied zone center and
 `teleportSpawn` before using it as a separate arena. The cloned event keeps
 Bloodbath's entry/exit kit transaction, rollback snapshot, action validation, and
@@ -103,7 +104,7 @@ Any player may request status through `.ai`; only admins can change event files:
 .ai event rollback shadow_hunt
 ```
 
-`deploy` accepts an HTTPS GitHub Gist containing `event.json`, `zones.json`,
+`deploy` accepts an HTTPS GitHub Gist containing `flow.json`, `zones.json`,
 `kits.json`, and `prompt.txt`. BattleLuck downloads into staging, validates JSON,
 actions, prompt rules, kit references, and zone-hash uniqueness, backs up the
 current folder under `backups/<eventId>/`, then registers the event. It never

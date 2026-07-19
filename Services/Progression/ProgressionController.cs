@@ -6,11 +6,6 @@ using System.Collections.Generic;
 
 namespace BattleLuck.Services.Progression;
 
-/// <summary>
-/// Stub progression facade. Canonical boundary is <see cref="PlayerProgressionService"/>.
-/// TODO: Redirect callers to PlayerProgressionService and remove this class.
-/// </summary>
-[Obsolete("Use PlayerProgressionService instead.")]
 public static class ProgressionController
 {
     public static OperationResult UnlockAllVBloods(Entity player)

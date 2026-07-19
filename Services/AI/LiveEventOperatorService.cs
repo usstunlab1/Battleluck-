@@ -66,7 +66,7 @@ public sealed class LiveEventOperatorService
             user.AppendLine($"- {match.Name} [{match.Category}/{match.RiskLevel}] {string.Join(" ; ", match.Examples.Take(2))}");
 
         user.AppendLine();
-        user.AppendLine("Current event.json:");
+        user.AppendLine("Current flow.json:");
         user.AppendLine(eventJson.Length > 18000 ? eventJson[..18000] + "\n...<truncated>" : eventJson);
 
         var response = await aiAssistant.GenerateOperatorReviewAsync(systemPrompt, user.ToString());
@@ -110,7 +110,7 @@ public sealed class LiveEventOperatorService
         var existingRootMutations = GetNonNotificationRootActions(originalJson);
         var currentConfigs = new Dictionary<string, JsonDocument>(StringComparer.OrdinalIgnoreCase)
         {
-            ["event.json"] = JsonDocument.Parse(originalJson)
+            ["flow.json"] = JsonDocument.Parse(originalJson)
         };
 
         var searchResults = SearchCatalog(request, 20);
@@ -134,9 +134,10 @@ public sealed class LiveEventOperatorService
             try
             {
                 using var responseDoc = JsonDocument.Parse(ExtractJsonObject(response));
-                if (!responseDoc.RootElement.TryGetProperty("event.json", out eventElement))
+                if (!responseDoc.RootElement.TryGetProperty("flow.json", out eventElement) &&
+                    !responseDoc.RootElement.TryGetProperty("event.json", out eventElement))
                 {
-                    return OperationResult<OperatorProposal>.Fail("AI response did not include event.json.");
+                    return OperationResult<OperatorProposal>.Fail("AI response did not include flow.json.");
                 }
                 eventElement = eventElement.Clone();
             }
@@ -217,7 +218,7 @@ public sealed class LiveEventOperatorService
         }
         catch (Exception ex)
         {
-            return OperationResult<UnifiedEventDefinition>.Fail($"Existing event.json could not be parsed for local fallback: {ex.Message}");
+            return OperationResult<UnifiedEventDefinition>.Fail($"Existing flow.json could not be parsed for local fallback: {ex.Message}");
         }
 
         definition ??= new UnifiedEventDefinition();
@@ -799,7 +800,13 @@ public sealed class LiveEventOperatorService
     static string GetEventPath(string modeId)
     {
         var eventsRoot = Path.Combine(ConfigLoader.ConfigRoot, "events");
-        return Path.Combine(eventsRoot, $"{modeId}.json");
+        var canonical = Path.Combine(eventsRoot, modeId, "flow.json");
+        var legacy = Path.Combine(eventsRoot, $"{modeId}.json");
+
+        // The runtime resolves flow.json first.  Always write that canonical path unless
+        // this is an intentionally legacy-only mode, so an approved proposal is visible
+        // to the same loader that starts live sessions.
+        return File.Exists(canonical) || !File.Exists(legacy) ? canonical : legacy;
     }
 
     static HashSet<string> GetNonNotificationRootActions(string json)
@@ -852,7 +859,7 @@ public sealed class LiveEventOperatorService
         sb.AppendLine($"Live Operator event-authoring request for mode '{modeId}':");
         sb.AppendLine(request);
         sb.AppendLine();
-        sb.AppendLine("Return a complete updated flow config only under the event.json key.");
+        sb.AppendLine("Return a complete updated flow config only under the flow.json key.");
         sb.AppendLine("Use only actions from the catalog matches or registered catalog names.");
         sb.AppendLine($"Do not exceed {maxActions} total event actions.");
         sb.AppendLine("Preserve unrelated existing content. The schema uses arrays for zones, objects, glows, bosses, phases, timers, and triggers; root actions are reserved for announcements.");
@@ -961,7 +968,7 @@ public sealed class LiveEventOperatorService
     {
         var originalLines = originalJson.Split('\n').Length;
         var proposedLines = proposedJson.Split('\n').Length;
-        return $"event.json lines {originalLines}->{proposedLines}; actions={actions.Count}; first actions={string.Join(", ", actions.Take(8))}";
+        return $"flow.json lines {originalLines}->{proposedLines}; actions={actions.Count}; first actions={string.Join(", ", actions.Take(8))}";
     }
 
     static string ExtractJsonObject(string value)

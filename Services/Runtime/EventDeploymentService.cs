@@ -15,7 +15,7 @@ namespace BattleLuck.Services.Runtime;
 /// </summary>
 public sealed class EventDeploymentService
 {
-    public static readonly string[] RequiredFiles = { "event.json", "zones.json", "kits.json", "prompt.txt" };
+    public static readonly string[] RequiredFiles = { "flow.json", "zones.json", "kits.json", "prompt.txt" };
 
     static readonly Regex ValidId = new("^[a-z0-9][a-z0-9_-]{1,31}$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     static readonly HttpClient Http = CreateHttpClient();
@@ -53,7 +53,7 @@ public sealed class EventDeploymentService
             return OperationResult<EventDeploymentResult>.Fail($"EGIST: Gist download failed: {ex.Message}");
         }
 
-        if (!NormalizeEventMetadata(modeId, files, out var normalizeError))
+        if (!NormalizeFlowMetadata(modeId, files, out var normalizeError))
             return OperationResult<EventDeploymentResult>.Fail("ESCHEMA: " + normalizeError);
 
         if (IsModeActive(modeId))
@@ -66,7 +66,7 @@ public sealed class EventDeploymentService
 
         if (dryRun)
         {
-            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["event.json"], ConfigLoader.JsonOptions)!;
+            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["flow.json"], ConfigLoader.JsonOptions)!;
             var zoneHash = flow.Zones.FirstOrDefault()?.Hash ?? 0;
             return OperationResult<EventDeploymentResult>.Ok(new EventDeploymentResult(
                 modeId, $"dry-run:{gistUrl.Trim()}", "dry-run (not installed)", flow.Zones.Count, zoneHash));
@@ -139,7 +139,7 @@ public sealed class EventDeploymentService
             return OperationResult<EventDeploymentResult>.Fail($"EBACKUP: Backup could not be read: {ex.Message}");
         }
 
-        if (!NormalizeEventMetadata(modeId, files, out var normalizeError))
+        if (!NormalizeFlowMetadata(modeId, files, out var normalizeError))
             return OperationResult<EventDeploymentResult>.Fail("ESCHEMA: " + normalizeError);
 
         if (IsModeActive(modeId))
@@ -215,21 +215,11 @@ public sealed class EventDeploymentService
 
             Directory.CreateDirectory(staging);
             foreach (var file in RequiredFiles)
-            {
-                if (file.Equals("event.json", StringComparison.OrdinalIgnoreCase))
-                    continue;
                 File.WriteAllText(Path.Combine(staging, file), files[file], new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-            }
 
             if (hadExisting)
                 Directory.Move(target, previous);
             Directory.Move(staging, target);
-
-            // Write event.json to the canonical flat path.
-            File.WriteAllText(
-                Path.Combine(EventsRoot, $"{modeId}.json"),
-                files["event.json"],
-                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
 
             ConfigLoader.InvalidateCache();
             var registrationError = "Game mode registry is unavailable.";
@@ -248,7 +238,7 @@ public sealed class EventDeploymentService
             if (Directory.Exists(previous))
                 Directory.Delete(previous, recursive: true);
 
-            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["event.json"], ConfigLoader.JsonOptions)!;
+            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["flow.json"], ConfigLoader.JsonOptions)!;
             var zoneHash = flow.Zones.FirstOrDefault()?.Hash ?? 0;
             return OperationResult<EventDeploymentResult>.Ok(new EventDeploymentResult(
                 modeId, source, backupPath, flow.Zones.Count, zoneHash));
@@ -261,7 +251,6 @@ public sealed class EventDeploymentService
                     Directory.Delete(staging, recursive: true);
                 if (Directory.Exists(target))
                     Directory.Delete(target, recursive: true);
-                try { File.Delete(Path.Combine(EventsRoot, $"{modeId}.json")); } catch { }
                 if (Directory.Exists(previous))
                     Directory.Move(previous, target);
 
@@ -292,23 +281,23 @@ public sealed class EventDeploymentService
         UnifiedEventDefinition? definition;
         try
         {
-            definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["event.json"], ConfigLoader.JsonOptions);
+            definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["flow.json"], ConfigLoader.JsonOptions);
             if (definition == null)
             {
-                result.Errors.Add("ESCHEMA: event.json is empty.");
+                result.Errors.Add("ESCHEMA: flow.json is empty.");
                 return result;
             }
         }
         catch (Exception ex)
         {
-            result.Errors.Add($"EJSONPARSE: event.json is invalid JSON: {ex.Message}");
+            result.Errors.Add($"EJSONPARSE: flow.json is invalid JSON: {ex.Message}");
             return result;
         }
 
         if (string.IsNullOrWhiteSpace(definition.Metadata.Id))
             definition.Metadata.Id = modeId;
         else if (!definition.Metadata.Id.Equals(modeId, StringComparison.OrdinalIgnoreCase))
-            result.Errors.Add($"event.json metadata.id '{definition.Metadata.Id}' does not match event '{modeId}'.");
+            result.Errors.Add($"flow.json metadata.id '{definition.Metadata.Id}' does not match event '{modeId}'.");
 
         _definitions.Validate(definition, result);
         // Prompt policy is checked against the live folder by EventDefinitionLoader;
@@ -324,45 +313,45 @@ public sealed class EventDeploymentService
         return result;
     }
 
-    static bool NormalizeEventMetadata(string modeId, IDictionary<string, string> files, out string error)
+    static bool NormalizeFlowMetadata(string modeId, IDictionary<string, string> files, out string error)
     {
         error = "";
         try
         {
-            using (var document = JsonDocument.Parse(files["event.json"]))
+            using (var document = JsonDocument.Parse(files["flow.json"]))
             {
                 if (document.RootElement.ValueKind != JsonValueKind.Object ||
                     !document.RootElement.TryGetProperty("metadata", out var metadata) ||
                     metadata.ValueKind != JsonValueKind.Object)
                 {
-                    error = "event.json requires a metadata object.";
+                    error = "flow.json requires a metadata object.";
                     return false;
                 }
             }
 
-            var definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["event.json"], ConfigLoader.JsonOptions);
+            var definition = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["flow.json"], ConfigLoader.JsonOptions);
             if (definition == null)
             {
-                error = "event.json is empty.";
+                error = "flow.json is empty.";
                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(definition.Metadata.Id) &&
                 !definition.Metadata.Id.Equals(modeId, StringComparison.OrdinalIgnoreCase))
             {
-                error = $"event.json metadata.id '{definition.Metadata.Id}' does not match event '{modeId}'.";
+                error = $"flow.json metadata.id '{definition.Metadata.Id}' does not match event '{modeId}'.";
                 return false;
             }
 
             definition.Metadata.Id = modeId;
             if (string.IsNullOrWhiteSpace(definition.Metadata.DisplayName))
                 definition.Metadata.DisplayName = ToDisplayName(modeId);
-            files["event.json"] = JsonSerializer.Serialize(definition, ConfigLoader.JsonOptions);
+            files["flow.json"] = JsonSerializer.Serialize(definition, ConfigLoader.JsonOptions);
             return true;
         }
         catch (Exception ex)
         {
-            error = $"event.json metadata could not be normalized: {ex.Message}";
+            error = $"flow.json metadata could not be normalized: {ex.Message}";
             return false;
         }
     }
@@ -410,10 +399,10 @@ public sealed class EventDeploymentService
                 return;
             }
 
-            var eventHashes = definition.Zones.Select(zone => zone.Hash).ToHashSet();
+            var flowHashes = definition.Zones.Select(zone => zone.Hash).ToHashSet();
             var legacyHashes = zones.Zones.Select(zone => zone.Hash).ToHashSet();
-            if (!eventHashes.SetEquals(legacyHashes))
-                result.Errors.Add($"event.json and zones.json zone hashes do not match for '{modeId}'.");
+            if (!flowHashes.SetEquals(legacyHashes))
+                result.Errors.Add($"flow.json and zones.json zone hashes do not match for '{modeId}'.");
         }
         catch (Exception ex)
         {
@@ -448,7 +437,7 @@ public sealed class EventDeploymentService
         EventValidationResult result)
     {
         var used = new HashSet<int>();
-        foreach (var path in EnumerateEventPaths(excludeModeId))
+        foreach (var path in EnumerateFlowPaths(excludeModeId))
         {
             try
             {
@@ -495,40 +484,20 @@ public sealed class EventDeploymentService
             return status;
         }
 
-        status.HasAllFiles = File.Exists(Path.Combine(EventsRoot, $"{modeId}.json")) &&
-            RequiredFiles.Where(f => !f.Equals("event.json", StringComparison.OrdinalIgnoreCase))
-                .All(file => File.Exists(Path.Combine(directory, file)));
+        status.HasAllFiles = RequiredFiles.All(file => File.Exists(Path.Combine(directory, file)));
         if (!status.HasAllFiles)
         {
             status.Errors.Add("One or more required event files are missing.");
             return status;
         }
 
-        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        try
-        {
-            var flatEvent = Path.Combine(EventsRoot, $"{modeId}.json");
-            if (File.Exists(flatEvent))
-                files["event.json"] = File.ReadAllText(flatEvent);
-            foreach (var file in RequiredFiles)
-            {
-                if (file.Equals("event.json", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                var path = Path.Combine(directory, file);
-                if (File.Exists(path))
-                    files[file] = File.ReadAllText(path);
-            }
-        }
-        catch
-        {
-            // Validation already contains the parse error.
-        }
+        var files = RequiredFiles.ToDictionary(file => file, file => File.ReadAllText(Path.Combine(directory, file)), StringComparer.OrdinalIgnoreCase);
         var validation = ValidateBundle(modeId, files, excludeModeId: modeId);
         status.FlowValid = validation.Success;
         status.Errors.AddRange(validation.Errors.Take(8));
         try
         {
-            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["event.json"], ConfigLoader.JsonOptions);
+            var flow = JsonSerializer.Deserialize<UnifiedEventDefinition>(files["flow.json"], ConfigLoader.JsonOptions);
             status.ZoneHashes = flow?.Zones.Select(zone => zone.Hash).Where(hash => hash != 0).Distinct().OrderBy(hash => hash).ToList() ?? new List<int>();
         }
         catch
@@ -545,14 +514,6 @@ public sealed class EventDeploymentService
         var destination = Path.Combine(root, $"{DateTime.UtcNow:yyyyMMddHHmmssfff}_{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         CopyDirectory(sourceDirectory, destination);
-        // Include the flat event.json in the backup for completeness.
-        try
-        {
-            var flatEvent = Path.Combine(EventsRoot, $"{modeId}.json");
-            if (File.Exists(flatEvent))
-                File.Copy(flatEvent, Path.Combine(destination, "event.json"), overwrite: true);
-        }
-        catch { }
         File.WriteAllText(Path.Combine(destination, "deployment.json"), JsonSerializer.Serialize(new
         {
             modeId,
@@ -650,23 +611,24 @@ public sealed class EventDeploymentService
         if (!Directory.Exists(root))
             return null;
         return Directory.EnumerateDirectories(root)
-            .Where(path => File.Exists(Path.Combine(path, "event.json")))
+            .Where(path => File.Exists(Path.Combine(path, "flow.json")))
             .OrderByDescending(Directory.GetLastWriteTimeUtc)
             .FirstOrDefault();
     }
 
-    IEnumerable<string> EnumerateEventPaths(string? excludeModeId)
+    IEnumerable<string> EnumerateFlowPaths(string? excludeModeId)
     {
         if (!Directory.Exists(EventsRoot))
             yield break;
 
-        foreach (var file in Directory.EnumerateFiles(EventsRoot, "*.json", SearchOption.TopDirectoryOnly))
+        foreach (var directory in Directory.EnumerateDirectories(EventsRoot))
         {
-            var id = Path.GetFileNameWithoutExtension(file);
+            var id = Path.GetFileName(directory);
             if (id.StartsWith('.') || (!string.IsNullOrWhiteSpace(excludeModeId) && id.Equals(excludeModeId, StringComparison.OrdinalIgnoreCase)))
                 continue;
-            if (ValidId.IsMatch(id))
-                yield return file;
+            var flow = Path.Combine(directory, "flow.json");
+            if (File.Exists(flow))
+                yield return flow;
         }
     }
 

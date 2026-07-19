@@ -339,13 +339,8 @@ public sealed class EventRuntimeController
         var skippedSetupActions = runtime.Definition.Actions.Count - setupActions.Count;
         if (skippedSetupActions > 0)
         {
-            var skippedActionNames = runtime.Definition.Actions
-                .Where(a => !IsSafeTopLevelSetupAction(a))
-                .Select(a => a.ToActionString())
-                .ToList();
             BattleLuckPlugin.LogWarning(
                 $"[EventRuntime] Skipped {skippedSetupActions} unsafe top-level event action(s) for {runtime.Context.SessionId}. " +
-                $"Skipped actions: [{string.Join(", ", skippedActionNames.Take(5))}]... " +
                 "Put live mutations in phases, timers, triggers, or object actions instead.");
         }
 
@@ -567,19 +562,12 @@ public sealed class EventRuntimeController
         var run = _customSequences.BuildRuntimeRun(sequenceId, runtime.ElapsedSeconds, reason);
         if (!run.Success || run.Value == null)
         {
-            var error = run.Error ?? "Unknown error";
-            BattleLuckPlugin.LogWarning($"[EventRuntime] {reason} custom sequence '{sequenceId}' could not be queued: {error}");
-            ProjectMEventRouter.Instance?.RaiseSequenceFailed(
-                new SequenceFailedEvent(runtime.Context.SessionId, sequenceId, error));
+            BattleLuckPlugin.LogWarning($"[EventRuntime] {reason} custom sequence '{sequenceId}' could not be queued: {run.Error}");
             return true;
         }
 
         runtime.CustomSequenceRuns.Add(run.Value);
         BattleLuckPlugin.LogInfo($"[EventRuntime] Queued custom sequence '{run.Value.SequenceId}' with {run.Value.Steps.Count} step(s) for {runtime.Context.SessionId}.");
-        
-        // Publish sequence started event
-        ProjectMEventRouter.Instance?.RaiseSequenceStarted(
-            new SequenceStartedEvent(runtime.Context.SessionId, run.Value.SequenceId, DateTime.UtcNow));
         return true;
     }
 
@@ -596,28 +584,14 @@ public sealed class EventRuntimeController
         {
             foreach (var step in run.Steps.Where(s => !s.Executed && runtime.ElapsedSeconds >= s.DueElapsedSeconds).ToList())
             {
-                // Publish step started event
-                ProjectMEventRouter.Instance?.RaiseSequenceStepStarted(
-                    new SequenceStepStartedEvent(runtime.Context.SessionId, run.SequenceId, step.StepIndex, step.StepLabel));
-                
                 step.Executed = true;
                 var result = _executor.Execute(step.Action, context);
-                
-                // Publish step completed event
-                ProjectMEventRouter.Instance?.RaiseSequenceStepCompleted(
-                    new SequenceStepCompletedEvent(runtime.Context.SessionId, run.SequenceId, step.StepIndex, result.Success));
-                
                 if (!result.Success)
                     BattleLuckPlugin.LogWarning($"[EventRuntime] custom sequence '{run.SequenceId}' step '{step.StepId}' failed: {result.Error}");
             }
 
             if (run.Complete)
-            {
-                // Publish sequence completed event
-                ProjectMEventRouter.Instance?.RaiseSequenceCompleted(
-                    new SequenceCompletedEvent(runtime.Context.SessionId, run.SequenceId));
                 runtime.CustomSequenceRuns.Remove(run);
-            }
         }
     }
 

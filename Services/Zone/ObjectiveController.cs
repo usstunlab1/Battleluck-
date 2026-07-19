@@ -33,7 +33,7 @@ public sealed class ObjectiveController
         obj.CapturedAtUtc = DateTime.UtcNow;
 
         ctx.Broadcast?.Invoke($"🏴 Objective '{objectiveId}' captured by Team {teamId}!");
-        GameEvents.RaiseObjectiveCaptured(new ObjectiveCapturedEvent
+        GameEvents.OnObjectiveCaptured?.Invoke(new ObjectiveCapturedEvent
         {
             SessionId = ctx.SessionId,
             ObjectiveId = objectiveId,

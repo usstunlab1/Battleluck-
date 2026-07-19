@@ -5,7 +5,7 @@ namespace BattleLuck.Services.Runtime
     /// <summary>
     /// Real implementation of flow validation service.
     /// </summary>
-    public class DefaultFlowValidationService : IFlowValidationService
+    public class FlowValidationServiceReal : IFlowValidationService
     {
         public Task<FlowValidationResultDto> ValidateFlowAsync(string flowName, string modeId)
         {

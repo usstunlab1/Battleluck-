@@ -1,234 +1,245 @@
 # User Guide
 
-BattleLuck is a V Rising dedicated-server plugin with action-driven events, rollback-safe player state, NPC/boss control, and optional local AI assistance.
+BattleLuck is a V Rising dedicated-server plugin with action-driven events, native ECS-backed rollback snapshots, and optional local LLM assistance. LLM requests run asynchronously; approved game-state changes are dispatched back to the server main thread.
+
+## Installing BattleLuck
+
+### Prerequisites
+
+- V Rising dedicated server
+- [BepInEx 5/6](https://thunderstore.io/c/v-rising/p/BepInEx/BepInExPack_V_Rising/) installed on the server
+- .NET 6 runtime (included with modern Windows)
+
+### Installation Steps
+
+1. **Install BepInEx** using the Thunderstore package or manual installation guide
+2. **Build BattleLuck:**
+   ```powershell
+   dotnet build BattleLuck.sln -c Release
+   ```
+3. **Copy files to server:**
+   - Copy `bin/Release/net6.0/BattleLuck.dll` to `<VRisingServer>/BepInEx/plugins/`
+   - Copying `config/BattleLuck/` is optional when using the DLL defaults; the
+     first load extracts missing files automatically.
+4. **Restart the V Rising server**. The DLL creates
+   `<VRisingServer>/BepInEx/config/BattleLuck/` and its `tools/` subdirectory,
+   without overwriting existing server files.
+
+### Thunderstore Installation (Recommended)
+
+Players using Thunderstore can install BattleLuck directly:
+
+1. Open Thunderstore mod manager
+2. Search for "BattleLuck"
+3. Install with dependencies (BepInEx, VampireCommandFramework)
 
 ## Configuration
 
+### AI for Server Owners and Players
+
+BattleLuck's AI runs on the dedicated server, so players do not need a separate
+AI installation. The server owner configures `BepInEx/config/BattleLuck/ai_config.json`:
+
+- Local Llama/Ollama-compatible inference is the recommended private setup.
+- Cloud providers are optional and require the owner's credentials.
+- Without a reachable provider, a simple local fallback still handles basic help
+  and catalog guidance.
+- `.ai <message>` is available to players as advice-only chat.
+- Admin previews, approvals, and the server main-thread dispatcher protect live
+  event/NPC/world mutations.
+
+Use `.aistatus` to inspect provider health. Admins can reload configuration with
+`.ai.reload`. Conversation history is off by default.
+
+### Session Config
+
+Each game mode has its own configuration folder under `BepInEx/config/BattleLuck/`:
+
 ```
 BepInEx/config/BattleLuck/
-├── events/<eventId>/          # Event definitions
-│   ├── event.json             # Action phases and timers
-│   ├── zones.json             # Zone centers and radii
-│   ├── kits.json              # Equipment loadouts
-│   └── prompt.txt             # AI prompt for this event
-├── actions_catalog.json       # Action source of truth
-├── ai_config.json             # AI provider settings
-├── discord_bridge.json        # Discord integration
-├── webhook.json               # Webhook listener
-├── special_item.json          # Special item transformations
-└── schematics/                # Arena schematic configs
+├── bloodbath/
+│   ├── session.json    # Flow actions for mode entry/exit
+│   ├── zones.json      # Zone definitions
+│   └── kit.json        # Equipment loadouts
+├── colosseum/
+├── siege/
+├── trials/
+├── aievent/
+├── ai_config.json      # AI assistant settings
+├── discord_bridge.json # Discord integration
+├── webhook.json        # Webhook listener
+└── special_item.json   # Special item transformations
 ```
 
-The DLL extracts defaults on first boot and never overwrites existing files.
-
 ### AI Configuration
+
+BattleLuck is **local-first**. The default profile points at a local endpoint and
+falls back to built-in guidance when that endpoint is not reachable. No hosted
+credentials are required for installation:
 
 ```json
 {
   "enabled": true,
   "provider": "llama",
   "llama_api": {
+    "enabled": true,
     "base_url": "http://127.0.0.1:11434",
     "model": "llama2:latest"
   }
 }
 ```
 
-Local Llama/Ollama is the recommended private setup. Cloud providers are optional. Without a reachable provider, a local fallback handles basic catalog guidance.
+For full LLM responses, start a local endpoint and install the configured model
+(see [LLM Guide](../LLM_GUIDE.md)), then run `.ai.reload`. To disable the AI
+surface completely, set `"enabled": false` and reload the server configuration.
+
+## Game Modes
+
+| Mode | Type | Description |
+|------|------|-------------|
+| **Bloodbath** | Free-for-all PvP | Last player standing wins |
+| **Colosseum** | Duel/ELO | Ranked 1v1 and team matches |
+| **Gauntlet** | PvE Wave | Survive increasing enemy waves |
+| **Siege** | Objective | Capture and hold objectives |
+| **Trials** | Timed PvE | Complete objectives within time limit |
+| **AI Event** | Test | Deterministic AI flow testing |
 
 ## Commands
 
-All commands use the `.` prefix in chat. `[A]` = admin-only. `.help` shows the live permission-aware list.
+`.ai` is the primary BattleLuck command. All commands use the `.` prefix, and
+`.help` shows the live permission-aware list. Event, NPC, boss, roadmap, schematic,
+and reload commands are optional admin tools and are only available when the
+corresponding feature is enabled.
 
-### AI Commands
+Process: public `.ai` chat is advice-only and allows up to four AI replies per
+interactive conversation; use `.ai end` to stop it early. Admin live changes
+follow catalog/search → preview → approval → runtime execution. `.ai history`
+shows only transient items from the last 24 hours. `.ai tasks <goal>` uses the
+catalog-backed planner and stores a proposal without executing it. Rollback
+discards pending proposals; it does not reverse an action that already executed.
+
+### Primary AI Commands
 
 | Command | Description |
 |---------|-------------|
-| `.ai <message>` | Advice-only chat; cannot mutate state (public) |
-| `.ai end` | End the 4-reply AI conversation |
-| `.ai history [items]` | Show transient AI history (last 24h) |
+| `.ai <message>` | Public advice/chat; no direct mutation |
+| `.ai end` | End the current four-reply AI conversation |
+| `.ai history [items]` | Show transient AI history from the last 24 hours |
 | `.ai tasks` | List recent planner tasks |
-| `.ai tasks <goal>` | Create a catalog-backed plan (admin, preview only) |
-| `.aistatus` | Provider/runtime status (public, read-only) |
-| `.ai catalog search <text>` | Search the verified action catalog [A] |
-| `.ai action <action>` | Preview one runtime action [A] |
-| `.ai create <eventId> [template]` | Clone an event from template [A] |
-| `.ai event deploy <id> <gist-url>` | Stage, validate, backup, register [A] |
-| `.ai event deploy <id> <gist-url> --dry-run` | Validate without writing [A] |
-| `.ai event status [id]` | Deployment status (public) |
-| `.ai event audit [id]` | Deployment audit summary [A] |
-| `.ai event review <mode>` | Review event without writing files [A] |
-| `.ai event request <change>` | Draft a validated event edit [A] |
-| `.ai event preview <id>` | Inspect a pending proposal [A] |
-| `.ai event approve <id>` | Apply an approved proposal [A] |
-| `.ai event rollback <id>` | Restore latest known-good event [A] |
-| `.ai rollback player <name> <ts>` | Restore one player snapshot [A] |
-| `.ai rollback server status` | Count online/offline snapshots [A] |
-| `.ai rollback server players confirm` | Restore all online snapshots [A] |
-| `.ai rollback server purge <id> [backup] confirm` | Delete a backup [A] |
-| `.ai.reload` | Reload AI configuration [A] |
-| `.ai.status` | Detailed provider status [A] |
-| `.aiadmin` | AI diagnostics, reload, recover, permissions [A] |
+| `.ai tasks <goal>` | Create a catalog-backed planner task (admin; preview only) |
+| `.aistatus` | Public provider/runtime status (read-only) |
+| `.ai catalog search <query>` | Search verified action catalog (admin) |
+| `.ai action <catalog action>` | Preview a runtime action (admin) |
+| `.ai create <eventId> [templateId]` | Clone an event; defaults to Bloodbath (admin) |
+| `.ai event request <change>` | Draft a validated event edit (admin) |
+| `.ai event review <mode>` | Review an event without writing files (admin) |
+| `.ai event preview <id>` | Preview a proposed edit (admin) |
+| `.ai event approve <id>` | Apply an approved edit (admin) |
+| `.ai approve [id]` | Execute an approved live action (admin) |
+| `.ai event rollback <operationId>` | Roll back a pending event proposal (admin) |
+| `.ai rollback [id]` | Discard a pending live-action proposal (admin) |
+| `.ai event deploy <eventId> <https-gist-url>` | Stage, validate, back up, and register four event files (admin) |
+| `.ai event deploy <eventId> <https-gist-url> --dry-run` | Validate without backup or registration (admin) |
+| `.ai event status [eventId]` | Read-only deployment/file status (public) |
+| `.ai event audit [eventId]` | Summarize deployment outcomes and remediation hints (admin) |
+| `.ai event rollback <eventId>` | Restore the latest known-good event deployment (admin) |
+| `.ai rollback player <name|steamId> <timestamp|runId>` | Restore one exact online snapshot (admin) |
+| `.ai rollback server players confirm` | Restore all online event snapshots; offline remain pending (admin) |
+| `.ai rollback server purge <eventId> [backupId] confirm` | Delete a BattleLuck deployment backup only (admin) |
+| `.ai.reload` | Reload AI configuration (admin) |
+| `.ai.status` | Check detailed AI provider status (admin) |
 
-### Session & Events
-
-| Command | Description |
-|---------|-------------|
-| `.toggleenter [mode]` | Enter a zone session |
-| `.toggleleave` | Leave current session and restore state |
-| `.exit` | Force exit current session |
-| `.start` | Force-start prepared session [A] |
-| `.pause` / `.resume` | Pause or resume session |
-| `.autoend` | Auto-end session |
-| `.setwinner` | Set winner and end session |
-| `.rollback <opId>` | Discard pending AI proposal [A] |
-| `.event.create <id> [template]` | Clone event from template [A] |
-| `.event.start <mode> [force=true]` | Start event [A] |
-| `.event.end <mode>` | End event sessions [A] |
-| `.event.endall` | End ALL active sessions [A] |
-| `.event.status` | Active events and player counts [A] |
-| `.event.forceenter <mode> <steamId>` | Force player into event [A] |
-| `.event.forceexit` | Force player out of event [A] |
-| `.event.clearburning` | Remove burning penalty [A] |
-
-### NPC & Boss
+### Optional Admin Commands
 
 | Command | Description |
 |---------|-------------|
-| `.npc.spawn <prefab> [count]` | Spawn controlled NPCs [A] |
-| `.npc.despawn <id\|all>` | Despawn NPCs [A] |
-| `.npc.follow <id> [target]` | NPC follow target [A] |
-| `.npc.goto <id> [x y z]` | Move NPC [A] |
-| `.npc.goto.pos <id>` | Move NPC to your position [A] |
-| `.npc.hold` / `.npc.stay` | NPC hold position [A] |
-| `.npc.patrol <id> <waypoints>` | Set patrol route [A] |
-| `.npc.guard <id> <x,y,z>` | Set guard post [A] |
-| `.npc.flee` / `.npc.wander` | Flee or wander behavior [A] |
-| `.npc.aggro <id> [target]` | NPC aggro target [A] |
-| `.npc.near [radius]` | List nearby NPCs [A] |
-| `.npc.status` | NPC control status [A] |
-| `.npc.buffs` / `.npc.components` | Inspect NPC [A] |
-| `.npc.rename` / `.npc.team` / `.npc.faction` / `.npc.speed` | Configure NPC [A] |
-| `.boss.spawn <prefab> [id]` | Spawn controlled boss [A] |
-| `.boss.list` | List controlled bosses [A] |
-| `.boss.despawn` / `.boss.despawn_all` | Despawn boss(es) [A] |
-| `.boss.follow_target` / `.boss.clear_follow` | Boss follow control [A] |
-| `.boss.goto` / `.boss.goto.pos` / `.boss.return_home` | Boss movement [A] |
+| `.reload` | Reload configuration |
+| `.event.create <eventId> [templateId]` | Clone Bloodbath (or another event) into a custom event |
+| `.event.start <mode> [force=true]` | Start a game mode; high-load windows require explicit force |
+| `.event.end <mode>` | End a game mode |
+| `.event.status` | Show active events and player counts |
+| `.modelist` | List registered game modes |
+| `.bstatus` | Show live BattleLuck status |
+| `.roadmap.status` | Show roadmap milestones |
+| `.npc.near [radius] [limit]` | List nearby controlled NPCs |
+| `.npc.spawn <prefab> [count]` | Spawn controlled NPCs |
+| `.npc.follow <npcId> [target]` | Make an NPC follow a target |
+| `.npc.goto <npcId> [x y z]` | Move a controlled NPC |
+| `.npc.despawn <npcId\|all>` | Despawn controlled NPCs |
+| `.swapteam.ai [options]` | Balance teams and announce with AI; NPC AI coming soon (admin) |
+| `.schematic.list` | List loaded schematics |
 
-### Player & Combat
+### Event creation safety and recovery
 
-| Command | Description |
-|---------|-------------|
-| `.heal` | Heal to full [A] |
-| `.blood <type> [quality]` | Set blood type [A] |
-| `.level.max` | Set max level [A] |
-| `.stun [duration]` | Stun player [A] |
-| `.pvp.enable` / `.pvp.disable` | Toggle PvP [A] |
-| `.death.prevent` / `.death.allow` | Death prevention [A] |
-| `.revive.grant <lives>` / `.revive.reset` | Manage revive lives [A] |
-| `.swapteam [closest\|balance]` | Balance teams [A] |
-| `.swapteam.ai [options]` | Balance + AI announce [A] |
-| `.kick` | Kick player [A] |
-| `.tp` / `.tp.dev` / `.tp.zone` | Teleport [A] |
+`.event.create <eventId> [templateId]` creates and registers editable files without
+adding C# code or restarting the server. The next `.event.start` executes those
+files, so malformed JSON, invalid prefabs/actions, or unsafe native ECS operations
+can still crash or restart the dedicated server. Back up the server, run
+`.ai event review <eventId>`, and test in a private arena first.
 
-### Kit & Inventory
+#### AI recovery and safety protocol
 
-| Command | Description |
-|---------|-------------|
-| `.kit <kitId>` | Apply kit loadout [A] |
-| `.kit.weapons` / `.kit.armor` / `.kit.clear` | Kit variants [A] |
-| `.equip.restrict` / `.equip.unrestrict` | Gear restrictions [A] |
-| `.ability.slot <slot> <prefab>` | Set ability slot [A] |
-| `.pull` / `.stash` / `.sort` / `.salvage` | Inventory ops [A] |
-| `.craftpull` / `.emptytrash` / `.autotrash` | Inventory ops [A] |
+While the process is alive, BattleLuck records AI operation/approval events in
+`BepInEx/config/BattleLuck/ai_operations.log`, and the AI can recommend a safer
+alternative when a request fails.
+The one-day `.ai history` and `.ai tasks` views are in-memory and are not crash
+durable. BattleLuck persists each player's pre-event snapshot in
+`BepInEx/data/BattleLuck/snapshots/<steamId>.json`; normal exit and explicit restore
+use it. A hard crash may terminate before cleanup, so inspect the logs and restore
+affected players after restart before retrying. Automatic rollback on an abrupt
+process termination is not guaranteed. Full V Rising world-save restore remains
+the dedicated server host's SaveFileManager/backup operation and is not performed
+by the plugin.
 
-### Buffs & Sequences
+Developer-only AI tools include `.ai.sequence.gather`, `.ai.sequence.create`,
+`.ai.sequence.preview`, and `.ai.sequence.execute`. Sequence steps can use
+`wait:<seconds>` and `tick:<event-second>` markers and are scheduled by the
+server event tick after catalog validation.
+
+### Optional Player Event Commands
 
 | Command | Description |
 |---------|-------------|
-| `.buff.apply <prefab> [duration]` | Apply buff [A] |
-| `.buff.remove <prefab>` / `.buff.clear` | Remove buffs [A] |
-| `.zone.buff.apply` / `.zone.buff.remove` | Zone-wide buffs [A] |
-| `.sequence.play <prefab> <x> <y> <z>` | Play VFX sequence [A] |
-| `.sequence.stop <prefab>` | Stop sequence [A] |
-| `.action <actionString>` | Run any action [A] |
-| `.actions` / `.actions.status` | List actions [A] |
+| `.score` | Show current score |
+| `.elo` | Show ELO rating |
+| `.exit` | Exit current mode |
 
-### Schematics & Building
+## Discord Integration
 
-| Command | Description |
-|---------|-------------|
-| `.schematic.load <name>` | Load schematic at position [A] |
-| `.schematic.loadat <name> <x y z>` | Load at coordinates [A] |
-| `.schematic.capture <name>` | Capture nearby design [A] |
-| `.schematic.list` / `.schematic.info` | Inspect schematics [A] |
-| `.schematic.clear` / `.schematic.clear.radius` | Clear schematics [A] |
-| `.build.search <filter>` | Search build pieces [A] |
-| `.findtiles` / `.grid` | Tile and grid tools [A] |
-| Shortcuts: `.sc.i` `.sc.l` `.sc.la` `.sc.lp` | Schematic aliases [A] |
+Enable in `discord_bridge.json`:
 
-### Castle Policy
-
-| Command | Description |
-|---------|-------------|
-| `.castlepolicy` | Manage castle policies [A] |
-| `.castlepolicy.target <id> <kind>` | Bind policy to object [A] |
-| `.castlepolicy.public` / `.private` | Set access level |
-| `.castlepolicy.allow` / `.deny` | Player access [A] |
-| `.castlepolicy.territory.apply <level> confirm` | Territory-wide apply [A] |
-
-### Other Commands
-
-| Command | Description |
-|---------|-------------|
-| `.score` / `.score.add` / `.score.reset` | Scoreboard [A] |
-| `.elo` | ELO ratings |
-| `.modelist` / `.modeinfo` / `.modepolicy` | Mode info [A] |
-| `.teamcreate` / `.teaminvite` / `.teamaccept` / `.teamleave` / `.teamlist` | Teams |
-| `.merchant.run` / `.merchant.list` / `.merchant.reload` | Merchant [A] |
-| `.activityclan` (`.ac`) | View clan tasks |
-| `.snapshot.save` / `.snapshot.restore` | State snapshots [A] |
-| `.bstatus` / `.director` | Runtime status views [A] |
-| `.zoneinfo` | Zone stats [A] |
-| `.reload` | Reload all config [A] |
-| `.help` | Show available commands |
-| `.mutatorenable` / `.mutatordisable` / `.mutatorlist` / `.mutatorclear` | Mutators [A] |
-| `.roadmap.show` / `.roadmap.status` / `.roadmap.prompt` | Roadmap [A] |
-| `.exportmods` / `.exportplugins` / `.exportprefabs` | Data export [A] |
-
-## Event Creation
-
-Admins can create a complete editable event without C# code:
-
-```text
-.event.create shadow_hunt bloodbath
+```json
+{
+  "enabled": true,
+  "port": 8080,
+  "channel_id": "your-discord-channel-id"
+}
 ```
 
-This creates `config/BattleLuck/events/shadow_hunt.json` with supporting files in `events/shadow_hunt/` (`zones.json`, `kits.json`, and `prompt.txt`). Customize the files, then:
-
-```text
-.event.start shadow_hunt
-```
-
-### Safety
-
-- Back up the server before starting custom events.
-- Run `.ai event review <eventId>` to validate before inviting players.
-- Invalid JSON, prefabs, or actions may crash the server.
-- Test in a private arena first.
-
-### AI Recovery
-
-- AI operations are logged to `ai_operations.log`.
-- Player snapshots are saved to `data/BattleLuck/snapshots/<steamId>.json`.
-- Normal exit restores automatically; hard crashes may require manual restore.
-- Use `.ai rollback player <name> <timestamp>` after a crash.
+The bridge supports slash commands and event relay to Discord channels.
 
 ## Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| Mod doesn't load | Check `BepInEx/LogOutput.log`; verify DLL is in `plugins/` |
-| Commands not registering | Verify VCF dependency; check console for load errors |
-| AI not responding | Start local endpoint; check `ai_config.json`; run `.ai.status` |
-| Server crash after event | Restore from backup; check event JSON for invalid prefabs/actions |
+### Mod doesn't load
+
+- Check `BepInEx/LogOutput.log` for errors
+- Verify `BattleLuck.dll` is in `BepInEx/plugins/`
+- Ensure VCF dependency is installed and loads before BattleLuck
+
+### Commands not registering
+
+- Verify BepInEx version compatibility
+- Check server console for plugin load errors
+- Ensure `.reload` runs without errors
+
+### AI not responding
+
+- Start local LLM endpoint with `scripts/start_vllm.ps1`
+- Check `ai_config.json` base_url and model settings
+- Run `.ai.status` to verify connection
+
+## Support
+
+- **Discord**: [V Rising Mod Community](https://vrisingmods.com/discord)
+- **Wiki**: [V Rising Mod Wiki](https://wiki.vrisingmods.com/)
+- **Issues**: [GitHub Issues](https://github.com/usstunlab1/Battleluck-/issues)

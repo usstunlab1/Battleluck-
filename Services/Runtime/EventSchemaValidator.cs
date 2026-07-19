@@ -12,11 +12,11 @@ public static class EventSchemaValidator
     public static EventSchemaValidationResult Validate(IReadOnlyDictionary<string, string> files)
     {
         var result = new EventSchemaValidationResult();
-        ValidateJson(files, "event.json", result, root =>
+        ValidateJson(files, "flow.json", result, root =>
         {
-            RequireObject(root, "metadata", "event.json", result);
-            if (TryRequireArray(root, "zones", "event.json", result, out var zones))
-                ValidateZoneObjects(zones, "center", "event.json", result);
+            RequireObject(root, "metadata", "flow.json", result);
+            if (TryRequireArray(root, "zones", "flow.json", result, out var zones))
+                ValidateZoneObjects(zones, "center", "flow.json", result);
         });
         ValidateJson(files, "zones.json", result, root =>
         {

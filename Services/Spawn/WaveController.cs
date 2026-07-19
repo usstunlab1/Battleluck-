@@ -42,7 +42,7 @@ public sealed class WaveController
         IsWaveActive = true;
 
         ctx.Broadcast?.Invoke($"⚔️ Wave {CurrentWave}/{TotalWaves} — {wave.EnemyCount} enemies incoming!");
-        GameEvents.RaiseWaveStarted(new WaveStartedEvent
+        GameEvents.OnWaveStarted?.Invoke(new WaveStartedEvent
         {
             SessionId = ctx.SessionId,
             WaveNumber = CurrentWave,
@@ -62,7 +62,7 @@ public sealed class WaveController
         {
             IsWaveActive = false;
             ctx.Broadcast?.Invoke($"✅ Wave {CurrentWave} cleared!");
-            GameEvents.RaiseWaveCleared(new WaveClearedEvent
+            GameEvents.OnWaveCleared?.Invoke(new WaveClearedEvent
             {
                 SessionId = ctx.SessionId,
                 WaveNumber = CurrentWave,

@@ -21,7 +21,7 @@ The current record uses these exact camelCase fields:
 | `command` | `deploy`, `deploy_dry_run`, `status`, `rollback`, `backup_purge`, `player_rollback`, `server_player_rollback`, or `event.start`. |
 | `eventId` | Normalized event id, `all` for aggregate status, or `invalid` when input was rejected. |
 | `gist` | Source URL for a deploy, or the backup source label for rollback. |
-| `files` | Presence map for `event.json`, `zones.json`, `kits.json`, and `prompt.txt`. |
+| `files` | Presence map for `flow.json`, `zones.json`, `kits.json`, and `prompt.txt`. |
 | `fileHashes` | Lowercase SHA-256 hash per file that was readable after the operation. |
 | `validation` | `{ "json": bool, "schema": bool, "ids": bool }`. |
 | `server` | `{ "registerOk": bool, "startOk": bool, "error": string|null }`. Deploy and rollback do not start an event, so `startOk` is normally false. |

@@ -92,7 +92,7 @@ public sealed class ShrinkZoneController
             if (newPct / 25 > oldPct / 25)
             {
                 ctx.Broadcast?.Invoke($"🔴 Zone shrinking! Radius: {CurrentRadius:F0}m");
-                GameEvents.RaiseZoneShrink(new ZoneShrinkEvent
+                GameEvents.OnZoneShrink?.Invoke(new ZoneShrinkEvent
                 {
                     SessionId = ctx.SessionId,
                     OldRadius = oldRadius,
@@ -147,7 +147,7 @@ public sealed class ShrinkZoneController
             // Shrink radius per waypoint
             CurrentRadius = Math.Max(_waypointMinRadius, CurrentRadius - _radiusShrinkPerWaypoint);
 
-            GameEvents.RaiseRealityChanged(new RealityStateChanged
+            GameEvents.OnRealityChanged?.Invoke(new RealityStateChanged
             {
                 SessionId = sessionId,
                 State = "waypoint_advance",

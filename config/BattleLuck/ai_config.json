@@ -6,8 +6,8 @@
   "llama_api": {
     "enabled": true,
     "api_key": "",
-    "base_url": "http://127.0.0.1:11434",
-    "model": "llama3.2:3b",
+    "base_url": "http://localhost:11434",
+    "model": "llama2:latest",
     "max_requests_per_second": 5,
     "temperature": 0.5,
     "max_tokens": 512,

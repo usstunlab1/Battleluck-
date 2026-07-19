@@ -20,15 +20,9 @@ public sealed class LlamaAIService : BaseAiService
     readonly string _model;
     private DateTime _lastHealthCheckUtc = DateTime.MinValue;
     private bool _healthCheckPending = true;
-    private int _consecutiveServerErrors;
     private const int HealthCheckIntervalSeconds = 10;
-    private const int CrashedBackoffSeconds = 120;
-    private const int MaxConsecutiveServerErrors = 3;
 
     public override bool IsEnabled => !_disposed && !_authFailed && HasUsableConfiguration(_apiKey, _baseUrl);
-    /// <summary>True when the llama-server process has crashed repeatedly (e.g. CUDA toolchain mismatch). Requests are skipped until the back-off expires.</summary>
-    public bool IsCrashed => _consecutiveServerErrors >= MaxConsecutiveServerErrors &&
-                             DateTime.UtcNow - _lastHealthCheckUtc < TimeSpan.FromSeconds(CrashedBackoffSeconds);
     public string Model => _model;
     public string BaseUrl => _baseUrl;
     public string ApiBaseUrl => _apiBaseUrl;
@@ -37,7 +31,7 @@ public sealed class LlamaAIService : BaseAiService
         : base(maxRequestsPerSecond, timeoutSeconds)
     {
         _apiKey = apiKey ?? string.Empty;
-        _baseUrl = string.IsNullOrWhiteSpace(baseUrl) ? "http://127.0.0.1:11434" : baseUrl.TrimEnd('/');
+        _baseUrl = string.IsNullOrWhiteSpace(baseUrl) ? "http://localhost:11434" : baseUrl.TrimEnd('/');
         _apiBaseUrl = NormalizeApiBaseUrl(_baseUrl);
         _model = string.IsNullOrWhiteSpace(model) ? "llama2" : model.Trim();
         if (HasUsableApiKey(_apiKey))
@@ -133,10 +127,6 @@ public sealed class LlamaAIService : BaseAiService
                 }
 
                 HandleHttpError("Llama API", response.StatusCode, responseJson);
-                // Server-side crash (e.g. CUDA toolchain mismatch) — back off before next attempt
-                _consecutiveServerErrors++;
-                _healthCheckPending = true;
-                _lastHealthCheckUtc = DateTime.UtcNow;
                 return null;
             }
 
@@ -153,7 +143,6 @@ public sealed class LlamaAIService : BaseAiService
                 return null;
             }
 
-            _consecutiveServerErrors = 0;
             RecordSuccess();
             return text;
         }

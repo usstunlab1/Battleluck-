@@ -843,6 +843,12 @@ public static class PlayerCommands
             ctx.Reply(line);
     }
 
+    [Command("sessiondirector", description: "Alias for .director.", adminOnly: true)]
+    public static void SessionDirectorStatus(ChatCommandContext ctx, string modeId = "")
+    {
+        DirectorStatus(ctx, modeId);
+    }
+
     [Command("eventstatus", description: "Show unified event runtime status.", adminOnly: true)]
     public static void EventStatus(ChatCommandContext ctx, string modeId = "")
     {
@@ -1055,7 +1061,7 @@ public static class PlayerCommands
 
             var world = ctx.GetSenderCharacterEntity().GetPosition();
             var grid = WorldGridCoordinate.FromWorld(world);
-            ctx.Reply($"Grid {grid} (nearest {grid.NearestPoint}); world X={world.x:F1}, Y={world.y:F1}, Z={world.z:F1}");
+            ctx.Reply($"Grid {grid} (nearest {grid.NearestCell}); world X={world.x:F1}, Y={world.y:F1}, Z={world.z:F1}");
             return;
         }
 
@@ -1065,7 +1071,7 @@ public static class PlayerCommands
             return;
         }
 
-        var position = coordinate.ToWorldPoint(height);
+        var position = coordinate.ToWorld(height);
         ctx.Reply($"Grid {coordinate} = world X={position.X:F1}, Y={position.Y:F1}, Z={position.Z:F1}");
     }
 
@@ -1716,7 +1722,7 @@ public static class PlayerCommands
                 return OperationResult.Fail("No active session found for live action.");
 
             var standaloneState = new PlayerStateController();
-            return FlowActionExecutor.Shared.ExecuteViaRuntime(actionString, new FlowActionContext
+            return new FlowActionExecutor(standaloneState, BattleLuckPlugin.GameModes).ExecuteViaRuntime(actionString, new FlowActionContext
             {
                 PlayerCharacter = entity,
                 PlayerState = standaloneState,
@@ -1725,7 +1731,7 @@ public static class PlayerCommands
         }
 
         var playerState = new PlayerStateController();
-        var executor = FlowActionExecutor.Shared;
+        var executor = new FlowActionExecutor(playerState, BattleLuckPlugin.GameModes);
         var zone = sessionForAction.Config.Zones.Zones.FirstOrDefault(z => z.Hash == sessionForAction.Context.ZoneHash);
         var context = new FlowActionContext
         {
@@ -2610,7 +2616,7 @@ public static class PlayerCommands
         }
 
         var playerState = new PlayerStateController();
-        var executor = FlowActionExecutor.Shared;
+        var executor = new FlowActionExecutor(playerState, BattleLuckPlugin.GameModes);
         var zone = session.Config.Zones.Zones.FirstOrDefault(z => z.Hash == session.Context.ZoneHash)
                    ?? new ZoneDefinition { Hash = session.Context.ZoneHash };
         var context = new FlowActionContext

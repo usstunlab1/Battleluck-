@@ -266,6 +266,20 @@ public static class ActionsConsoleCommands
         RunAndReply(ctx, $"mode.end:modeId={modeId}", target);
     }
 
+    [Command("warevent_start", description: "Legacy war event alias for mode.start. Usage: .warevent_start <modeId>", adminOnly: true)]
+    public static void WarEventStart(ChatCommandContext ctx, string modeId)
+    {
+        if (!TryResolveTarget(ctx, "self", out var target)) return;
+        RunAndReply(ctx, $"warevent_start:modeId={modeId}", target);
+    }
+
+    [Command("warevent_end", description: "Legacy war event alias for mode.end. Usage: .warevent_end <modeId>", adminOnly: true)]
+    public static void WarEventEnd(ChatCommandContext ctx, string modeId)
+    {
+        if (!TryResolveTarget(ctx, "self", out var target)) return;
+        RunAndReply(ctx, $"warevent_end:modeId={modeId}", target);
+    }
+
     // ── Visual / Sequence ─────────────────────────────────────────────────────
 
     [Command("sequence.play", description: "Play a VFX sequence. Usage: .sequence.play <sequencePrefab> <x> <y> <z> [duration=-1]", adminOnly: true)]
@@ -372,6 +386,29 @@ public static class ActionsConsoleCommands
         RunAndReply(ctx, $"notify:message={full}|type={type}", target);
     }
 
+    // ── AI / Boss ─────────────────────────────────────────────────────────────
+
+    [Command("ai.boss.aggro", description: "Set boss aggro target. Usage: .ai.boss.aggro <prefab> [aggroRange=40] [leashRange=80] [player=self]", adminOnly: true)]
+    public static void BossAggro(ChatCommandContext ctx, string prefab, float aggroRange = 40f, float leashRange = 80f, string player = "self")
+    {
+        if (!TryResolveTarget(ctx, player, out var target)) return;
+        RunAndReply(ctx, $"npc.aggro:prefab={prefab}|aggroRange={F(aggroRange)}|leashRange={F(leashRange)}", target);
+    }
+
+    [Command("ai.boss.deaggro", description: "De-aggro boss. Usage: .ai.boss.deaggro <prefab>", adminOnly: true)]
+    public static void BossDeaggro(ChatCommandContext ctx, string prefab)
+    {
+        if (!TryResolveTarget(ctx, "self", out var target)) return;
+        RunAndReply(ctx, $"npc.hold:prefab={prefab}", target);
+    }
+
+    [Command("ai.behavior", description: "Set AI behavior. Usage: .ai.behavior <prefab> <behavior> [radius=40]", adminOnly: true)]
+    public static void SetBehavior(ChatCommandContext ctx, string prefab, string behavior, float radius = 40f)
+    {
+        if (!TryResolveTarget(ctx, "self", out var target)) return;
+        RunAndReply(ctx, $"npc.{behavior}:prefab={prefab}|radius={F(radius)}", target);
+    }
+
     // ── Zone ──────────────────────────────────────────────────────────────────
 
     // ── Mount ─────────────────────────────────────────────────────────────────
@@ -432,7 +469,7 @@ public static class ActionsConsoleCommands
             GameContext = null
         };
 
-        var executor = FlowActionExecutor.Shared;
+        var executor = new FlowActionExecutor(new PlayerStateController());
         var result = executor.ExecuteViaRuntime(actionString, context);
 
         ctx.Reply(result.Success

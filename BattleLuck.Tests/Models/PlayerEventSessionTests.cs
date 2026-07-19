@@ -42,16 +42,13 @@ public sealed class PlayerEventSessionTests
         participant.DeathCount.Should().Be(1);
     }
 
-    static PlayerEventSession ActiveParticipant()
+    static PlayerEventSession ActiveParticipant() => new()
     {
-        var p = new PlayerEventSession
-        {
-            SteamId = 76561198000000000,
-            SessionId = "session-1",
-            ModeId = "bloodbath",
-            ZoneHash = 101,
-        };
-        p.Activate();
-        return p;
-    }
+        SteamId = 76561198000000000,
+        SessionId = "session-1",
+        ModeId = "bloodbath",
+        ZoneHash = 101,
+        State = PlayerSessionState.Active,
+        ActivatedAtUtc = DateTime.UtcNow
+    };
 }

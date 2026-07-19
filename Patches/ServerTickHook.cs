@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using HarmonyLib;
 using ProjectM;
 
@@ -12,11 +11,7 @@ using ProjectM;
 [HarmonyPatch]
 internal static class ServerTickHook
 {
-    static readonly Stopwatch Stopwatch = Stopwatch.StartNew();
-    static double _lastTickSeconds;
-    static double _nextInitRetryAtSeconds;
-    const double InitRetryIntervalSeconds = 5.0;
-    const float MaxDeltaSeconds = 0.5f;
+    static DateTime _lastTick = DateTime.UtcNow;
 
     [HarmonyPatch(typeof(BuffSystem_Spawn_Server), nameof(BuffSystem_Spawn_Server.OnUpdate))]
     [HarmonyPostfix]
@@ -24,58 +19,38 @@ internal static class ServerTickHook
     {
         try
         {
-            // Retry initialization at a controlled interval, not every frame.
+            // Retry initialization every tick until it succeeds.
+            // This handles cases where the InitializationPatch target method
+            // does not exist in the current game version, or the server world
+            // is not yet ready when the patch first fires.
             if (!BattleLuckPlugin.IsInitialized)
             {
-                var nowSec = Stopwatch.Elapsed.TotalSeconds;
-                if (nowSec >= _nextInitRetryAtSeconds)
+                try
                 {
-                    try
-                    {
-                        Core.InitializeAfterLoaded();
-                    }
-                    catch (Exception initEx)
-                    {
-                        BattleLuckPlugin.LogWarning($"[BattleLuck] Init attempt failed (will retry in {InitRetryIntervalSeconds:F0}s): {initEx.ToString()}");
-                    }
-
-                    if (!BattleLuckPlugin.IsInitialized)
-                    {
-                        _nextInitRetryAtSeconds = nowSec + InitRetryIntervalSeconds;
-                        return;
-                    }
-
-                    // Initialization succeeded — reset timing baseline so the
-                    // first real tick does not report a multi-second delta.
-                    _lastTickSeconds = Stopwatch.Elapsed.TotalSeconds;
+                    Core.InitializeAfterLoaded();
                 }
-                else
+                catch (Exception initEx)
                 {
+                    BattleLuckPlugin.LogWarning($"[BattleLuck] Init attempt failed (will retry): {initEx.Message}");
+                }
+                if (!BattleLuckPlugin.IsInitialized)
                     return;
-                }
             }
 
-            var elapsedSeconds = Stopwatch.Elapsed.TotalSeconds;
-            var rawDelta = elapsedSeconds - _lastTickSeconds;
-            _lastTickSeconds = elapsedSeconds;
+            var now = DateTime.UtcNow;
+            float delta = (float)(now - _lastTick).TotalSeconds;
+            _lastTick = now;
 
-            // Clamp to avoid huge deltas on first tick or lag spikes,
-            // but preserve meaningful pauses up to the cap.
-            float delta = (float)Math.Min(rawDelta, MaxDeltaSeconds);
-            if (delta < 0f) delta = 0f;
-
-            var nowUtc = DateTime.UtcNow;
-
-            // Process runtime first, then publish tick telemetry so the event
-            // describes a tick that BattleLuck actually processed.
-            BattleLuckPlugin.ServerTick(delta);
+            // Clamp to avoid huge deltas on first tick or lag spikes
+            if (delta > 2f) delta = 0.016f;
 
             ProjectMEventRouter.Instance?.RaiseBattleLuckServerTick(
-                new BattleLuckServerTickEvent(delta, nowUtc));
+                new BattleLuckServerTickEvent(delta, now));
+            BattleLuckPlugin.ServerTick(delta);
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[BattleLuck] Tick error: {ex.ToString()}");
+            BattleLuckPlugin.LogWarning($"[BattleLuck] Tick error: {ex.Message}");
         }
     }
 }

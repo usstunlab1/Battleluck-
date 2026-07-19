@@ -7,7 +7,7 @@ namespace BattleLuck.Models;
 //
 // BattleLuck-native domain types for the castle policy sub-system. These types
 // are intentionally separate from the existing "flow" sub-system (FlowController,
-// FlowActionExecutor, event.json) so that:
+// FlowActionExecutor, flow.json) so that:
 //   - Event lifecycle actions remain clearly "flow" objects.
 //   - Castle object access permissions remain clearly "policy" objects.
 //

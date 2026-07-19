@@ -6,15 +6,6 @@
         "--readonly",
         "--allow-usage"
       ]
-    },
-    "BattleLuck Actions": {
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "BattleLuck.csproj"
-      ],
-      "description": "BattleLuck action execution and event management"
     }
   }
 }

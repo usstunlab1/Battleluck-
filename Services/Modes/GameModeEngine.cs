@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BattleLuck.Models;
+using BattleLuck.ECS.Actions.Components;
 using BattleLuck.Services;
+using Stunlock.Core;
+using Unity.Entities;
 using Unity.Mathematics;
 
 namespace BattleLuck.Services.Modes;
@@ -20,7 +23,7 @@ public sealed class GameModeEngine : GameModeBase
         if (points != 0)
             ctx.Scores.AddPlayerScore(steamId, points);
 
-        GameEvents.RaisePlayerScored(new PlayerScoredEvent
+        GameEvents.OnPlayerScored?.Invoke(new PlayerScoredEvent
         {
             SessionId = ctx.SessionId,
             SteamId = steamId,
@@ -30,7 +33,7 @@ public sealed class GameModeEngine : GameModeBase
             Action = action
         });
 
-        GameEvents.RaiseActionPerformed(new ActionPerformedEvent
+        GameEvents.OnActionPerformed?.Invoke(new ActionPerformedEvent
         {
             SessionId = ctx.SessionId,
             SteamId = steamId,
@@ -55,8 +58,6 @@ public sealed class GameModeEngine : GameModeBase
     private readonly ObjectiveController _objectives = new();
 
     private int _initialPlayerCount;
-    // TODO: Replace _lives with PlayerEventSession.DeathCount once SessionController
-    //       is the single source of truth for elimination tracking.
     private readonly Dictionary<ulong, int> _lives = new();
     private readonly Dictionary<ulong, int> _playerKills = new();
     private float3 _center;
@@ -145,7 +146,7 @@ public sealed class GameModeEngine : GameModeBase
         }
 
         ctx.Broadcast?.Invoke($"{DisplayName.ToUpper()} — Fight! {(_livesPerPlayer > 1 ? $"{_livesPerPlayer} lives each. " : "")}Time: {_timer.FormatRemaining()}");
-        GameEvents.RaiseModeStarted(new ModeStartedEvent
+        GameEvents.OnModeStarted?.Invoke(new ModeStartedEvent
         {
             SessionId = ctx.SessionId,
             ModeId = ModeId,
@@ -185,7 +186,7 @@ public sealed class GameModeEngine : GameModeBase
         ctx.Players.Remove(steamId);
         _lives.Remove(steamId);
 
-        GameEvents.RaisePlayerLeft(new PlayerLeftEvent
+        GameEvents.OnPlayerLeft?.Invoke(new PlayerLeftEvent
         {
             SessionId = ctx.SessionId,
             SteamId = steamId,
@@ -229,7 +230,7 @@ public sealed class GameModeEngine : GameModeBase
 
     public void OnRoundEnd(GameModeContext ctx, int roundNumber)
     {
-        GameEvents.RaiseRoundEnded(new RoundEndedEvent
+        GameEvents.OnRoundEnded?.Invoke(new RoundEndedEvent
         {
             SessionId = ctx.SessionId,
             ModeId = ModeId,
@@ -273,7 +274,7 @@ public sealed class GameModeEngine : GameModeBase
         var winnerName = topEntity.Exists() ? EntityExtensions.FormatPlayer(topPlayer, topEntity) : topPlayer.ToString();
 
         ctx.Broadcast?.Invoke($"{DisplayName} over! Winner: {winnerName}");
-        GameEvents.RaiseModeEnded(new ModeEndedEvent
+        GameEvents.OnModeEnded?.Invoke(new ModeEndedEvent
         {
             SessionId = ctx.SessionId,
             ModeId = ModeId,
@@ -299,6 +300,89 @@ public sealed class GameModeEngine : GameModeBase
     }
 
     public bool RecordEnemyKill(GameModeContext ctx, ulong killerSteamId, int points = 0) => false;
+
+    internal void CreateEcsActions(EntityManager entityManager, GameModeContext ctx)
+    {
+        var flow = _flowEnter;
+        var playerEntities = GetPlayerEntities(ctx);
+
+        foreach (var flowName in flow.ExecutionOrder)
+        {
+            if (!flow.Flows.TryGetValue(flowName, out var flowDef)) continue;
+
+            foreach (var actionStr in flowDef.Actions)
+            {
+                foreach (var targetEntity in playerEntities)
+                {
+                    CreateEcsActionEntity(entityManager, actionStr, ctx, targetEntity);
+                }
+            }
+        }
+    }
+
+    private void CreateEcsActionEntity(EntityManager em, string actionString, GameModeContext ctx, Entity targetEntity)
+    {
+        var parts = actionString.Split(':', 2);
+        var actionName = parts[0].Trim();
+
+        switch (actionName)
+        {
+            case "kit.apply":
+                var kitId = ParseParameter(actionString, "kitId", _rules.ModeId ?? ModeId);
+                em.AddComponentData(targetEntity, new KitApplyAction
+                {
+                    TargetEntity = targetEntity,
+                    KitId = new FixedString64Bytes(kitId),
+                    SessionEntity = Entity.Null
+                });
+                break;
+
+            case "teleport":
+                em.AddComponentData(targetEntity, new TeleportPlayerAction
+                {
+                    TargetEntity = targetEntity,
+                    Position = _center,
+                    TargetZoneHash = ctx.ZoneHash,
+                    SessionEntity = Entity.Null
+                });
+                break;
+
+            case "notification":
+            case "announce":
+            case "send_message":
+                var message = ParseParameter(actionString, "message", "");
+                em.AddComponentData(targetEntity, new NotificationAction
+                {
+                    TargetEntity = targetEntity,
+                    Message = new FixedString512Bytes(message),
+                    Type = new FixedString64Bytes("info"),
+                    SessionEntity = Entity.Null
+                });
+                break;
+
+            case "shrink.zone":
+                em.AddComponentData(targetEntity, new ShrinkZoneAction
+                {
+                    TargetEntity = targetEntity,
+                    ZoneHash = ctx.ZoneHash,
+                    TargetRadius = float.Parse(ParseParameter(actionString, "targetRadius", "10")),
+                    ShrinkRate = float.Parse(ParseParameter(actionString, "shrinkRate", "0.5")),
+                    SessionEntity = Entity.Null
+                });
+                break;
+
+            case "score.add":
+                var points = int.Parse(ParseParameter(actionString, "points", "1"));
+                em.AddComponentData(targetEntity, new ScoreAddAction
+                {
+                    TargetEntity = targetEntity,
+                    Points = points,
+                    Reason = new FixedString128Bytes(ParseParameter(actionString, "reason", "action")),
+                    SessionEntity = Entity.Null
+                });
+                break;
+        }
+    }
 
     private int _livesPerPlayer = 3;
     private bool _allowLateJoin = false;
@@ -476,6 +560,20 @@ public sealed class GameModeEngine : GameModeBase
     private static Entity GetPlayerEntity(ulong steamId) =>
         VRisingCore.GetOnlinePlayers().FirstOrDefault(player =>
             player.Exists() && player.IsPlayer() && player.GetSteamId() == steamId);
+
+    private static string ParseParameter(string actionString, string key, string fallback)
+    {
+        var parts = actionString.Split(':', 2);
+        if (parts.Length < 2) return fallback;
+
+        foreach (var param in parts[1].Split('|'))
+        {
+            var kv = param.Split('=', 2);
+            if (kv.Length == 2 && kv[0].Trim() == key)
+                return kv[1].Trim();
+        }
+        return fallback;
+    }
 
     public ShrinkZoneController Shrink => _shrink;
     public TimerController Timer => _timer;

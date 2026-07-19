@@ -77,7 +77,7 @@ public sealed class LootCrateController
                         DestroyCrate(crate);
                         _activeCrates.RemoveAt(i);
 
-                        GameEvents.RaiseCrateCollected(new CrateCollectedEvent
+                        GameEvents.OnCrateCollected?.Invoke(new CrateCollectedEvent
                         {
                             SessionId = sessionId,
                             SteamId = steamId,

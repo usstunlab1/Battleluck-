@@ -74,9 +74,10 @@ NGG/.python-version
 NGG/.aitk/
 NGG/inspector/
 .mcp.json
-
-# GitHub workflows (moved to .agents/workflows)
-.github/
+.agentsroom/
+.agentsroom/**
+.agentsroom/handoff-transcript-*.txt
+.agentsroom/handoff-summary-*.md
 
 # Misc transient
 c

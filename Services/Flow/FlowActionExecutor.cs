@@ -16,6 +16,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
+using RuntimeActionRegistry = BattleLuck.Services.Runtime.ActionRegistry;
 using ServantType = BattleLuck.Models.ServantType;
 using ServantFaction = BattleLuck.Models.ServantFaction;
 using ServantCommand = BattleLuck.Models.ServantCommand;
@@ -83,14 +84,7 @@ public sealed class FlowActionExecutor : IActionRuntime
         }
     }
 
-    public static ActionManifestService Registry { get; } = ActionManifestService.Instance;
-
-    /// <summary>
-    /// Shared singleton for command callers that don't need a dedicated PlayerStateController.
-    /// Uses a default PlayerStateController; commands that create their own state should
-    /// pass it via FlowActionContext.PlayerState.
-    /// </summary>
-    public static FlowActionExecutor Shared { get; } = new(new PlayerStateController(), BattleLuckPlugin.GameModes);
+    public static RuntimeActionRegistry Registry { get; } = new();
 
     private static readonly ActionLogger _actionLogger = new("FlowActionExecutor");
     public static ActionLogger Logger => _actionLogger;
@@ -126,7 +120,7 @@ public sealed class FlowActionExecutor : IActionRuntime
         }
         _actionNames = names;
         BattleLuckPlugin.LogInfo($"[FlowActionExecutor] Loaded {_actionNames.Count} registered actions from catalog.");
-        // ActionManifestService loads catalog data in its constructor.
+        RuntimeActionRegistry.EnsureLoaded();
     }
 
     /// <summary>Load the runtime_inject list for a specific event — hot-reloaded each tick check.</summary>
@@ -174,8 +168,8 @@ public sealed class FlowActionExecutor : IActionRuntime
 
         if (Registry.TryGetAction(actionName, out var definition) && definition != null && !string.IsNullOrWhiteSpace(definition.Action))
         {
-            _actionLogger.LogValidation(actionName, definition.Name ?? "", true);
-            var resolved = ActionManifestService.BuildActionString(definition.Action, definition.Params);
+            _actionLogger.LogValidation(actionName, definition.ActionId ?? "", true);
+            var resolved = RuntimeActionRegistry.BuildActionString(definition.Action, definition.Params);
             if (!string.IsNullOrWhiteSpace(resolved))
             {
                 var (resolvedName, resolvedParams) = ParseActionString(resolved);
@@ -433,7 +427,7 @@ public sealed class FlowActionExecutor : IActionRuntime
                 if (!result.Success)
                 {
                     if (rollbackOnFailure)
-                        TryRestore(context.PlayerCharacter, context.ZoneHash, context);
+                        TryRestore(context.PlayerCharacter, context.ZoneHash);
                     return OperationResult.FailWithHelp(
                         $"Action '{action}' failed: {result.Error}",
                         "Flow action failed",
@@ -491,20 +485,19 @@ public sealed class FlowActionExecutor : IActionRuntime
                 return FinalizeEvent(player, p, c);
             case "snapshot.save":
             case "snapshot.save_old":
-                var saveState = c.PlayerState ?? _playerState;
                 if (IsEntryPrepared(c))
-                    saveState.SaveSnapshotIfMissing(player, zoneHash);
+                    _playerState.SaveSnapshotIfMissing(player, zoneHash);
                 else
-                    saveState.SaveSnapshot(player, zoneHash);
+                    _playerState.SaveSnapshot(player, zoneHash);
                 return OperationResult.Ok();
             case "player.snapshot.restore":
             case "snapshot.restore":
             case "snapshot.restore_old":
-                return (c.PlayerState ?? _playerState).RestoreSnapshot(player, zoneHash)
+                return _playerState.RestoreSnapshot(player, zoneHash)
                     ? OperationResult.Ok()
                     : OperationResult.Fail("No snapshot found.");
             case "snapshot.clear":
-                (c.PlayerState ?? _playerState).ClearSnapshot(player.GetSteamId());
+                _playerState.ClearSnapshot(player.GetSteamId());
                 return OperationResult.Ok();
             case "snapshot.mark_active":
                 ctx?.Players.Add(player.GetSteamId());
@@ -2709,7 +2702,7 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
         var id = Required(p, "objectiveId");
         var objectives = ObjectiveStates(c.GameContext);
         objectives[id] = Int(p, "teamId", 0);
-        GameEvents.RaiseObjectiveCaptured(new ObjectiveCapturedEvent
+        GameEvents.OnObjectiveCaptured?.Invoke(new ObjectiveCapturedEvent
         {
             SessionId = c.GameContext.SessionId,
             ObjectiveId = id,
@@ -2879,7 +2872,7 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
 
         var objectives = ObjectiveStates(c.GameContext);
         objectives[objectiveId] = OptionalTeamId(p) ?? 0;
-        GameEvents.RaiseObjectiveCaptured(new ObjectiveCapturedEvent
+        GameEvents.OnObjectiveCaptured?.Invoke(new ObjectiveCapturedEvent
         {
             SessionId = c.GameContext.SessionId,
             ObjectiveId = objectiveId,
@@ -3895,9 +3888,9 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
         return OperationResult.Ok();
     }
 
-    void TryRestore(Entity player, int zoneHash, FlowActionContext? context = null)
+    void TryRestore(Entity player, int zoneHash)
     {
-        try { (context?.PlayerState ?? _playerState).RestoreSnapshot(player, zoneHash); }
+        try { _playerState.RestoreSnapshot(player, zoneHash); }
         catch (Exception ex) { BattleLuckPlugin.LogError($"[FlowActionExecutor] Rollback restore failed: {ex.Message}"); }
     }
 

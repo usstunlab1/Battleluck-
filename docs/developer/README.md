@@ -134,8 +134,9 @@ See [mod-structure.md](mod-structure.md) for detailed folder descriptions.
 
 ### IDE Installation
 
-1. Download [Visual Studio 2022 Community](https://visualstudio.microsoft.com/) with .NET 6.0 SDK
-2. Add **.NET 6.0 Runtime** and **.NET SDK** individual components
+1. Download [Visual Studio 2022 Community](https://visualstudio.microsoft.com/)
+2. Select **Game development with Unity** workload
+3. Add **.NET 6.0 Runtime** and **.NET SDK** individual components
 
 For alternatives, see the [Development Setup Wiki](https://wiki.vrisingmods.com/dev/development_setup.html):
 - [JetBrains Rider](https://www.jetbrains.com/rider/) — Full Unity/IL2CPP support
