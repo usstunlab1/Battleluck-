@@ -15,7 +15,7 @@ public sealed class PlayerEquipmentTrackingService
 {
     readonly Dictionary<ulong, TrackedPlayerEquipment> _tracked = new();
 
-    public bool StartTrackingPlayer(Entity player) =>
+    public void StartTrackingPlayer(Entity player) =>
         StartTrackingEvent(player, eventRunId: "", eventId: "");
 
     public bool StartTrackingEvent(Entity player, string eventRunId, string eventId)
