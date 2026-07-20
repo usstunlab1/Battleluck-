@@ -1,218 +1,299 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
-using BattleLuck.Models;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
 using BattleLuck.Core.Loaders;
+using BattleLuck.Models;
 
 namespace BattleLuck.Services.Runtime;
 
 /// <summary>
-/// Loads and parses prompt.txt files with YAML frontmatter for AI context injection.
+/// Loads the AI prompt, action policy, and examples directly from the unified
+/// event JSON at config/BattleLuck/events/&lt;modeId&gt;.json.
+///
+/// prompt.txt is intentionally no longer part of the runtime configuration
+/// path. Each event owns its complete LLM contract in one JSON document.
 /// </summary>
 public sealed class PromptContextLoader
 {
+    readonly ActionManifestService _actions = ActionManifestService.Instance;
+
     public sealed class PromptContext
     {
         public string EventId { get; set; } = "";
+        public bool Enabled { get; set; } = true;
         public List<string> AllowedActions { get; set; } = new();
         public List<string> BlockedActions { get; set; } = new();
         public List<string> AllowedTechs { get; set; } = new();
+        public List<string> RequireApproval { get; set; } = new();
+        public List<string> Instructions { get; set; } = new();
+        public List<PromptExample> Examples { get; set; } = new();
+        public string Role { get; set; } = "";
+        public string Objective { get; set; } = "";
+        public string ResponseMode { get; set; } = "action_plan";
         public string Narrative { get; set; } = "";
+        public bool IncludeActionCatalog { get; set; } = true;
     }
 
-    /// <summary>
-    /// Loads a prompt.txt file and extracts YAML frontmatter + narrative.
-    /// </summary>
+    public sealed class PromptExample
+    {
+        public string Request { get; set; } = "";
+        public JsonElement Actions { get; set; }
+    }
+
     public PromptContext? Load(string modeId)
     {
-        var candidates = new[]
-        {
-            Path.Combine(ConfigLoader.ConfigRoot, "events", modeId, "prompt.txt"),
-            Path.Combine(AppContext.BaseDirectory, "Events", modeId, "prompt.txt"),
-            Path.Combine(Environment.CurrentDirectory, "Events", modeId, "prompt.txt")
-        };
-        var promptPath = candidates.FirstOrDefault(File.Exists);
-        if (promptPath == null)
+        if (string.IsNullOrWhiteSpace(modeId))
+            return null;
+
+        var path = Path.Combine(ConfigLoader.ConfigRoot, "events", $"{modeId}.json");
+        if (!File.Exists(path))
             return null;
 
         try
         {
-            var content = File.ReadAllText(promptPath);
-            return Parse(content);
+            using var document = JsonDocument.Parse(File.ReadAllText(path));
+            var root = document.RootElement;
+            if (!root.TryGetProperty("ai", out var ai) || ai.ValueKind != JsonValueKind.Object)
+                return null;
+
+            var context = new PromptContext
+            {
+                EventId = ReadEventId(root, modeId),
+                Enabled = ReadBoolean(ai, "enabled", true)
+            };
+
+            if (!context.Enabled)
+                return context;
+
+            if (ai.TryGetProperty("prompt", out var prompt) && prompt.ValueKind == JsonValueKind.Object)
+                ReadPrompt(prompt, context);
+
+            if (ai.TryGetProperty("policy", out var policy) && policy.ValueKind == JsonValueKind.Object)
+                ReadPolicy(policy, context);
+
+            if (ai.TryGetProperty("examples", out var examples) && examples.ValueKind == JsonValueKind.Array)
+                ReadExamples(examples, context);
+
+            NormalizeActions(context.AllowedActions, context.EventId, "allowedActions");
+            NormalizeActions(context.BlockedActions, context.EventId, "blockedActions");
+            NormalizeActions(context.RequireApproval, context.EventId, "requireApproval");
+
+            var overlap = context.AllowedActions
+                .Intersect(context.BlockedActions, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (overlap.Length > 0)
+            {
+                BattleLuckPlugin.LogWarning(
+                    $"[PromptContextLoader] Event '{context.EventId}' contains actions in both allowedActions and blockedActions: {string.Join(", ", overlap)}");
+            }
+
+            context.Narrative = BuildNarrative(context);
+            return context;
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[PromptContextLoader] Failed to load {promptPath}: {ex.Message}");
+            BattleLuckPlugin.LogWarning($"[PromptContextLoader] Failed to load AI config from {path}: {ex.Message}");
             return null;
         }
     }
 
-    /// <summary>
-    /// Parses prompt content with YAML frontmatter.
-    /// Format:
-    /// ---
-    /// eventId: bloodbath
-    /// allowedActions:
-    ///   - action1
-    /// blockedActions:
-    ///   - action2
-    /// ...
-    /// ---
-    /// Narrative text here.
-    /// </summary>
-    public PromptContext Parse(string content)
+    static string ReadEventId(JsonElement root, string fallback)
     {
-        var context = new PromptContext();
-
-        if (string.IsNullOrWhiteSpace(content))
-            return context;
-
-        // Extract YAML frontmatter
-        var yamlMatch = Regex.Match(content, @"^---\s*\n(.*?)\n---\s*\n", RegexOptions.Singleline);
-        if (!yamlMatch.Success)
+        if (root.TryGetProperty("metadata", out var metadata) &&
+            metadata.ValueKind == JsonValueKind.Object &&
+            metadata.TryGetProperty("id", out var id) &&
+            id.ValueKind == JsonValueKind.String)
         {
-            // No frontmatter, treat entire content as narrative
-            context.Narrative = content.Trim();
-            return context;
+            return id.GetString() ?? fallback;
         }
 
-        var yamlContent = yamlMatch.Groups[1].Value;
-        var narrative = content[yamlMatch.Length..].Trim();
-
-        // Parse key-value pairs
-        var lines = yamlContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var line in lines)
-        {
-            var trimmed = line.Trim();
-            if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#"))
-                continue;
-
-            // Handle list properties
-            if (trimmed.EndsWith(":"))
-            {
-                var listKey = trimmed.TrimEnd(':').Trim().ToLowerInvariant();
-                continue;
-            }
-
-            if (trimmed.StartsWith("- "))
-            {
-                var value = trimmed[2..].Trim();
-                // Find which list we're in (next preceding key that ends with :)
-                continue;
-            }
-
-            // Handle key: value pairs
-            var colonIdx = trimmed.IndexOf(':');
-            if (colonIdx > 0)
-            {
-                var key = trimmed[..colonIdx].Trim().ToLowerInvariant();
-                var value = trimmed[(colonIdx + 1)..].Trim();
-
-                switch (key)
-                {
-                    case "eventid":
-                        context.EventId = value;
-                        break;
-                    case "narrative":
-                        context.Narrative = value;
-                        break;
-                }
-            }
-        }
-
-        // Parse lists more robustly
-        ParseLists(yamlContent, context);
-
-        // If narrative is empty, use the remaining content
-        if (string.IsNullOrWhiteSpace(context.Narrative))
-            context.Narrative = narrative;
-
-        return context;
+        return fallback;
     }
 
-    void ParseLists(string yaml, PromptContext context)
+    static bool ReadBoolean(JsonElement element, string propertyName, bool fallback)
     {
-        var allowedMatch = Regex.Matches(yaml, @"allowedActions:\s*\n((?:  - .+\n?)+)");
-        foreach (Match match in allowedMatch)
+        if (!element.TryGetProperty(propertyName, out var value))
+            return fallback;
+        return value.ValueKind switch
         {
-            var listContent = match.Groups[1].Value;
-            foreach (var line in listContent.Split('\n'))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("- "))
-                    context.AllowedActions.Add(trimmed[2..].Trim().Trim('"'));
-            }
-        }
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            _ => fallback
+        };
+    }
 
-        var blockedMatch = Regex.Matches(yaml, @"blockedActions:\s*\n((?:  - .+\n?)+)");
-        foreach (Match match in blockedMatch)
-        {
-            var listContent = match.Groups[1].Value;
-            foreach (var line in listContent.Split('\n'))
-            {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("- "))
-                    context.BlockedActions.Add(trimmed[2..].Trim().Trim('"'));
-            }
-        }
+    static void ReadPrompt(JsonElement prompt, PromptContext context)
+    {
+        context.Role = ReadString(prompt, "role");
+        context.Objective = ReadString(prompt, "objective");
+        context.ResponseMode = ReadString(prompt, "responseMode", "action_plan");
+        context.IncludeActionCatalog = ReadBoolean(prompt, "includeActionCatalog", true);
+        ReadStringArray(prompt, "instructions", context.Instructions);
+    }
 
-        var techsMatch = Regex.Matches(yaml, @"allowedTechs:\s*\n((?:  - .+\n?)+)");
-        foreach (Match match in techsMatch)
+    static void ReadPolicy(JsonElement policy, PromptContext context)
+    {
+        ReadStringArray(policy, "allowedActions", context.AllowedActions);
+        ReadStringArray(policy, "blockedActions", context.BlockedActions);
+        ReadStringArray(policy, "allowedTechs", context.AllowedTechs);
+        ReadStringArray(policy, "requireApproval", context.RequireApproval);
+    }
+
+    static void ReadExamples(JsonElement examples, PromptContext context)
+    {
+        foreach (var example in examples.EnumerateArray())
         {
-            var listContent = match.Groups[1].Value;
-            foreach (var line in listContent.Split('\n'))
+            if (example.ValueKind != JsonValueKind.Object)
+                continue;
+
+            var request = ReadString(example, "request");
+            if (string.IsNullOrWhiteSpace(request))
+                continue;
+
+            var actions = example.TryGetProperty("actions", out var actionElement)
+                ? actionElement.Clone()
+                : default;
+
+            context.Examples.Add(new PromptExample
             {
-                var trimmed = line.Trim();
-                if (trimmed.StartsWith("- "))
-                    context.AllowedTechs.Add(trimmed[2..].Trim().Trim('"'));
-            }
+                Request = request,
+                Actions = actions
+            });
         }
     }
 
+    static string ReadString(JsonElement element, string propertyName, string fallback = "")
+    {
+        if (!element.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.String)
+            return fallback;
+        return value.GetString() ?? fallback;
+    }
+
+    static void ReadStringArray(JsonElement element, string propertyName, ICollection<string> target)
+    {
+        if (!element.TryGetProperty(propertyName, out var values) || values.ValueKind != JsonValueKind.Array)
+            return;
+
+        foreach (var value in values.EnumerateArray())
+        {
+            if (value.ValueKind != JsonValueKind.String)
+                continue;
+            var text = value.GetString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(text) && !target.Contains(text, StringComparer.OrdinalIgnoreCase))
+                target.Add(text);
+        }
+    }
+
+    void NormalizeActions(List<string> values, string eventId, string scope)
+    {
+        for (var i = 0; i < values.Count; i++)
+        {
+            var original = values[i].Trim();
+            var canonical = _actions.NormalizeActionName(original);
+            values[i] = canonical;
+
+            if (!_actions.IsKnown(canonical))
+            {
+                BattleLuckPlugin.LogWarning(
+                    $"[PromptContextLoader] Event '{eventId}' {scope} contains unknown action '{original}'. Startup validation will reject it.");
+            }
+            else if (!original.Equals(canonical, StringComparison.OrdinalIgnoreCase))
+            {
+                BattleLuckPlugin.LogInfo(
+                    $"[PromptContextLoader] Event '{eventId}' mapped action alias '{original}' to '{canonical}'.");
+            }
+        }
+
+        var unique = values
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        values.Clear();
+        values.AddRange(unique);
+    }
+
+    static string BuildNarrative(PromptContext context)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrWhiteSpace(context.Role))
+            sb.AppendLine($"Role: {context.Role}");
+        if (!string.IsNullOrWhiteSpace(context.Objective))
+            sb.AppendLine($"Objective: {context.Objective}");
+        if (context.Instructions.Count > 0)
+        {
+            sb.AppendLine("Instructions:");
+            foreach (var instruction in context.Instructions)
+                sb.AppendLine($"- {instruction}");
+        }
+        return sb.ToString().Trim();
+    }
+
     /// <summary>
-    /// Builds a prompt string for AI from context and runtime state.
+    /// Builds the complete event-scoped LLM prompt. The model receives canonical
+    /// action names and catalog metadata, then must return structured action_plan
+    /// JSON. Execution still passes through the normal validation pipeline.
     /// </summary>
     public string BuildPrompt(PromptContext context, RuntimeActionContext runtimeContext)
     {
-        var sb = new System.Text.StringBuilder();
-
+        var sb = new StringBuilder();
         sb.AppendLine($"Event: {context.EventId}");
+        sb.AppendLine($"Response mode: {context.ResponseMode}");
+        sb.AppendLine();
+        sb.AppendLine(context.Narrative);
         sb.AppendLine();
 
-        if (context.AllowedActions?.Count > 0)
+        sb.AppendLine("Return JSON only using this contract:");
+        sb.AppendLine("{\"type\":\"action_plan\",\"reason\":\"short explanation\",\"actions\":[{\"action\":\"canonical.action\",\"params\":{}}]}");
+        sb.AppendLine("Never invent action names or parameter names.");
+        sb.AppendLine();
+
+        if (context.AllowedActions.Count > 0)
         {
-            sb.AppendLine("Allowed Actions:");
-            foreach (var action in context.AllowedActions)
-                sb.AppendLine($"  - {action}");
+            sb.AppendLine("Allowed actions:");
+            foreach (var actionName in context.AllowedActions)
+            {
+                if (context.IncludeActionCatalog && _actions.TryGetAction(actionName, out var entry) && entry != null)
+                {
+                    var required = entry.Required.Count > 0 ? string.Join(",", entry.Required) : "none";
+                    var optional = entry.Optional.Count > 0 ? string.Join(",", entry.Optional) : "none";
+                    sb.AppendLine($"- {entry.Name}: {entry.Description} | required={required} | optional={optional} | risk={entry.RiskLevel} | approval={entry.RequiresApproval}");
+                }
+                else
+                {
+                    sb.AppendLine($"- {actionName}");
+                }
+            }
             sb.AppendLine();
         }
 
-        if (context.BlockedActions?.Count > 0)
-        {
-            sb.AppendLine("Blocked Actions:");
-            foreach (var action in context.BlockedActions)
-                sb.AppendLine($"  - {action}");
-            sb.AppendLine();
-        }
-
-        if (context.AllowedTechs?.Count > 0)
-        {
-            sb.AppendLine("Allowed Techs:");
-            foreach (var tech in context.AllowedTechs)
-                sb.AppendLine($"  - {tech}");
-            sb.AppendLine();
-        }
-
-        sb.AppendLine("Narrative:");
-        sb.AppendLine(context.Narrative);
+        if (context.BlockedActions.Count > 0)
+            sb.AppendLine($"Blocked actions: {string.Join(", ", context.BlockedActions)}");
+        if (context.RequireApproval.Count > 0)
+            sb.AppendLine($"Actions requiring approval: {string.Join(", ", context.RequireApproval)}");
+        if (context.AllowedTechs.Count > 0)
+            sb.AppendLine($"Allowed techs: {string.Join(", ", context.AllowedTechs)}");
 
         if (runtimeContext.ZoneDefinition != null)
         {
             sb.AppendLine();
-            sb.AppendLine($"Current Zone: {runtimeContext.ZoneDefinition.Name}");
-            sb.AppendLine($"Zone Coordinates: ({runtimeContext.ZoneDefinition.Position.X}, {runtimeContext.ZoneDefinition.Position.Y}, {runtimeContext.ZoneDefinition.Position.Z})");
-            sb.AppendLine($"Zone Radius: {runtimeContext.ZoneDefinition.Radius}");
+            sb.AppendLine($"Current zone: {runtimeContext.ZoneDefinition.Name}");
+            sb.AppendLine($"Zone coordinates: ({runtimeContext.ZoneDefinition.Position.X}, {runtimeContext.ZoneDefinition.Position.Y}, {runtimeContext.ZoneDefinition.Position.Z})");
+            sb.AppendLine($"Zone radius: {runtimeContext.ZoneDefinition.Radius}");
+        }
+
+        if (context.Examples.Count > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Validated examples:");
+            foreach (var example in context.Examples)
+            {
+                sb.AppendLine($"Request: {example.Request}");
+                if (example.Actions.ValueKind != JsonValueKind.Undefined)
+                    sb.AppendLine($"Actions: {example.Actions.GetRawText()}");
+            }
         }
 
         return sb.ToString();
