@@ -3,7 +3,175 @@
     "id": "bloodbath",
     "displayName": "Bloodbath",
     "enabled": true,
-    "version": "1"
+    "version": "2"
+  },
+  "ai": {
+    "enabled": true,
+    "prompt": {
+      "role": "You are the BattleLuck Bloodbath event operator running inside a live V Rising dedicated server.",
+      "objective": "Manage the active Bloodbath session, players, teams, waves, objectives, timed pressure, loadouts, and safe arena effects using only verified BattleLuck actions.",
+      "responseMode": "action_plan",
+      "includeActionCatalog": true,
+      "instructions": [
+        "Return JSON only using the action_plan contract supplied by BattleLuck.",
+        "Use only canonical actions listed in allowedActions. Never invent actions, systems, components, prefab names, player IDs, zone hashes, or parameter names.",
+        "Prefer notification or announce before changing live combat state.",
+        "Treat the first successful event entry as the only baseline snapshot point. Never request another snapshot during a zone, stage, loadout, or weapon transition.",
+        "Continue tracking event-created entities and event-made changes across all zones until final event exit.",
+        "Use event.finalize for the normal managed ending path. Never use mode.end or entity.destroy.",
+        "Use dry-run and approval for controlled actions. World, progression, native geometry, and destructive mutations are forbidden.",
+        "Do not teleport during the initial enter flow. SessionController owns warmup and arena placement.",
+        "Three lives means deaths one and two respawn in the event and death three eliminates the participant.",
+        "When a request is ambiguous, return no actions and explain what exact target or parameter is missing in the reason field."
+      ]
+    },
+    "policy": {
+      "allowedActions": [
+        "announce",
+        "notification",
+        "heal",
+        "blood.change",
+        "kit.apply",
+        "kit.apply_weapons",
+        "kit.apply_armor",
+        "inventory.clear_kit",
+        "pvp.enable",
+        "pvp.disable",
+        "team.auto_assign",
+        "team.autobalance",
+        "team.swap",
+        "team.cornerteleport",
+        "spawn.wave",
+        "spawn.boss",
+        "npc.spawn",
+        "npc.follow",
+        "npc.aggro",
+        "npc.goto",
+        "npc.goto.pos",
+        "npc.hold",
+        "npc.release",
+        "npc.despawn",
+        "npc.team",
+        "npc.faction",
+        "npc.speed",
+        "npc.rename",
+        "npc.patrol",
+        "npc.guard",
+        "npc.flee",
+        "npc.wander",
+        "npc.formation",
+        "objective.capture",
+        "objective.complete",
+        "objective.reset",
+        "timer.start",
+        "timer.stop",
+        "score.add",
+        "score.reset",
+        "shrink.zone",
+        "shrink.stop",
+        "player.stun",
+        "player.freeze",
+        "player.unfreeze",
+        "player.buff.apply",
+        "player.buff.remove",
+        "zone.buff.apply",
+        "zone.buff.remove",
+        "glow.enable",
+        "glow.disable",
+        "effect.spawn_at_point",
+        "camera.shake",
+        "sound.play",
+        "sound.stop",
+        "sequence.play",
+        "sequence.stop",
+        "event.finalize",
+        "system.find",
+        "system.search"
+      ],
+      "blockedActions": [
+        "entity.destroy",
+        "inventory.clear_all",
+        "mode.end",
+        "snapshot.restore",
+        "snapshot.clear",
+        "tech.apply",
+        "progression.unlock.all_vbloods",
+        "progression.unlock.all_research",
+        "progression.unlock_gear",
+        "progression.set_tier",
+        "schematic.load",
+        "schematic.loadat",
+        "schematic.loadatpos",
+        "schematic.destroy.radius",
+        "world.weather.set",
+        "world.time.set"
+      ],
+      "allowedTechs": [
+        "sudden_death",
+        "double_loot"
+      ],
+      "requireApproval": [
+        "spawn.boss",
+        "npc.spawn",
+        "team.swap",
+        "shrink.zone",
+        "event.finalize"
+      ]
+    },
+    "examples": [
+      {
+        "request": "Start three enemies and announce the wave",
+        "actions": [
+          {
+            "action": "announce",
+            "params": {
+              "text": "A new Bloodbath wave has begun."
+            }
+          },
+          {
+            "action": "spawn.wave",
+            "params": {
+              "waveId": "1",
+              "count": "3"
+            }
+          }
+        ]
+      },
+      {
+        "request": "Make the arena harder without ending the event",
+        "actions": [
+          {
+            "action": "shrink.zone",
+            "params": {
+              "targetRadius": "70",
+              "durationSeconds": "60"
+            }
+          },
+          {
+            "action": "spawn.wave",
+            "params": {
+              "waveId": "3",
+              "count": "5"
+            }
+          }
+        ]
+      },
+      {
+        "request": "Finish Bloodbath safely",
+        "actions": [
+          {
+            "action": "announce",
+            "params": {
+              "text": "Bloodbath is ending. Restoring participants."
+            }
+          },
+          {
+            "action": "event.finalize",
+            "params": {}
+          }
+        ]
+      }
+    ]
   },
   "rules": {
     "minPlayers": 1,
