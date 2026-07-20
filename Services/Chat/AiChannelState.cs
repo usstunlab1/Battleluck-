@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using BattleLuck.Models.Chat;
 
 namespace BattleLuck.Services.Chat;
@@ -14,8 +13,8 @@ namespace BattleLuck.Services.Chat;
 /// </summary>
 public static class AiChannelState
 {
-    private static readonly ConcurrentDictionary<ulong, byte> _aiChannelMembers = new();
-    private static readonly ConcurrentDictionary<ulong, byte> _playersWithActiveRequests = new();
+    private static readonly ConcurrentDictionary<ulong, byte> AiMembers = new();
+    private static readonly ConcurrentDictionary<ulong, CancellationTokenSource> ActiveRequests = new();
 
     public static BattleLuckChatChannel GetChannel(ulong steamId) =>
         AiMembers.ContainsKey(steamId)
@@ -26,59 +25,38 @@ public static class AiChannelState
 
     public static BattleLuckChatChannel Enter(ulong steamId)
     {
-        return _aiChannelMembers.ContainsKey(steamId) ? BattleLuckChatChannel.AI : BattleLuckChatChannel.Native;
+        AiMembers[steamId] = 0;
+        return BattleLuckChatChannel.AI;
     }
 
     public static BattleLuckChatChannel Leave(ulong steamId)
     {
-        _aiChannelMembers.TryAdd(steamId, 0);
+        AiMembers.TryRemove(steamId, out _);
+        CancelRequest(steamId);
+        return BattleLuckChatChannel.Native;
     }
 
-    /// <summary>
-    /// Removes a player from the AI channel and clears any active request flag.
-    /// </summary>
-    public static void Remove(ulong steamId)
-    {
-        _aiChannelMembers.TryRemove(steamId, out _);
-        _playersWithActiveRequests.TryRemove(steamId, out _);
-    }
+    public static BattleLuckChatChannel SelectNext(ulong steamId) =>
+        IsInAiChannel(steamId) ? Leave(steamId) : Enter(steamId);
 
     // Compatibility alias for existing callers while AiChannelState remains the
     // only owner of the underlying state.
     public static void Add(ulong steamId) => Enter(steamId);
 
-    /// <summary>
-    /// Checks if a player is in the AI channel.
-    /// </summary>
-    public static bool IsInAiChannel(ulong steamId)
-    {
-        return _aiChannelMembers.ContainsKey(steamId);
-    }
+    public static IReadOnlyList<ulong> GetAiChannelMembers() =>
+        AiMembers.Keys.ToArray();
 
-    /// <summary>
-    /// Gets all players currently in the AI channel.
-    /// </summary>
-    public static List<ulong> GetAiChannelMembers()
-    {
-        return _aiChannelMembers.Keys.ToList();
-    }
+    public static bool HasActiveRequest(ulong steamId) =>
+        ActiveRequests.ContainsKey(steamId);
 
-    /// <summary>
-    /// Checks if a player has an active AI request.
-    /// </summary>
-    public static bool HasActiveRequest(ulong steamId)
-    {
-        return _playersWithActiveRequests.ContainsKey(steamId);
-    }
-
-    /// <summary>
-    /// Attempts to begin an AI request for a player.
-    /// Returns false if the player already has an active request.
-    /// </summary>
     public static bool TryBeginRequest(ulong steamId)
     {
-        // TryAdd returns true if the key was added, false if it already existed.
-        return _playersWithActiveRequests.TryAdd(steamId, 0);
+        var cancellation = new CancellationTokenSource();
+        if (ActiveRequests.TryAdd(steamId, cancellation))
+            return true;
+
+        cancellation.Dispose();
+        return false;
     }
 
     public static CancellationToken GetRequestCancellationToken(ulong steamId) =>
@@ -88,7 +66,10 @@ public static class AiChannelState
 
     public static void EndRequest(ulong steamId)
     {
-        _playersWithActiveRequests.TryRemove(steamId, out _);
+        if (!ActiveRequests.TryRemove(steamId, out var cancellation))
+            return;
+
+        cancellation.Dispose();
     }
 
     public static void Remove(ulong steamId)
