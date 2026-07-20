@@ -3,7 +3,190 @@
     "id": "aievent",
     "displayName": "AI Event Test",
     "enabled": true,
-    "version": "1"
+    "version": "2"
+  },
+  "ai": {
+    "enabled": true,
+    "prompt": {
+      "role": "You are the BattleLuck AI Event operator on a live V Rising dedicated server.",
+      "objective": "Help administrators inspect available systems, plan safe event changes, and execute verified BattleLuck actions through the normal validation and approval pipeline.",
+      "responseMode": "action_plan",
+      "includeActionCatalog": true,
+      "instructions": [
+        "Return JSON only using the action_plan contract supplied by BattleLuck.",
+        "Use canonical BattleLuck action IDs. Never invent system names, components, actions, targets, prefab names, or parameters.",
+        "Use system.search or system.find before proposing a native system reference.",
+        "Registering a system reference does not execute or patch that system.",
+        "Prefer query, notification, preview, and validation actions before mutations.",
+        "The first committed event entry captures the only baseline snapshot. Track new entities and changes until final exit.",
+        "Do not restore snapshots during zone or loadout changes.",
+        "Do not use client-only systems from the dedicated server.",
+        "Controlled actions require approval. Destructive, progression, world, and native geometry actions are blocked.",
+        "When required parameters or targets are missing, return no actions and explain the missing information in reason."
+      ]
+    },
+    "policy": {
+      "allowedActions": [
+        "system.find",
+        "system.search",
+        "system.register",
+        "prefab.query",
+        "entity.query",
+        "entity.count",
+        "entity.validate",
+        "inventory.count",
+        "condition.check",
+        "notification",
+        "announce",
+        "heal",
+        "blood.change",
+        "kit.apply",
+        "kit.apply_weapons",
+        "kit.apply_armor",
+        "inventory.clear_kit",
+        "pvp.enable",
+        "pvp.disable",
+        "player.teleport",
+        "teleport.position",
+        "team.auto_assign",
+        "team.autobalance",
+        "team.swap",
+        "spawn.wave",
+        "spawn.boss",
+        "npc.spawn",
+        "npc.follow",
+        "npc.aggro",
+        "npc.goto",
+        "npc.goto.pos",
+        "npc.hold",
+        "npc.release",
+        "npc.despawn",
+        "npc.team",
+        "npc.faction",
+        "npc.speed",
+        "npc.rename",
+        "npc.patrol",
+        "npc.guard",
+        "npc.flee",
+        "npc.wander",
+        "npc.formation",
+        "companion.assign",
+        "companion.follow",
+        "companion.guard",
+        "companion.dismiss",
+        "companion.despawn",
+        "companion.behavior.set",
+        "objective.capture",
+        "objective.complete",
+        "objective.deliver",
+        "objective.reset",
+        "timer.start",
+        "timer.stop",
+        "score.add",
+        "score.reset",
+        "shrink.zone",
+        "shrink.stop",
+        "player.stun",
+        "player.freeze",
+        "player.unfreeze",
+        "player.buff.apply",
+        "player.buff.remove",
+        "zone.buff.apply",
+        "zone.buff.remove",
+        "glow.enable",
+        "glow.disable",
+        "point.set",
+        "point.remove",
+        "point.clear_session",
+        "effect.spawn_at_point",
+        "camera.shake",
+        "sound.play",
+        "sound.stop",
+        "sequence.play",
+        "sequence.stop",
+        "sequence.custom.preview",
+        "sequence.step.run",
+        "sequence.step.skip",
+        "sequence.step.retry",
+        "event.reload",
+        "config.reload",
+        "event.finalize"
+      ],
+      "blockedActions": [
+        "entity.destroy",
+        "inventory.clear_all",
+        "mode.end",
+        "snapshot.restore",
+        "snapshot.clear",
+        "tech.apply",
+        "progression.unlock.all_vbloods",
+        "progression.unlock.all_research",
+        "progression.unlock_gear",
+        "progression.set_tier",
+        "schematic.load",
+        "schematic.loadat",
+        "schematic.loadatpos",
+        "schematic.clear",
+        "schematic.destroy.radius",
+        "world.weather.set",
+        "world.weather.restore",
+        "world.time.advance",
+        "world.time.set",
+        "object.place",
+        "object.remove"
+      ],
+      "allowedTechs": [],
+      "requireApproval": [
+        "system.register",
+        "player.teleport",
+        "teleport.position",
+        "team.swap",
+        "spawn.wave",
+        "spawn.boss",
+        "npc.spawn",
+        "companion.assign",
+        "shrink.zone",
+        "event.reload",
+        "config.reload",
+        "event.finalize"
+      ]
+    },
+    "examples": [
+      {
+        "request": "Find systems related to equipment changes",
+        "actions": [
+          {
+            "action": "system.search",
+            "params": {
+              "query": "equipment equip unequip inventory change"
+            }
+          }
+        ]
+      },
+      {
+        "request": "Preview a safe wave for this event",
+        "actions": [
+          {
+            "action": "spawn.wave",
+            "params": {
+              "waveId": "1",
+              "count": "3"
+            }
+          }
+        ]
+      },
+      {
+        "request": "Tell the player that the requested action is blocked",
+        "actions": [
+          {
+            "action": "notification",
+            "params": {
+              "message": "That action is blocked by the current event policy."
+            }
+          }
+        ]
+      }
+    ]
   },
   "rules": {
     "minPlayers": 1,
