@@ -21,7 +21,7 @@ public sealed class CreatureCaptureService
     readonly Dictionary<string, BloodThreshold> _thresholds = new(StringComparer.OrdinalIgnoreCase);
 
     // Admin override flag for V Blood capture
-    bool _allowVBloodCapture;
+    const bool AllowVBloodCapture = false;
 
     public CreatureCaptureService(NpcControlService npcService)
     {
@@ -59,7 +59,7 @@ public sealed class CreatureCaptureService
             return OperationResult<CaptureValidation>.Fail("Cannot capture player entities.");
 
         // Reject V Bloods unless admin override
-        if (entity.IsVBlood() && !allowVBlood && !_allowVBloodCapture)
+        if (entity.IsVBlood() && !allowVBlood && !AllowVBloodCapture)
             return OperationResult<CaptureValidation>.Fail("Cannot capture V Blood entities without admin policy override.");
 
         // Check level cap
@@ -107,7 +107,7 @@ public sealed class CreatureCaptureService
             return OperationResult.Fail("Cannot capture player entities.");
 
         // Reject V Bloods
-        if (entity.IsVBlood() && !_allowVBloodCapture)
+        if (entity.IsVBlood() && !AllowVBloodCapture)
             return OperationResult.Fail("Cannot capture V Blood entities.");
 
         lock (_lock)

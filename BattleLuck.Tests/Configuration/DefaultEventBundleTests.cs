@@ -59,7 +59,7 @@ public sealed class DefaultEventBundleTests
 
         foreach (var (mode, flowPath) in EnumerateFlowFiles())
         {
-            var zonesPath = Path.Combine(Path.GetDirectoryName(flowPath)!, "zones.json");
+            var zonesPath = Path.Combine(EventsRoot, mode, "zones.json");
             if (!File.Exists(zonesPath))
                 continue;
 
@@ -96,7 +96,7 @@ public sealed class DefaultEventBundleTests
                 kitId.Should().Be(mode, $"{mode} must resolve kits.json through KitController's mode-folder lookup");
             }
 
-            var kitPath = Path.Combine(Path.GetDirectoryName(flowPath)!, "kits.json");
+            var kitPath = Path.Combine(EventsRoot, mode, "kits.json");
             File.Exists(kitPath).Should().BeTrue($"{mode} must ship the kit used by its entry fallback");
             using var kit = Parse(kitPath);
             var root = kit.RootElement;

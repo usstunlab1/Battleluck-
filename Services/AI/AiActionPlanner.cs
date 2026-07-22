@@ -96,7 +96,7 @@ public sealed class AiActionPlanner
         return plan;
     }
 
-    public static string? ExtractJsonArray(string text)
+    static string? ExtractJsonArray(string text)
     {
         var start = text.IndexOf('[');
         var end = text.LastIndexOf(']');

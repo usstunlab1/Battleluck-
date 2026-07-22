@@ -93,7 +93,7 @@ public sealed class BattleLuckCommandDispatcher
             return true;
         }
 
-        var ctx = new BattleLuckCommandContext(senderEntity, steamId, rawInput, args, isAdmin, isConsole);
+        var ctx = new BattleLuckCommandContext(senderEntity, steamId, rawInput ?? "", args, isAdmin, isConsole);
         var parsedArgs = ParseArgs(args, cmd.ParameterTypes);
 
         try
@@ -110,11 +110,15 @@ public sealed class BattleLuckCommandDispatcher
         }
         catch (TargetInvocationException tie)
         {
+            BattleLuckPlugin.ErrorReporter.Report(tie.InnerException ?? tie,
+                new BattleLuck.Models.ErrorReportContext { AdminSteamId = steamId, Command = cmdName });
             BattleLuckPlugin.LogWarning($"[CmdDispatcher] {cmdName} failed: {tie.InnerException?.Message ?? tie.Message}");
             Notify(senderEntity, steamId, $"❌ Command failed: {tie.InnerException?.Message ?? tie.Message}", isConsole);
         }
         catch (Exception ex)
         {
+            BattleLuckPlugin.ErrorReporter.Report(ex,
+                new BattleLuck.Models.ErrorReportContext { AdminSteamId = steamId, Command = cmdName });
             BattleLuckPlugin.LogWarning($"[CmdDispatcher] {cmdName} failed: {ex.Message}");
             Notify(senderEntity, steamId, $"❌ Command failed: {ex.Message}", isConsole);
         }
@@ -164,6 +168,8 @@ public sealed class BattleLuckCommandDispatcher
         }
         catch (Exception ex)
         {
+            BattleLuckPlugin.ErrorReporter.Report(ex,
+                new BattleLuck.Models.ErrorReportContext { AdminSteamId = steamId, Command = commandName });
             BattleLuckPlugin.LogWarning($"[CmdDispatcher] {commandName} failed: {ex.Message}");
             Notify(senderEntity, steamId, $"Command failed: {ex.Message}", isConsole);
         }
@@ -211,7 +217,9 @@ public sealed class BattleLuckCommandDispatcher
 
             if (type == typeof(string))
             {
-                result.Add(raw);
+                result.Add(i == parameterTypes.Length - 1 && args.Length > i
+                    ? string.Join(" ", args.Skip(i))
+                    : raw);
                 continue;
             }
 

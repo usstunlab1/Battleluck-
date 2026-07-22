@@ -20,7 +20,7 @@ public sealed class NpcActionAuditor
         }
     }
 
-    public static NpcCommandConsistencyResult Validate(NpcAuditEntry entry, NpcControlService service)
+    public static NpcCommandConsistencyResult Validate(NpcAuditEntry entry, NpcControlService? service)
     {
         var result = new NpcCommandConsistencyResult { IsConsistent = true };
 
@@ -95,7 +95,7 @@ public sealed class NpcActionAuditor
         return result;
     }
 
-    public static NpcAuditEntry RecordPre(NpcAuditEntry entry, NpcControlService service)
+    public static NpcAuditEntry RecordPre(NpcAuditEntry entry, NpcControlService? service)
     {
         entry.PreValidationPassed = true;
         if (service != null && service.TryGet(entry.NpcId, out var existing))
@@ -109,7 +109,7 @@ public sealed class NpcActionAuditor
         return entry;
     }
 
-    public static NpcAuditEntry RecordPost(NpcAuditEntry entry, NpcControlService service, bool executed, string? error = null)
+    public static NpcAuditEntry RecordPost(NpcAuditEntry entry, NpcControlService? service, bool executed, string? error = null)
     {
         entry.Executed = executed;
         entry.Error = error;

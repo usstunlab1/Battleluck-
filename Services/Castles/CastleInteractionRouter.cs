@@ -71,7 +71,8 @@ public sealed class CastleInteractionRouter
         {
             // No policy: fall through to the "is the requester the owner"
             // check. Owners can always use their own objects.
-            var liveOwner = _service.Resolver.ResolveOwner(BuildKeyFromEntity(entity), entity);
+            var key = BuildKeyFromEntity(entity);
+            var liveOwner = key == null ? 0 : _service.Resolver.ResolveOwner(key, entity);
             if (isAdmin || (liveOwner != 0 && liveOwner == requesterSteamId))
                 return CastleAccessDecision.Allow();
             return CastleAccessDecision.Deny("No policy is set for this object.", "No policy", "The owner must create a policy with `.castlepolicy target`.");

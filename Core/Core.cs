@@ -7,6 +7,7 @@ using BattleLuck.Services.Encounter;
 using BattleLuck.Services.Boss;
 using BattleLuck.Services.Portal;
 using BattleLuck.Services.Creature;
+using BattleLuck.Services.Diagnostics;
 
 /// <summary>
 /// Static service locator for BattleLuck.
@@ -49,6 +50,10 @@ internal static class Core
     public static ClanTaskService? ClanTasks { get; internal set; }
     public static RoadmapService? Roadmap { get; internal set; }
     public static CastlePolicyService? CastlePolicy { get; internal set; }
+    public static ServerEventPlatform? EventPlatform { get; internal set; }
+    public static GameEventNormalizer? EventNormalizer { get; internal set; }
+    public static PlayerDirectoryService? PlayerDirectory { get; internal set; }
+    public static IErrorReporter ErrorReporter { get; internal set; } = NoOpErrorReporter.Instance;
 
     // ── Wave 1: New expansion services ──────────────────────────────────────────
     public static CompanionService? Companion { get; internal set; }

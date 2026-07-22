@@ -2,53 +2,36 @@ using System.Text.Json.Serialization;
 
 namespace BattleLuck.Models;
 
-/// <summary>
-/// Configuration for Backtrace error reporting service.
-/// See: https://backtrace.io/docs/unity/
-/// </summary>
-public sealed class BacktraceConfig
+public sealed class BacktraceSettings
 {
     [JsonPropertyName("enabled")]
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; }
 
-    [JsonPropertyName("serverAddress")]
-    public string ServerAddress { get; set; } = "";
+    [JsonPropertyName("subdomain")]
+    public string Subdomain { get; set; } = "";
 
-    [JsonPropertyName("submissionToken")]
-    public string SubmissionToken { get; set; } = "";
-
-    [JsonPropertyName("attributes")]
-    public Dictionary<string, string> Attributes { get; set; } = new();
-
-    [JsonPropertyName("database")]
-    public DatabaseConfig Database { get; set; } = new();
-
-    [JsonPropertyName("reporting")]
-    public ReportingConfig Reporting { get; set; } = new();
-
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(ServerAddress) && !string.IsNullOrWhiteSpace(SubmissionToken);
+    [JsonIgnore]
+    public bool IsConfigured => Enabled && !string.IsNullOrWhiteSpace(Subdomain);
 }
 
-public sealed class DatabaseConfig
+public sealed record ErrorReportContext
 {
-    [JsonPropertyName("enabled")]
-    public bool Enabled { get; set; } = true;
-
-    [JsonPropertyName("path")]
-    public string Path { get; set; } = "backtrace_database";
-
-    [JsonPropertyName("maxRecords")]
-    public int MaxRecords { get; set; } = 100;
+    public ulong? AdminSteamId { get; init; }
+    public string? CharacterName { get; init; }
+    public string? Command { get; init; }
+    public string? Action { get; init; }
+    public string? ModeId { get; init; }
+    public string? EventRunId { get; init; }
+    public string? SessionId { get; init; }
+    public string? RequestId { get; init; }
+    public bool Critical { get; init; }
 }
 
-public sealed class ReportingConfig
-{
-    [JsonPropertyName("unhandledExceptions")]
-    public bool UnhandledExceptions { get; set; } = true;
-
-    [JsonPropertyName("logErrors")]
-    public bool LogErrors { get; set; } = true;
-
-    [JsonPropertyName("handledExceptions")]
-    public bool HandledExceptions { get; set; } = true;
-}
+public sealed record ErrorReporterDiagnostics(
+    bool Enabled,
+    int Queued,
+    long Submitted,
+    long Dropped,
+    long Deduplicated,
+    long Retried,
+    string? DisabledReason);

@@ -16,6 +16,7 @@ public static class ConfigLoader
     static readonly Dictionary<string, ModeConfig> _cache = new();
     static AIConfig? _aiConfig;
     static ActionConfig? _actionConfig;
+    static BattleLuckConfig? _ownerConfig;
     static string? _configRoot;
     static volatile bool _defaultsEnsured;
     static readonly object _defaultsEnsuredLock = new();
@@ -40,15 +41,9 @@ public static class ConfigLoader
                 _defaultsEnsured = false;  // Thread-safe flag reset
             }
             _aiConfig = null;
+            _ownerConfig = null;
         }
     }
-
-    /// <summary>
-    /// Directory where optional BattleLuck helper tools are extracted on first load.
-    /// Tools are kept below the config root so a server owner can inspect or remove
-    /// them without touching the plugin binary.
-    /// </summary>
-    public static string ToolsRoot => Path.Combine(ConfigRoot, "tools");
 
     public static AIConfig LoadAIConfig()
     {
@@ -59,8 +54,89 @@ public static class ConfigLoader
         var config = LoadJson<AIConfig>(aiConfigPath) ?? new AIConfig();
         ApplyEnvOverrides(config);
         PluginSettings.ApplyAIOverrides(config);
+        EnforceServerOnlyAiProfile(config);
         _aiConfig = config;
         return config;
+    }
+
+    static void EnforceServerOnlyAiProfile(AIConfig config)
+    {
+        // The revamp supports exactly one optional local HTTP adapter. Legacy
+        // cloud, sidecar, and MCP settings may still deserialize for one migration
+        // release, but they cannot become executable runtime capabilities.
+        config.Provider = "llama";
+        config.LlamaAPI.Enabled = true;
+        if (!Uri.TryCreate(config.LlamaAPI.BaseUrl, UriKind.Absolute, out var localEndpoint) ||
+            localEndpoint.Scheme is not ("http" or "https") || !localEndpoint.IsLoopback)
+        {
+            config.LlamaAPI.BaseUrl = "http://127.0.0.1:11434";
+        }
+        config.LlamaAPI.Model = string.IsNullOrWhiteSpace(config.LlamaAPI.Model)
+            ? "qwen2.5:0.5b"
+            : config.LlamaAPI.Model;
+        config.GoogleAIStudio.ApiKey = "";
+        config.GoogleAIStudio.FallbackModels.Clear();
+        config.CloudflareAI.Enabled = false;
+        config.CloudflareAI.AccountId = "";
+        config.CloudflareAI.ApiToken = "";
+        config.Sidecar.Enabled = false;
+        config.Sidecar.AuthKey = "";
+        config.McpRuntime.Enabled = false;
+        config.McpRuntime.Servers.Clear();
+    }
+
+    public static BattleLuckConfig LoadBattleLuckConfig()
+    {
+        if (_ownerConfig != null)
+            return _ownerConfig;
+        EnsureDefaultsDeployed();
+        var path = Path.Combine(ConfigRoot, "battleluck.json");
+        var config = LoadJson<BattleLuckConfig>(path) ?? new BattleLuckConfig();
+        config.Results.Keep = Math.Clamp(config.Results.Keep, 1, 1000);
+        if (config.Schema != 1)
+            BattleLuckPlugin.LogWarning($"[ConfigLoader] Unsupported battleluck.json schema {config.Schema}; safe schema-1 defaults are used for new fields.");
+        if (config.Chat.KillfeedScope is not ("off" or "event" or "global"))
+            config.Chat.KillfeedScope = "event";
+        if (!Uri.TryCreate(config.Assistant.LocalUrl, UriKind.Absolute, out var localUri) ||
+            localUri.Scheme is not ("http" or "https"))
+            config.Assistant.LocalUrl = "http://127.0.0.1:11434";
+        _ownerConfig = config;
+        EnsureRuntimeDirectories();
+        return config;
+    }
+
+    public static bool TryReloadBattleLuckConfig(out string message)
+    {
+        var path = Path.Combine(ConfigRoot, "battleluck.json");
+        try
+        {
+            var candidate = JsonSerializer.Deserialize<BattleLuckConfig>(File.ReadAllText(path), JsonOpts);
+            if (candidate == null) { message = "battleluck.json is empty."; return false; }
+            if (candidate.Schema != 1) { message = $"Unsupported schema {candidate.Schema}."; return false; }
+            if (candidate.Results.Keep is < 1 or > 1000) { message = "results.keep must be between 1 and 1000."; return false; }
+            if (candidate.Chat.KillfeedScope is not ("off" or "event" or "global"))
+            { message = "chat.killfeed_scope must be off, event, or global."; return false; }
+            if (!Uri.TryCreate(candidate.Assistant.LocalUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            { message = "assistant.local_url must be an absolute HTTP(S) URL."; return false; }
+            _ownerConfig = candidate;
+            EnsureRuntimeDirectories();
+            message = "Configuration validated and reloaded.";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            message = $"Configuration rejected; the previous live configuration remains active: {ex.Message}";
+            return false;
+        }
+    }
+
+    static void EnsureRuntimeDirectories()
+    {
+        var root = Path.Combine(ConfigRoot, "runtime");
+        Directory.CreateDirectory(Path.Combine(root, "ledger"));
+        Directory.CreateDirectory(Path.Combine(root, "results"));
+        Directory.CreateDirectory(Path.Combine(root, "recovery"));
+        Directory.CreateDirectory(Path.Combine(ConfigRoot, "logs"));
     }
 
     static void ApplyEnvOverrides(AIConfig config)
@@ -287,6 +363,7 @@ public static class ConfigLoader
         ConfigAdapter.InvalidateAll();
         _aiConfig = null;
         _actionConfig = null;
+        _ownerConfig = null;
         _defaultsEnsured = false;
     }
 
@@ -308,22 +385,18 @@ public static class ConfigLoader
                 assembly,
                 $"{assemblyName}.config.BattleLuck.",
                 ConfigRoot);
-            var toolsDeployed = DeployEmbeddedFiles(
-                assembly,
-                $"{assemblyName}.tools.",
-                ToolsRoot);
+            UnifiedEventMigrationService.MigrateSplitDefinitions(ConfigRoot, BattleLuckPlugin.LogInfo,
+                BattleLuckPlugin.LogWarning);
             var allowlistsDeployed = DeployEmbeddedFiles(
                 assembly,
                 $"{assemblyName}.docs.audit.systems.allowlists.",
                 Path.Combine(ConfigRoot, "audit", "systems", "allowlists"));
 
-            if (configDeployed > 0 || toolsDeployed > 0 || allowlistsDeployed > 0)
+            if (configDeployed > 0 || allowlistsDeployed > 0)
             {
                 var details = new List<string>();
                 if (configDeployed > 0)
                     details.Add($"{configDeployed} config file(s)");
-                if (toolsDeployed > 0)
-                    details.Add($"{toolsDeployed} tool file(s)");
                 if (allowlistsDeployed > 0)
                     details.Add($"{allowlistsDeployed} KindredExtract allowlist file(s)");
                 BattleLuckPlugin.LogInfo($"[ConfigLoader] Extracted {string.Join(" and ", details)} under {ConfigRoot}");
@@ -337,7 +410,7 @@ public static class ConfigLoader
             {
                 _defaultsEnsured = false;
             }
-            BattleLuckPlugin.LogWarning($"[ConfigLoader] Failed to extract embedded defaults/tools: {ex.Message}");
+            BattleLuckPlugin.LogWarning($"[ConfigLoader] Failed to extract embedded defaults: {ex.Message}");
         }
     }
 

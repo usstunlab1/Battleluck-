@@ -81,7 +81,9 @@ public sealed class LlmAnalyticsCommands
         if (string.IsNullOrWhiteSpace(intent.ModeId))
             return "join_zone intent requires 'modeId'.";
 
-        var result = BattleLuckPlugin.Session.ToggleEnter(steamId, player, intent.ModeId);
+        var session = BattleLuckPlugin.Session;
+        if (session == null) return "Event runtime is not ready.";
+        var result = session.ToggleEnter(steamId, player, intent.ModeId);
         return result.Success
             ? $"✔ Player joined mode '{intent.ModeId}'."
             : $"✘ Join failed: {result.Error ?? result.UserMessage}";
@@ -89,7 +91,9 @@ public sealed class LlmAnalyticsCommands
 
     static string ExecuteLeaveZone(ulong steamId, Entity player, LlmIntent? intent = null)
     {
-        var result = BattleLuckPlugin.Session.ToggleLeave(steamId, player);
+        var session = BattleLuckPlugin.Session;
+        if (session == null) return "Event runtime is not ready.";
+        var result = session.ToggleLeave(steamId, player);
         return result.Success
             ? "✔ Player left zone."
             : $"✘ Leave failed: {result.Error ?? result.UserMessage}";

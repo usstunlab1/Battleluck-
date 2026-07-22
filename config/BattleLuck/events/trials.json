@@ -1,0 +1,11 @@
+{
+  "metadata": { "id": "trials", "displayName": "Trials", "enabled": true, "version": "2" },
+  "rules": { "minPlayers": 1, "maxPlayers": 4, "enablePvP": false, "enableVBloods": true, "enableEliteMobs": false, "matchDurationMinutes": 10, "allowLateJoin": false, "eliminationMode": false, "livesPerPlayer": 3, "zoneEnterRule": "auto_enter" },
+  "zones": [{
+    "name": "Trial Grounds", "type": "trials", "hash": 2006, "priority": 1, "kitId": "trials",
+    "center": { "x": -1570, "y": 5, "z": -2800 }, "teleportSpawn": { "x": -1570, "y": 5, "z": -2800 },
+    "radius": 60, "exitRadius": 70, "safe": false, "blockedActions": [], "boundaryPolicy": "dot_and_walls",
+    "boundary": { "policy": "dot_and_walls", "dot": { "enabled": true, "warningRadiusPercent": 0.8, "dangerRadiusPercent": 0.95, "teleportOnExit": true }, "walls": { "enabled": false, "height": 15, "spacing": 5, "floorSpacing": 2.5, "batchSize": 2, "spawnWalls": false, "spawnFloors": false, "requireOnlineAdmin": true, "wallPrefab": "TM_Castle_Wall_Tier02_Stone", "floorPrefab": "TM_Castle_Floor_Foundation_Stone03", "buffs": [], "timers": [], "glow": { "enabled": false, "scanWidth": 6, "maxGlowEntities": 32, "batchSize": 4 } } }
+  }],
+  "actions": [{ "type": "pvp.disable" }, { "type": "kit.apply", "params": { "kitId": "trials" } }]
+}

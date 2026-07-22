@@ -3139,7 +3139,6 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
 
         var radius = Float(p, "radius", 0f);
         var clearRadius = Float(p, "clearRadius", Float(p, "expandClear", 0f));
-        var allowLiveWorldMutations = false;
 
         if (eventTrackedZoneOnly)
         {
@@ -3155,7 +3154,6 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
             if (clearRadius > 0f)
                 clearRadius = Math.Min(clearRadius, zoneRadius);
 
-            allowLiveWorldMutations = true;
             c.GameContext.State["arenaSpawningRequested"] = true;
             c.GameContext.State[$"schematic:{eventName}:sessionId"] = c.GameContext.SessionId;
             c.GameContext.State[$"schematic:{eventName}:group"] = Text(p, "group", eventName);
@@ -3641,18 +3639,21 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
 
     static OperationResult UnlockAllVBloods(Entity player)
     {
-        return ProgressionController.UnlockAllVBloods(player);
+        return BattleLuckPlugin.Progression?.UnlockAllVBloods(player)
+            ?? OperationResult.Fail("Progression service is not initialized.");
     }
 
     static OperationResult UnlockAllResearch(Entity player)
     {
-        return ProgressionController.UnlockAllResearch(player);
+        return BattleLuckPlugin.Progression?.UnlockAllResearch(player)
+            ?? OperationResult.Fail("Progression service is not initialized.");
     }
 
     static OperationResult SetProgressionTier(Entity player, Dictionary<string, string> p, FlowActionContext c)
     {
         var tier = Int(p, "tier", 8);
-        var result = ProgressionController.SetTier(player, tier);
+        var result = BattleLuckPlugin.Progression?.SetTier(player, tier)
+            ?? OperationResult.Fail("Progression service is not initialized.");
         if (!result.Success) return result;
         
         var gearLevel = Int(p, "gearLevel", tier switch

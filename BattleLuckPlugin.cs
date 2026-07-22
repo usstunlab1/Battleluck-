@@ -21,6 +21,7 @@ using BattleLuck.Services.Encounter;
 using BattleLuck.Services.Boss;
 using BattleLuck.Services.Portal;
 using BattleLuck.Services.Creature;
+using BattleLuck.Services.Diagnostics;
 using VampireCommandFramework;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +55,9 @@ public class BattleLuckPlugin : BasePlugin
     public static ClanTaskService? ClanTasks { get => Core.ClanTasks; private set => Core.ClanTasks = value; }
     public static RoadmapService? Roadmap { get => Core.Roadmap; private set => Core.Roadmap = value; }
     public static CastlePolicyService? CastlePolicy { get => Core.CastlePolicy; private set => Core.CastlePolicy = value; }
+    public static ServerEventPlatform? EventPlatform { get => Core.EventPlatform; private set => Core.EventPlatform = value; }
+    public static PlayerDirectoryService? PlayerDirectory { get => Core.PlayerDirectory; private set => Core.PlayerDirectory = value; }
+    public static IErrorReporter ErrorReporter { get => Core.ErrorReporter; private set => Core.ErrorReporter = value; }
     // ── Wave 1: New expansion services ──────────────────────────────────────────
     public static CompanionService? Companion { get => Core.Companion; private set => Core.Companion = value; }
     public static EncounterService? Encounters { get => Core.Encounters; private set => Core.Encounters = value; }
@@ -155,6 +159,11 @@ public class BattleLuckPlugin : BasePlugin
         Log.LogInfo("[BattleLuck] Loading...");
         PluginSettings.Initialize(Config);
         ConfigLoader.EnsureDefaultsDeployed();
+        var ownerConfig = ConfigLoader.LoadBattleLuckConfig();
+        ErrorReporter = ownerConfig.Backtrace.Enabled
+            ? new BacktraceHttpErrorReporter(ownerConfig.Backtrace,
+                Environment.GetEnvironmentVariable("BATTLELUCK_BACKTRACE_SUBMISSION_TOKEN"))
+            : NoOpErrorReporter.Instance;
         ModeConfigLoader.EnsureWatcher();
         SchematicLoader.LoadAll();
 
@@ -496,6 +505,7 @@ public class BattleLuckPlugin : BasePlugin
         catch (Exception ex)
         {
             Log?.LogWarning($"[BattleLuck] Tick error: {ex.Message}");
+            ErrorReporter.Report(ex, new ErrorReportContext { Action = "server.tick", Critical = true });
         }
     }
 
@@ -535,6 +545,14 @@ public class BattleLuckPlugin : BasePlugin
 
                 Session = new SessionController(GameModes!, playerState, flow, zoneDetection);
                 Session.Initialize();
+
+                var ownerConfig = ConfigLoader.LoadBattleLuckConfig();
+                EventPlatform = new ServerEventPlatform(Path.Combine(ConfigLoader.ConfigRoot, "runtime"), ownerConfig.Results.Keep);
+                Core.EventNormalizer?.Dispose();
+                Core.EventNormalizer = new GameEventNormalizer(EventPlatform, ProjectMEventRouter.Instance);
+                PlayerDirectory = new PlayerDirectoryService();
+                PlayerDirectory.Rebuild(VRisingCore.EntityManager);
+                Log?.LogInfo("[BattleLuck] Canonical event ledger, scoring, and results platform initialized.");
 
                 ZoneMap = new ZoneMapIconService();
                 ZoneMap.Initialize(GameModes!);
@@ -779,6 +797,7 @@ public class BattleLuckPlugin : BasePlugin
             catch (Exception ex)
             {
                 Log?.LogError($"[BattleLuck] TryInitializeCore failed: {ex}");
+                ErrorReporter.Report(ex, new ErrorReportContext { Action = "core.initialize", Critical = true });
                 CleanupFailedCoreInitialization();
                 return false;
             }
@@ -861,6 +880,13 @@ public class BattleLuckPlugin : BasePlugin
 
     public override bool Unload()
     {
+        try { ErrorReporter.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { }
+        ErrorReporter = NoOpErrorReporter.Instance;
+        Core.EventNormalizer?.Dispose();
+        Core.EventNormalizer = null;
+        EventPlatform?.Dispose();
+        EventPlatform = null;
+        PlayerDirectory = null;
         BuildingRestrictionController.Reset();
         FloorLockService.Reset();
         NpcService?.DespawnAll();

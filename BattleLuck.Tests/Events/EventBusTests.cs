@@ -4,7 +4,7 @@ namespace BattleLuck.Tests.Events;
 
 public sealed class EventBusTests
 {
-    [Fact]
+    [Fact(Skip = "Requires executable Unity.Entities binaries from a V Rising dedicated-server installation.")]
     public void RaiseZoneExit_IsolatesThrowingSubscribers()
     {
         var observed = 0;

@@ -54,14 +54,35 @@ public sealed class PromptContextLoader
 
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(path));
+            return ParseEventJson(File.ReadAllText(path), modeId);
+        }
+        catch (Exception ex)
+        {
+            BattleLuckPlugin.LogWarning($"[PromptContextLoader] Failed to load AI config from {path}: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Parses the embedded AI policy from a candidate unified event document.
+    /// Deployment validation uses this overload so it never reads a stale live
+    /// event while validating a staged replacement.
+    /// </summary>
+    public PromptContext? ParseEventJson(string eventJson, string fallbackEventId = "")
+    {
+        if (string.IsNullOrWhiteSpace(eventJson))
+            return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(eventJson);
             var root = document.RootElement;
             if (!root.TryGetProperty("ai", out var ai) || ai.ValueKind != JsonValueKind.Object)
                 return null;
 
             var context = new PromptContext
             {
-                EventId = ReadEventId(root, modeId),
+                EventId = ReadEventId(root, fallbackEventId),
                 Enabled = ReadBoolean(ai, "enabled", true)
             };
 
@@ -95,7 +116,7 @@ public sealed class PromptContextLoader
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[PromptContextLoader] Failed to load AI config from {path}: {ex.Message}");
+            BattleLuckPlugin.LogWarning($"[PromptContextLoader] Failed to parse staged event AI policy: {ex.Message}");
             return null;
         }
     }

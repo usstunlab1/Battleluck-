@@ -317,7 +317,7 @@ public sealed class EventDeploymentService
             error.Contains("blocked by", StringComparison.OrdinalIgnoreCase) ||
             error.Contains("not allowed by", StringComparison.OrdinalIgnoreCase));
 
-        ValidatePrompt(files["prompt.txt"], modeId, definition, result);
+        ValidatePrompt(files["event.json"], modeId, definition, result);
         ValidateZones(modeId, files["zones.json"], definition, result);
         ValidateKit(modeId, files["kits.json"], result);
         ValidateZoneHashCollisions(modeId, definition, excludeModeId, result);
@@ -367,24 +367,20 @@ public sealed class EventDeploymentService
         }
     }
 
-    void ValidatePrompt(string text, string modeId, UnifiedEventDefinition definition, EventValidationResult result)
+    void ValidatePrompt(string eventJson, string modeId, UnifiedEventDefinition definition, EventValidationResult result)
     {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            result.Errors.Add("ESCHEMA: prompt.txt is empty.");
+        var prompt = new PromptContextLoader().ParseEventJson(eventJson, modeId);
+        if (prompt == null)
             return;
-        }
-
-        var prompt = new PromptContextLoader().Parse(text);
         if (!string.IsNullOrWhiteSpace(prompt.EventId) &&
             !prompt.EventId.Equals(modeId, StringComparison.OrdinalIgnoreCase))
-            result.Errors.Add($"prompt.txt eventId '{prompt.EventId}' does not match event '{modeId}'.");
+            result.Errors.Add($"event.json AI policy event id '{prompt.EventId}' does not match event '{modeId}'.");
 
         var entries = _actions.Entries;
         foreach (var actionName in prompt.AllowedActions.Concat(prompt.BlockedActions).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!entries.ContainsKey(actionName) && !LiveSystemRegistryService.TryGet(actionName, out _))
-                result.Errors.Add($"prompt.txt references unknown action '{actionName}'.");
+                result.Errors.Add($"event.json AI policy references unknown action '{actionName}'.");
         }
 
         var blocked = prompt.BlockedActions.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -393,9 +389,9 @@ public sealed class EventDeploymentService
         {
             var actionName = action.ToActionString().Split(':', 2)[0].Trim();
             if (blocked.Contains(actionName))
-                result.Errors.Add($"Event action '{actionName}' is blocked by prompt.txt.");
+                result.Errors.Add($"Event action '{actionName}' is blocked by event.json AI policy.");
             else if (allowed.Count > 0 && !allowed.Contains(actionName))
-                result.Errors.Add($"Event action '{actionName}' is not allowed by prompt.txt.");
+                result.Errors.Add($"Event action '{actionName}' is not allowed by event.json AI policy.");
         }
     }
 

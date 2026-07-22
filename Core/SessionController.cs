@@ -216,7 +216,6 @@ public sealed class SessionController
         _pendingEnd.Clear();
 
         // Clear AI channel state on shutdown
-        BattleLuck.Services.Chat.AiChannelState.Clear();
     }
 
     ModeConfig LoadEffectiveConfig(string modeId) => _eventDefinitions.LoadEffectiveConfig(modeId);
@@ -1006,7 +1005,6 @@ public sealed class SessionController
         _playerZoneMap.Remove(steamId);
 
         // Remove from AI channel if present
-        BattleLuck.Services.Chat.AiChannelState.Remove(steamId);
 
         // Transition managed session for disconnected player.
         if (_playerSessions.TryGetValue(steamId, out var dcParticipant))

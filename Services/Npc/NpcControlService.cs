@@ -522,7 +522,6 @@ public sealed class NpcControlService
                 .FirstOrDefault();
             return prefabMatch;
         }
-        return null;
     }
 
     bool TryGetByEntityLocked(Entity entity, out ControlledNpcEntry entry)

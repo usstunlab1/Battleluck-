@@ -13,4 +13,7 @@ public sealed class PlayerProgressionService
 
     public OperationResult UnlockAllResearch(Entity player) => OperationResult.Fail(
         "Research progression mutation is not available through a verified server API on this build.");
+
+    public OperationResult SetTier(Entity player, int tier) => OperationResult.Fail(
+        "Progression tier mutation is not available through a verified server API on this build.");
 }

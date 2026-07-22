@@ -127,6 +127,8 @@ public sealed class CastlePaymentService
             if (counter != null && counter.Count > 0)
             {
                 counter.Count--;
+                if (counter.Count == 0)
+                    policy.QuotaCounters.Remove(counter);
                 policy.UpdatedAtUtc = DateTime.UtcNow;
                 _store.Upsert(policy);
             }

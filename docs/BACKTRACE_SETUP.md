@@ -1,100 +1,24 @@
-# Backtrace Error Reporting Setup
+# Optional BattleLuck Backtrace reporting
 
-This document describes how to set up Backtrace error reporting for BattleLuck.
+BattleLuck includes a small server-side HTTP reporter for exceptions caught at BattleLuck-owned boundaries. It is disabled by default, does not replace Unity's logger, does not capture unrelated game/mod logs, and never writes reports to disk.
 
-## Overview
-
-Backtrace is a crash and error reporting service that captures:
-- Unhandled exceptions
-- Log errors (from `Debug.LogError`)
-- Handled exceptions (explicitly reported)
-- Game state context (mode, player count, etc.)
-
-## Prerequisites
-
-1. A Backtrace account (sign up at https://backtrace.io)
-2. A Backtrace project with a submission token
-
-## Configuration
-
-Edit `BepInEx/config/BattleLuck/backtrace_config.json`:
+Set the nonsecret options in `BepInEx/config/BattleLuck/battleluck.json`:
 
 ```json
 {
-  "enabled": true,
-  "serverAddress": "https://submit.backtrace.io",
-  "submissionToken": "your-submission-token-here",
-  "attributes": {
-    "modVersion": "1.0.0",
-    "game": "VRising"
-  },
-  "database": {
+  "backtrace": {
     "enabled": true,
-    "path": "backtrace_database",
-    "maxRecords": 100
-  },
-  "reporting": {
-    "unhandledExceptions": true,
-    "logErrors": true,
-    "handledExceptions": true
+    "subdomain": "your-backtrace-subdomain"
   }
 }
 ```
 
-### Getting Your Server Address and Token
+Supply the submission token only through the dedicated server process environment:
 
-1. In the Backtrace Console, go to **Project Settings > Integration Guides > Unity**
-2. Copy the server address in the format: `https://submit.backtrace.io/{subdomain}/{submission-token}/json`
-3. Set `serverAddress` to `https://submit.backtrace.io`
-4. Set `submissionToken` to your submission token
-
-## Features
-
-### Automatic Error Capture
-
-The `UnityLogHandler` automatically captures:
-- `Debug.LogError` messages
-- Unity exceptions
-- Unhandled exceptions
-
-### Manual Error Reporting
-
-You can report errors programmatically:
-
-```csharp
-// Report an exception with context
-BattleLuckPlugin.ErrorReporter?.ReportException(
-    exception,
-    "Custom error message",
-    new { PlayerId = steamId, Action = "SomeAction" }
-);
-
-// Report a log error
-BattleLuckPlugin.ErrorReporter?.ReportLogError(
-    "Error message",
-    stackTrace,
-    new { Context = "Additional info" }
-);
+```powershell
+$env:BATTLELUCK_BACKTRACE_SUBMISSION_TOKEN = "your-submission-token"
 ```
 
-### Dynamic Attributes
+Restart the server after changing the environment. Never put the token or a full submission URL in a tracked JSON file. Use `.bl admin diagnostics errors` to inspect the in-memory queue state and `.bl admin diagnostics errors test` to submit a redacted test exception.
 
-Update attributes at runtime:
-
-```csharp
-BattleLuckPlugin.ErrorReporter?.UpdateAttribute("gameMode", "bloodbath");
-```
-
-## Integration Points
-
-The Backtrace service is integrated into:
-
-1. **Plugin Initialization** - Initialized during `TryInitializeCore()`
-2. **Log Handler** - Captures Unity log errors via `UnityLogHandler`
-3. **Cleanup** - Properly disposed during plugin unload
-
-## Notes
-
-- For full Unity SDK features (crashes, hangs, out-of-memory on mobile), install the Backtrace Unity SDK via OpenUPM or Unity Package Manager
-- This server-side implementation uses HTTP API for error reporting
-- Error reports include game state context (active mode, player count, session state)
+Reports are capped at 50 queued entries, deduplicated for 60 seconds, retried for network/429/5xx failures, and drained for at most two seconds during unload. HTTP 400 is dropped; HTTP 403 disables the reporter until reload. Payloads contain only BattleLuck context and exclude chat transcripts, credentials, inventories, raw ECS dumps, IP/authentication data, and unrelated player data.

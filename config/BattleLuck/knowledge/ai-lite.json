@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "id": "getting-started",
+      "terms": ["start", "help", "event", "begin"],
+      "answer": "Use .bl event to see the active event, .bl join <event> to join, and .bl score for your standing. Admins can validate an event before starting it."
+    },
+    {
+      "id": "results",
+      "terms": ["result", "winner", "score", "leaderboard", "top"],
+      "answer": "Use .bl score for your live score, .bl top for current standings, or .bl results last for the latest immutable result."
+    },
+    {
+      "id": "configuration",
+      "terms": ["config", "configuration", "reload", "file", "json"],
+      "answer": "Stable settings are in config/BattleLuck/battleluck.json. Each event owns one events/<eventId>.json file. Invalid candidates are rejected before becoming live."
+    },
+    {
+      "id": "zui",
+      "terms": ["zui", "ui", "window", "interface"],
+      "answer": "BattleLuck is server-side. Native chat always works. Players who already run ZUI may opt in with .bl ui zui and return with .bl ui native."
+    },
+    {
+      "id": "local-ai",
+      "terms": ["ai", "llm", "ollama", "local", "model"],
+      "answer": "AI-lite is embedded and free. The optional local adapter uses an OpenAI-compatible/Ollama endpoint and defaults to qwen2.5:0.5b; gameplay never depends on it."
+    },
+    {
+      "id": "developer-bridge",
+      "terms": ["developer", "npc", "simulation", "manifest", "access"],
+      "answer": "The developer bridge reads bounded allowlisted projections and produces validated action proposals. Static/model simulation is the default; dev-arena or live execution requires explicit scoped confirmation."
+    }
+  ]
+}

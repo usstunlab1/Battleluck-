@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "npc-simulation",
+  "usings": ["ProjectM", "Unity.Entities"],
+  "namespaces": ["ProjectM", "Unity.Entities", "BattleLuck.Services.Npc"],
+  "systems": ["ProjectM.AiMoveSystem", "ProjectM.AggroSystem"],
+  "components": ["ProjectM.Health", "ProjectM.Team", "Unity.Transforms.LocalTransform"],
+  "actions": ["npc.spawn", "npc.goto", "npc.patrol", "npc.guard", "npc.aggro", "npc.despawn"],
+  "limits": {
+    "maxEntities": 12,
+    "maxActions": 20,
+    "maxSnapshotBytes": 131072,
+    "maxSimulationSeconds": 30
+  }
+}

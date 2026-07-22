@@ -1,0 +1,19 @@
+{
+  "metadata": { "id": "trial_of_all_actions", "displayName": "Trial of All Actions", "enabled": true, "version": "2" },
+  "rules": { "minPlayers": 1, "maxPlayers": 10, "enablePvP": true, "enableVBloods": true, "enableEliteMobs": true, "matchDurationMinutes": 60, "allowLateJoin": true, "eliminationMode": false, "livesPerPlayer": 5, "zoneEnterRule": "auto_enter" },
+  "zones": [{
+    "name": "Testing Grounds", "type": "trials", "hash": 5555, "priority": 1, "kitId": "trial_of_all_actions",
+    "center": { "x": 0, "y": 5, "z": 0 }, "teleportSpawn": { "x": 0, "y": 5, "z": 0 }, "radius": 100, "exitRadius": 120, "safe": false, "boundaryPolicy": "dot_and_walls",
+    "boundary": { "policy": "dot_and_walls", "dot": { "enabled": true, "warningRadiusPercent": 0.8, "dangerRadiusPercent": 0.95, "teleportOnExit": true }, "walls": { "enabled": true, "height": 10, "spacing": 4, "floorSpacing": 2, "batchSize": 4, "spawnWalls": true, "spawnFloors": true, "requireOnlineAdmin": false, "wallPrefab": "TM_Castle_Wall_Tier02_Stone", "floorPrefab": "TM_Castle_Floor_Foundation_Stone03" } }
+  }],
+  "actions": [
+    { "type": "notification", "params": { "message": "Starting Trial of All Actions..." } },
+    { "type": "announce", "params": { "message": "ALL SYSTEMS GO: Initiating comprehensive test sequence." } },
+    { "type": "kit.apply", "params": { "kitId": "trial_of_all_actions" } }, { "type": "progression.unlock.all_vbloods" },
+    { "type": "progression.unlock.all_research" }, { "type": "progression.set_tier", "params": { "tier": "8" } },
+    { "type": "blood.change", "params": { "bloodType": "Warrior", "quality": "100" } }, { "type": "heal" }, { "type": "pvp.enable" },
+    { "type": "inventory.sort" }, { "type": "logistics.setting", "params": { "setting": "AutoStash", "enabled": "true" } },
+    { "type": "config.reload", "params": { "modeId": "trial_of_all_actions" } },
+    { "type": "event.set_prompt", "params": { "prompt": "# Trial Mode Active\nYou are testing the system. Observe and report." } }
+  ]
+}

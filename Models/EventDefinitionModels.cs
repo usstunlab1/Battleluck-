@@ -19,6 +19,9 @@ public sealed class UnifiedEventDefinition
     [JsonPropertyName("zones")]
     public List<EventZoneDefinition> Zones { get; set; } = new();
 
+    [JsonPropertyName("kit")]
+    public KitConfig? Kit { get; set; }
+
     [JsonPropertyName("objects")]
     public List<EventObjectDefinition> Objects { get; set; } = new();
 

@@ -1,6 +1,5 @@
 using System;
 using BattleLuck.ECS.Events;
-using BattleLuck.Services.Chat;
 using Unity.Entities;
 
 namespace BattleLuck.Services.Runtime;
@@ -54,7 +53,6 @@ public sealed class ProjectMEventRouter
             // GameEvents already owns the actual player-disconnect hook. Keep AI
             // channel cleanup attached to that authoritative lifecycle instead of
             // adding another player-state dictionary or Harmony disconnect patch.
-            GameEvents.OnPlayerLeft += evt => AiChannelState.Remove(evt.SteamId);
 
             BattleLuckPlugin.LogInfo("[ProjectMEventRouter] Initialized - listening to ProjectM ECS systems (Phase 1, no dispatch).");
             return router;
@@ -72,7 +70,6 @@ public sealed class ProjectMEventRouter
             // The plugin unload path calls ProjectMEventRouter.Shutdown before
             // GameEvents.Shutdown. Cancel every outstanding request and clear all
             // AI memberships here so no channel state survives a reload.
-            AiChannelState.Clear();
 
             if (_instance == null) return;
             // Null out all subscribers so we don't leak references.

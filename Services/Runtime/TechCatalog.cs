@@ -59,7 +59,7 @@ public sealed class TechResolver
         // Sort by priority descending (higher priority wins conflicts)
         var sorted = requestedTechIds
             .Where(id => _catalog.TryGetTech(id, out _))
-            .OrderByDescending(id => _catalog.TryGetTech(id, out var t) ? t.Priority : 0)
+            .OrderByDescending(id => _catalog.TryGetTech(id, out var t) && t != null ? t.Priority : 0)
             .ToList();
 
         foreach (var techId in sorted)

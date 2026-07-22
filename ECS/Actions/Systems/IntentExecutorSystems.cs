@@ -11,7 +11,6 @@ namespace BattleLuck.ECS.Actions.Systems;
 public partial class IntentExecutorSystem : SystemBase
 {
     private EntityQuery _intentQuery;
-    private SessionController _sessionController;
 
     public override void OnCreate()
     {
@@ -124,10 +123,11 @@ public partial class IntentExecutorSystem : SystemBase
         if (!player.Exists()) return;
         
         var steamId = player.GetSteamId();
-        var session = BattleLuckPlugin.Session?.GetSessionByEntity(sessionEntity);
-        if (session != null)
+        var controller = BattleLuckPlugin.Session;
+        var session = controller?.GetSessionByEntity(sessionEntity);
+        if (controller != null && session != null)
         {
-            BattleLuckPlugin.Session.QueueImmediateArenaRespawn(session, steamId, player);
+            controller.QueueImmediateArenaRespawn(session, steamId, player);
         }
     }
 
@@ -135,13 +135,14 @@ public partial class IntentExecutorSystem : SystemBase
     {
         if (!player.Exists()) return;
         var steamId = player.GetSteamId();
-        var session = BattleLuckPlugin.Session?.GetSessionByEntity(sessionEntity);
-        if (session != null)
+        var controller = BattleLuckPlugin.Session;
+        var session = controller?.GetSessionByEntity(sessionEntity);
+        if (controller != null && session != null)
         {
             // The existing ForceExitEliminatedPlayer handles snapshot restore logic
             // but we want to do it via intent.
             // For now, we call the existing logic.
-            BattleLuckPlugin.Session.ForceExitEliminatedPlayer(session, steamId, player);
+            controller.ForceExitEliminatedPlayer(session, steamId, player);
         }
     }
 
