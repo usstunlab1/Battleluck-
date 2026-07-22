@@ -15,7 +15,7 @@ public sealed class AiLiteKnowledgeService
     public string Answer(string query)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return "Ask about events, results, configuration, ZUI, local AI, or NPC simulation. Use .bl help for commands.";
+            return "Ask about events, results, configuration, local AI, or NPC simulation with .ai <request>.";
 
         var tokens = Tokenize(query);
         var best = _entries.Select(entry => new
@@ -25,7 +25,7 @@ public sealed class AiLiteKnowledgeService
         }).OrderByDescending(match => match.Score).ThenBy(match => match.Entry.Id, StringComparer.Ordinal).FirstOrDefault();
 
         return best == null || best.Score <= 0
-            ? "I could not match that safely. Use .bl help, .bl event, .bl results last, or ask about config, ZUI, local AI, or NPC simulation."
+            ? "I could not match that safely. Ask with .ai <request> about events, results, configuration, local AI, or NPC simulation."
             : best.Entry.Answer;
     }
 

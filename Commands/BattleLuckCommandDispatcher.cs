@@ -28,7 +28,7 @@ public sealed class BattleLuckCommandDispatcher
 
         foreach (var assembly in assemblies)
         {
-            foreach (var type in assembly.GetTypes())
+            foreach (var type in GetLoadableTypes(assembly))
             {
                 // Static command containers are abstract+sealed in CLR metadata.
                 // Exclude only true abstract base classes, not static classes.
@@ -39,9 +39,9 @@ public sealed class BattleLuckCommandDispatcher
                 {
                     var attr = method.GetCustomAttribute<BattleLuckCommandAttribute>();
                     if (attr == null) continue;
-                    if (!attr.Name.Equals("bl", StringComparison.OrdinalIgnoreCase) &&
-                        !attr.Name.StartsWith("bl ", StringComparison.OrdinalIgnoreCase) &&
-                        !attr.Name.StartsWith("ai.dev", StringComparison.OrdinalIgnoreCase))
+                    // BattleLuck exposes one native command: .ai <request>.
+                    // Legacy .bl and .ai.dev routes are deliberately not registered.
+                    if (!attr.Name.Equals("ai", StringComparison.OrdinalIgnoreCase))
                         continue;
 
                     if (method.ReturnType != typeof(void) &&
@@ -78,6 +78,20 @@ public sealed class BattleLuckCommandDispatcher
         }
 
         BattleLuckPlugin.LogInfo($"[CmdDispatcher] Registered {_commands.Count} BattleLuck commands: {string.Join(", ", _aliases.OrderBy(s => s))}");
+    }
+
+    static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            BattleLuckPlugin.LogWarning(
+                $"[CmdDispatcher] Skipped {ex.Types.Count(type => type == null)} type(s) with unavailable optional interop dependencies.");
+            return ex.Types.OfType<Type>();
+        }
     }
 
     public static bool TryDispatch(string rawInput, Entity senderEntity, ulong steamId, bool isAdmin, bool isConsole)

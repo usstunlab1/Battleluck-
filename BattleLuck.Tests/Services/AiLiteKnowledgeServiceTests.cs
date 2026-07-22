@@ -15,11 +15,11 @@ public sealed class AiLiteKnowledgeServiceTests
     }
 
     [Fact]
-    public void UnknownQuestion_FailsClosedToNativeHelp()
+    public void UnknownQuestion_FailsClosedToAiRequestHelp()
     {
         var service = new AiLiteKnowledgeService();
 
         service.Answer("xyzzy-unrecognized-request")
-            .Should().Contain(".bl help");
+            .Should().Contain(".ai <request>");
     }
 }

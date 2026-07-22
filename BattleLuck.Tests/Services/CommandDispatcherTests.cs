@@ -12,6 +12,18 @@ public sealed class CommandDispatcherTests
         Assert.False(CommandDiscoveryRules.IsCommandContainer(typeof(GenericCommands<>)));
     }
 
+    [Fact]
+    public void Public_command_surface_contains_only_ai_request()
+    {
+        BattleLuckCommandDispatcher.EnsureScanned();
+
+        Assert.Equal(new[] { "ai" }, BattleLuckCommandDispatcher.RegisteredCommands);
+        Assert.DoesNotContain(BattleLuckCommandDispatcher.RegisteredCommands,
+            command => command.Equals("bl", StringComparison.OrdinalIgnoreCase) ||
+                       command.StartsWith("bl ", StringComparison.OrdinalIgnoreCase) ||
+                       command.StartsWith("ai.dev", StringComparison.OrdinalIgnoreCase));
+    }
+
     static class StaticCommands { }
     abstract class AbstractCommands { }
     sealed class GenericCommands<T> { }
