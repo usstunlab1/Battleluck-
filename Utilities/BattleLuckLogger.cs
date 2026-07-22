@@ -13,6 +13,7 @@ public static class BattleLuckLogger
 {
     static string? _webhookUrl;
     static readonly System.Net.Http.HttpClient _http = new();
+    public static bool IsDiscordForwardingEnabled => _webhookUrl != null;
 
     // Severity → Discord embed colour (decimal)
     // Red is reserved only for Critical; Warning uses amber, Error uses softer red.
@@ -32,7 +33,10 @@ public static class BattleLuckLogger
         if (string.IsNullOrWhiteSpace(url) ||
             !System.Uri.TryCreate(url.Trim(), System.UriKind.Absolute, out var uri) ||
             (uri.Scheme != System.Uri.UriSchemeHttp && uri.Scheme != System.Uri.UriSchemeHttps) ||
-            string.IsNullOrWhiteSpace(uri.Host))
+            !uri.Scheme.Equals(System.Uri.UriSchemeHttps, System.StringComparison.OrdinalIgnoreCase) ||
+            !(uri.Host.Equals("discord.com", System.StringComparison.OrdinalIgnoreCase) ||
+              uri.Host.Equals("discordapp.com", System.StringComparison.OrdinalIgnoreCase)) ||
+            !uri.AbsolutePath.StartsWith("/api/webhooks/", System.StringComparison.Ordinal))
         {
             _webhookUrl = null;
             return;
@@ -90,6 +94,8 @@ public static class BattleLuckLogger
 
     // Called by BattleLuckPlugin.LogInfo/Warning/Error to forward without double-logging
     public static void Post_Internal(string level, string message) => Post(level, message);
+
+    public static void Forward(string level, string message) => Post(level, message);
 
     // ── Discord forwarding ────────────────────────────────────────────────
 

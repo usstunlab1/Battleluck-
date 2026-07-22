@@ -7,6 +7,11 @@ using BattleLuck.Services.AI;
 using BattleLuck.Services.Npc;
 using BattleLuck.Services.Logistics;
 using BattleLuck.Services.Progression;
+using BattleLuck.Services.Companion;
+using BattleLuck.Services.Creature;
+using BattleLuck.Services.Encounter;
+using BattleLuck.Services.Portal;
+using BattleLuck.Services.Boss;
 using ProjectM;
 using Stunlock.Core;
 using Unity.Entities;
@@ -47,6 +52,95 @@ public sealed class FlowActionExecutor : IActionRuntime
     {
         "tech.apply", "progression.unlock.all_vbloods", "progression.unlock.all_research",
         "progression.unlock_gear", "progression.set_tier"
+    };
+    // Catalog entries retained as design/reference metadata but intentionally
+    // not advertised as executable until a real server handler exists. This
+    // prevents AI, event validation, and admin execution from reaching the
+    // switch default and falsely presenting these names as working actions.
+    public static readonly IReadOnlySet<string> CatalogOnlyActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "ability.cooldown.multiplier.apply",
+        "ability.cooldown.multiplier.reset",
+        "ability.loadout.apply",
+        "ability.loadout.bind_weapon",
+        "ability.loadout.capture",
+        "ability.loadout.unbind_weapon",
+        "ability.slot.policy.set",
+        "ability.swap.policy.set",
+        "boss.reward.eligibility.set",
+        "boss.spawn.policy.set",
+        "boss.spawn.restore",
+        "boss.spawn.suppress",
+        "boss.unlock.policy.set",
+        "castle.raidability.set",
+        "container.item.rule.set",
+        "crafting.mastery.bonus.set",
+        "crafting.mastery.progress.add",
+        "crafting.result.modify",
+        "dungeon.abort",
+        "dungeon.boss.spawn",
+        "dungeon.complete",
+        "dungeon.layout.load",
+        "dungeon.room.activate",
+        "dungeon.session.create",
+        "encounter.random.select",
+        "encounter.reward.grant",
+        "equipment.appearance.reset",
+        "equipment.appearance.set",
+        "equipment.template.create",
+        "equipment.template.grant",
+        "equipment.template.validate",
+        "invasion.cancel",
+        "invasion.end",
+        "invasion.prepare",
+        "invasion.scale",
+        "invasion.start",
+        "invasion.target.set",
+        "invasion.wave.spawn",
+        "item.durability.regeneration.remove",
+        "item.durability.regeneration.set",
+        "item.durability.restore",
+        "lane.define",
+        "lane.structure.damage",
+        "lane.tower.disable",
+        "lane.tower.enable",
+        "lane.tower.spawn",
+        "lane.unit.advance",
+        "lane.wave.spawn",
+        "mastery.perk.reset",
+        "mastery.perk.unlock",
+        "match.currency.grant",
+        "match.currency.spend",
+        "match.form.policy.set",
+        "match.recall",
+        "match.upgrade.purchase",
+        "object.place",
+        "object.remove",
+        "object.variant.set",
+        "player.afk.evaluate",
+        "player.afk.remove",
+        "player.chat.mute",
+        "player.chat.unmute",
+        "player.movement.modifier.apply",
+        "player.movement.modifier.remove",
+        "player.revive.duration.reset",
+        "player.revive.duration.set",
+        "schematic.capture",
+        "servant.hunt.assign",
+        "servant.hunt.cancel",
+        "servant.hunt.repeat",
+        "servant.hunt.snapshot",
+        "servant.hunt.validate",
+        "siege.policy.set",
+        "structure.fade.policy.set",
+        "structure.railing.remove",
+        "sunlight.damage.scale",
+        "sunlight.rule.set",
+        "world.time.advance",
+        "world.time.set",
+        "world.weather.restore",
+        "world.weather.set",
+        "zone.movement.modifier.set"
     };
     public static readonly HashSet<string> NonBlockingEnterActions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -115,7 +209,7 @@ public sealed class FlowActionExecutor : IActionRuntime
                 foreach (var entry in registered.EnumerateArray())
                 {
                     var name = entry.GetString();
-                    if (!string.IsNullOrWhiteSpace(name))
+                    if (!string.IsNullOrWhiteSpace(name) && !CatalogOnlyActions.Contains(name))
                         names.Add(name!);
                 }
             }
@@ -949,6 +1043,40 @@ public sealed class FlowActionExecutor : IActionRuntime
             case "entity.validate":
                 return EntityValidate(p);
 
+            // Expansion families backed by the server-owned services created
+            // during core initialization. Keeping the dispatch here preserves
+            // the single canonical action execution boundary.
+            case "companion.assign":
+            case "companion.follow":
+            case "companion.guard":
+            case "companion.dismiss":
+            case "companion.despawn":
+            case "companion.behavior.set":
+            case "companion.limit.set":
+                return ExecuteCompanionAction(actionName, player, p, c);
+            case "creature.capture.validate":
+            case "creature.capture.apply":
+            case "creature.capture.release":
+            case "creature.blood.threshold.set":
+                return ExecuteCreatureAction(actionName, player, p, c);
+            case "encounter.spawn":
+            case "encounter.named_unit.spawn":
+            case "encounter.wave.start":
+            case "encounter.wave.stop":
+            case "encounter.cleanup":
+                return ExecuteEncounterAction(actionName, player, p, c);
+            case "portal.create":
+            case "portal.enable":
+            case "portal.disable":
+            case "portal.teleport":
+            case "portal.return.bind":
+            case "portal.return.execute":
+                return ExecutePortalAction(actionName, player, p, c);
+            case "boss.scale.apply":
+            case "boss.scale.refresh":
+            case "boss.scale.reset":
+                return ExecuteBossScalingAction(actionName, p);
+
             case string s when s.StartsWith("system."):
                 if (!LiveSystemRegistryService.TryGet(s, out var systemRegistration))
                 {
@@ -963,6 +1091,191 @@ public sealed class FlowActionExecutor : IActionRuntime
             default:
                 return OperationResult.Fail($"Unknown action '{actionName}'.");
         }
+    }
+
+    static OperationResult ExecuteCompanionAction(
+        string actionName,
+        Entity player,
+        Dictionary<string, string> p,
+        FlowActionContext c)
+    {
+        var service = BattleLuckPlugin.Companion;
+        if (service == null)
+            return OperationResult.Fail("Companion service is not initialized.");
+
+        var entityId = Text(p, "entityId", "");
+        return actionName switch
+        {
+            "companion.assign" => service.Assign(
+                Required(p, "entityId"),
+                ULong(p, "ownerSteamId", player.GetSteamId()),
+                Text(p, "role", "follow"),
+                Bool(p, "persist", false)),
+            "companion.follow" => service.Follow(
+                Required(p, "entityId"),
+                ULong(p, "targetSteamId", player.GetSteamId()),
+                Float(p, "distance", 6f),
+                Float(p, "teleportCatchupDistance", 80f),
+                Bool(p, "combatEnabled", true)),
+            "companion.guard" => service.Guard(
+                Required(p, "entityId"),
+                ResolveActionPosition(player, p, c, "center"),
+                Float(p, "radius", 20f),
+                Text(p, "aggroMode", "aggressive"),
+                Bool(p, "returnToCenter", true)),
+            "companion.dismiss" => service.Dismiss(Required(p, "entityId")),
+            "companion.despawn" => service.Despawn(Required(p, "entityId")),
+            "companion.behavior.set" => service.SetBehavior(
+                Required(p, "entityId"),
+                Required(p, "behavior"),
+                Float(p, "radius", 6f),
+                OptionalUlong(p, "target"),
+                Bool(p, "combatEnabled", true)),
+            "companion.limit.set" => service.SetLimit(
+                Required(p, "scope"),
+                Int(p, "maximum", 1),
+                Text(p, "overflowPolicy", "reject")),
+            _ => OperationResult.Fail($"Unknown companion action '{actionName}'.")
+        };
+    }
+
+    static OperationResult ExecuteCreatureAction(
+        string actionName,
+        Entity player,
+        Dictionary<string, string> p,
+        FlowActionContext c)
+    {
+        var service = BattleLuckPlugin.CreatureCapture;
+        if (service == null)
+            return OperationResult.Fail("Creature capture service is not initialized.");
+
+        switch (actionName)
+        {
+            case "creature.capture.validate":
+            {
+                var result = service.Validate(
+                    Required(p, "targetEntity"),
+                    Bool(p, "allowVBlood", false),
+                    Text(p, "allowedCategories", ""),
+                    Float(p, "minimumBloodQuality", 0f),
+                    Int(p, "maximumLevel", 0));
+                return result.Success ? OperationResult.Ok() : OperationResult.Fail(result.Error ?? "Creature is not eligible for capture.");
+            }
+            case "creature.capture.apply":
+                return service.Apply(
+                    Required(p, "targetEntity"),
+                    ULong(p, "ownerSteamId", player.GetSteamId()),
+                    TryActionPosition(p, "destination"),
+                    Bool(p, "convertToPrisoner", false),
+                    Bool(p, "preserveBlood", true));
+            case "creature.capture.release":
+                return service.Release(Required(p, "targetEntity"));
+            case "creature.blood.threshold.set":
+                return service.SetBloodThreshold(
+                    Float(p, "minimumQuality", 0f),
+                    Float(p, "maximumQuality", 100f),
+                    Text(p, "category", ""));
+            default:
+                return OperationResult.Fail($"Unknown creature action '{actionName}'.");
+        }
+    }
+
+    static OperationResult ExecuteEncounterAction(
+        string actionName,
+        Entity player,
+        Dictionary<string, string> p,
+        FlowActionContext c)
+    {
+        var service = BattleLuckPlugin.Encounters;
+        if (service == null)
+            return OperationResult.Fail("Encounter service is not initialized.");
+
+        var sessionId = Text(p, "sessionId", c.GameContext?.SessionId ?? "_encounter_");
+        return actionName switch
+        {
+            "encounter.spawn" => service.Spawn(
+                Required(p, "encounterId"),
+                sessionId,
+                ResolveActionPosition(player, p, c, "center"),
+                Text(p, "faction", ""),
+                Required(p, "prefabs"),
+                Math.Clamp(Int(p, "count", 1), 1, 100),
+                Text(p, "formation", "line"),
+                Math.Max(0f, Float(p, "despawnSeconds", 0f))),
+            "encounter.named_unit.spawn" => service.SpawnNamedUnit(
+                Required(p, "prefab"),
+                Text(p, "displayName", ""),
+                Text(p, "levelPolicy", "default"),
+                Text(p, "behavior", "hold"),
+                Text(p, "rewardTable", "")),
+            "encounter.wave.start" => service.StartWave(
+                Required(p, "waveSetId"),
+                Int(p, "waveNumber", 1),
+                Math.Max(0.1f, Float(p, "intervalSeconds", 30f)),
+                Bool(p, "scaleByPlayers", true)),
+            "encounter.wave.stop" => service.StopWave(Text(p, "waveSetId", sessionId)),
+            "encounter.cleanup" => service.Cleanup(Text(p, "encounterId", "")),
+            _ => OperationResult.Fail($"Unknown encounter action '{actionName}'.")
+        };
+    }
+
+    static OperationResult ExecutePortalAction(
+        string actionName,
+        Entity player,
+        Dictionary<string, string> p,
+        FlowActionContext c)
+    {
+        var service = BattleLuckPlugin.Portals;
+        if (service == null)
+            return OperationResult.Fail("Portal service is not initialized.");
+
+        var portalId = Required(p, "portalId");
+        return actionName switch
+        {
+            "portal.create" => service.Create(
+                portalId,
+                ResolvePortalMarker(Required(p, "sourceMarker"), player, c),
+                ResolvePortalMarker(Required(p, "destinationMarker"), player, c),
+                Text(p, "visualPrefab", ""),
+                Math.Clamp(Float(p, "interactionRadius", 3f), 0.5f, 20f),
+                Text(p, "accessPolicy", "all")),
+            "portal.enable" => service.Enable(portalId),
+            "portal.disable" => service.Disable(portalId),
+            "portal.teleport" => service.Teleport(
+                portalId,
+                ULong(p, "steamId", player.GetSteamId()),
+                Bool(p, "preserveVelocity", false),
+                Bool(p, "requireOutOfCombat", true)),
+            "portal.return.bind" => service.BindReturnPoint(player.GetSteamId(), player.GetPosition(), c.ZoneHash),
+            "portal.return.execute" => service.ExecuteReturn(player.GetSteamId()),
+            _ => OperationResult.Fail($"Unknown portal action '{actionName}'.")
+        };
+    }
+
+    static OperationResult ExecuteBossScalingAction(string actionName, Dictionary<string, string> p)
+    {
+        var service = BattleLuckPlugin.BossScaling;
+        if (service == null)
+            return OperationResult.Fail("Boss scaling service is not initialized.");
+
+        var entityId = Required(p, "entityId");
+        if (BattleLuckPlugin.NpcService?.TryGet(entityId, out var npc) != true || !npc.Entity.Exists())
+            return OperationResult.Fail($"Tracked boss '{entityId}' was not found.");
+
+        return actionName switch
+        {
+            "boss.scale.apply" => service.ApplyScaling(
+                entityId,
+                npc.Entity,
+                Math.Max(1, Int(p, "playerCount", 1)),
+                Math.Clamp(Float(p, "healthPerAdditionalPlayer", 0.5f), 0f, 10f),
+                Math.Clamp(Float(p, "powerPerAdditionalPlayer", 0.1f), 0f, 10f),
+                Math.Clamp(Float(p, "levelPerAdditionalPlayer", 0f), 0f, 10f),
+                Math.Max(1, Int(p, "maximumPlayersCounted", 10))),
+            "boss.scale.refresh" => service.RefreshScaling(entityId, npc.Entity, Math.Max(1, Int(p, "playerCount", 1))),
+            "boss.scale.reset" => service.ResetScaling(entityId, npc.Entity),
+            _ => OperationResult.Fail($"Unknown boss scaling action '{actionName}'.")
+        };
     }
 
     OperationResult ApplyKit(Entity player, string kitId)
@@ -3217,7 +3530,7 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
     static bool IsRegisteredAction(string actionName) =>
         SupportedActions.Contains(actionName, KeyComparer) ||
         LiveSystemRegistryService.IsRegisteredAction(actionName) ||
-        Registry.TryGetAction(actionName, out _);
+        (Registry.TryGetAction(actionName, out var entry) && entry?.HandlerAvailable == true);
 
     /// <summary>Parse JSON action response from AI and convert to action string format.</summary>
     public static string? ParseJsonToActionString(string jsonResponse)
@@ -3293,6 +3606,35 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
 
     static ulong ULong(Dictionary<string, string> p, string key, ulong fallback) =>
         p.TryGetValue(key, out var value) && ulong.TryParse(value, out var parsed) ? parsed : fallback;
+
+    static ulong? OptionalUlong(Dictionary<string, string> p, string key) =>
+        p.TryGetValue(key, out var value) && ulong.TryParse(value, out var parsed) ? parsed : null;
+
+    static float3? TryActionPosition(Dictionary<string, string> p, string key) =>
+        p.TryGetValue(key, out var value) && TryParseFloat3(value, out var parsed) ? parsed : null;
+
+    static float3 ResolveActionPosition(
+        Entity player,
+        Dictionary<string, string> p,
+        FlowActionContext context,
+        string key)
+    {
+        if (p.TryGetValue(key, out var value) && TryParseFloat3(value, out var parsed))
+            return parsed;
+        return ResolvePosition(player, p, context);
+    }
+
+    static float3 ResolvePortalMarker(string marker, Entity player, FlowActionContext context)
+    {
+        if (TryParseFloat3(marker, out var parsed))
+            return parsed;
+        if (SpatialPoints(context.GameContext).TryGetValue(marker, out var stored))
+            return stored;
+        if (marker.Equals("self", StringComparison.OrdinalIgnoreCase) ||
+            marker.Equals("player", StringComparison.OrdinalIgnoreCase))
+            return player.GetPosition();
+        throw new InvalidOperationException($"Portal marker '{marker}' was not found. Define it with point.set or use x,y,z coordinates.");
+    }
 
     static int? OptionalTeamId(Dictionary<string, string> p)
     {

@@ -75,14 +75,14 @@ public class BattleLuckPlugin : BasePlugin
     static bool _coreInitializationInProgress;
     static EntityQuery? _playerQuery;
     public static bool IsInitialized => Core.IsInitialized;
-    public static bool IsDiscordBridgeEnabled => false;
+    public static bool IsDiscordBridgeEnabled => BattleLuckLogger.IsDiscordForwardingEnabled;
 
     public static void SetAIAssistant(AIAssistant? assistant)
     {
         AIAssistant = assistant;
     }
 
-    public static void PostToDiscordLogs(string message) { }
+    public static void PostToDiscordLogs(string message) => BattleLuckLogger.Forward("INFO", message);
     public static void PostToDiscordChatVip(string message) { }
 
     public static bool TryNotifyPlayerBySteamId(ulong steamId, string message)
@@ -130,10 +130,14 @@ public class BattleLuckPlugin : BasePlugin
         Log.LogInfo("[BattleLuck] Loading...");
         PluginSettings.Initialize(Config);
         ConfigLoader.EnsureDefaultsDeployed();
+        // Secrets remain outside owner JSON and the plugin binary. Load the
+        // optional local environment file early enough for startup diagnostics.
+        Env.LoadFromConfigRoot();
+        BattleLuckLogger.SetDiscordWebhook(Env.Get("BATTLELUCK_DISCORD_WEBHOOK_URL"));
         var ownerConfig = ConfigLoader.LoadBattleLuckConfig();
         ErrorReporter = ownerConfig.Backtrace.Enabled
             ? new BacktraceHttpErrorReporter(ownerConfig.Backtrace,
-                Environment.GetEnvironmentVariable("BATTLELUCK_BACKTRACE_SUBMISSION_TOKEN"))
+                Env.Get("BATTLELUCK_BACKTRACE_SUBMISSION_TOKEN"))
             : NoOpErrorReporter.Instance;
         ModeConfigLoader.EnsureWatcher();
         SchematicLoader.LoadAll();
