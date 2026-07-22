@@ -217,6 +217,8 @@ public class BattleLuckPlugin : BasePlugin
             }
 
         BattleLuck.Commands.BattleLuckCommandDispatcher.EnsureScanned();
+        CommandRegistry.RegisterCommandType(typeof(BattleLuck.Commands.Chat.BattleLuckRootCommands));
+        Log?.LogInfo("[BattleLuck] Registered VCF command root: .ai");
 
         Log?.LogInfo($"[BattleLuck] Loaded - {gameModes.GetRegisteredModes().Count} game modes registered. Waiting for server world...");
     }

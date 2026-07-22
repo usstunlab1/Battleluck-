@@ -10,6 +10,8 @@ namespace BattleLuck.Patches;
 public static class ChatMessageSystemPatch
 {
     [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyBefore("gg.deca.VampireCommandFramework")]
     static void OnUpdatePrefix(ProjectM.ChatMessageSystem __instance)
     {
         if (!VRisingCore.IsReady)

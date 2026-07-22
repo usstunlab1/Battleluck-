@@ -1,6 +1,7 @@
 using BattleLuck.Commands;
 using BattleLuck.Services.AI;
 using BattleLuck.Services.Assistant;
+using VampireCommandFramework;
 
 namespace BattleLuck.Commands.Chat;
 
@@ -11,6 +12,35 @@ namespace BattleLuck.Commands.Chat;
 public static class BattleLuckRootCommands
 {
     static readonly AiLiteKnowledgeService AiLite = new();
+
+    /// <summary>
+    /// VCF registration surface used for command discovery and the short usage
+    /// response. The Harmony chat prefix handles complete multi-word requests
+    /// before VCF tokenizes them, then routes them to <see cref="Request"/>.
+    /// </summary>
+    [Command("ai", usage: ".ai request <text>", description: "Send a private request to the BattleLuck assistant")]
+    public static void Ai(ChatCommandContext ctx, string operation = "", string request = "")
+    {
+        if (!operation.Equals("request", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(request))
+        {
+            ctx.Reply("Usage: .ai request <text>");
+            return;
+        }
+
+        if (!ctx.TryGetSenderIdentity(out var character, out var steamId))
+        {
+            ctx.Reply("BattleLuck could not resolve your player identity.");
+            return;
+        }
+
+        BattleLuckCommandDispatcher.TryDispatch(
+            $".ai request {request}",
+            character,
+            steamId,
+            ctx.Event.User.IsAdmin,
+            isConsole: false);
+    }
 
     [BattleLuckCommand("ai request", description: "Send a private request to the BattleLuck assistant")]
     public static async Task Request(BattleLuckCommandContext ctx, string request = "")
