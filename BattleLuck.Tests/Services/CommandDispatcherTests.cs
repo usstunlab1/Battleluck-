@@ -17,7 +17,7 @@ public sealed class CommandDispatcherTests
     {
         BattleLuckCommandDispatcher.EnsureScanned();
 
-        Assert.Equal(new[] { "ai" }, BattleLuckCommandDispatcher.RegisteredCommands);
+        Assert.Equal(new[] { "ai request" }, BattleLuckCommandDispatcher.RegisteredCommands);
         Assert.DoesNotContain(BattleLuckCommandDispatcher.RegisteredCommands,
             command => command.Equals("bl", StringComparison.OrdinalIgnoreCase) ||
                        command.StartsWith("bl ", StringComparison.OrdinalIgnoreCase) ||

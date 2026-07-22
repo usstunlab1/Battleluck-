@@ -44,13 +44,13 @@ public static class GameChatAiBridge
             BattleLuckPlugin.AIAssistant?.SetInteractiveConversation(steamId, active: false);
             BattleLuckPlugin.NotifyPlayerBySteamIdOnMainThread(
                 steamId,
-                "[AI] Four replies completed. Say .ai <question> to start another chat, or .ai end to close it earlier.");
+                "[AI] Four replies completed. Use .ai request <text> to start another chat, or .ai request end to close it earlier.");
         }
         else
         {
             BattleLuckPlugin.NotifyPlayerBySteamIdOnMainThread(
                 steamId,
-                $"[AI] Conversation active — {remaining} repl{(remaining == 1 ? "y" : "ies")} remaining. Say .ai end to stop now.");
+                $"[AI] Conversation active — {remaining} repl{(remaining == 1 ? "y" : "ies")} remaining. Use .ai request end to stop now.");
         }
     }
 
@@ -154,7 +154,7 @@ public static class GameChatAiBridge
 
         // VCF normally consumes this command first. Keep a defensive fallback
         // so an alternate chat channel can never send the stop command to the LLM.
-        if (trimmed.Equals(".ai end", StringComparison.OrdinalIgnoreCase))
+        if (trimmed.Equals(".ai request end", StringComparison.OrdinalIgnoreCase))
             return false;
 
         if (string.Equals(channel, "ai", StringComparison.OrdinalIgnoreCase))

@@ -6,19 +6,19 @@ namespace BattleLuck.Commands.Chat;
 
 /// <summary>
 /// The complete public BattleLuck command surface. All former .bl routes are
-/// intentionally retired; requests enter through one private .ai command.
+/// intentionally retired; requests enter through one private .ai request command.
 /// </summary>
 public static class BattleLuckRootCommands
 {
     static readonly AiLiteKnowledgeService AiLite = new();
 
-    [BattleLuckCommand("ai", description: "Send a private request to the BattleLuck assistant")]
+    [BattleLuckCommand("ai request", description: "Send a private request to the BattleLuck assistant")]
     public static async Task Request(BattleLuckCommandContext ctx, string request = "")
     {
         request = request.Trim();
         if (request.Length == 0)
         {
-            ctx.Reply("Usage: .ai <request>");
+            ctx.Reply("Usage: .ai request <text>");
             return;
         }
 

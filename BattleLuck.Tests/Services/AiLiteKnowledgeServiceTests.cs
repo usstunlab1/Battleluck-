@@ -20,6 +20,6 @@ public sealed class AiLiteKnowledgeServiceTests
         var service = new AiLiteKnowledgeService();
 
         service.Answer("xyzzy-unrecognized-request")
-            .Should().Contain(".ai <request>");
+            .Should().Contain(".ai request <text>");
     }
 }

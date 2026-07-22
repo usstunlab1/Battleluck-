@@ -43,8 +43,8 @@ public sealed class ZuiPacketPresenter
     static bool IsAllowedCommand(string command)
     {
         var value = command.Trim();
-        return value.Equals(".ai", StringComparison.OrdinalIgnoreCase) ||
-               value.StartsWith(".ai ", StringComparison.OrdinalIgnoreCase);
+        return value.Equals(".ai request", StringComparison.OrdinalIgnoreCase) ||
+               value.StartsWith(".ai request ", StringComparison.OrdinalIgnoreCase);
     }
 
     static string Plain(string? value, int max)
