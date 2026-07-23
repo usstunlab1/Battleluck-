@@ -5,6 +5,7 @@ using BattleLuck.Services.Flow;
 using BattleLuck.Services.Modes;
 using BattleLuck.Services.Runtime;
 using BattleLuck.Services.Adaptive;
+using BattleLuck.Services.Spawn;
 using ProjectM.Shared;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -719,29 +720,101 @@ public sealed class SessionController
 
     OperationResult ExecuteLeaveFlow(ulong steamId, Entity playerCharacter, int zoneHash)
     {
+        BattleLuckPlugin.LogInfo($"[TrialExit] begin steamId={steamId} zoneHash={zoneHash}");
+
         if (!_zoneModeMap.TryGetValue(zoneHash, out var modeId))
+        {
+            BattleLuckPlugin.LogInfo($"[TrialExit] complete steamId={steamId} reason=zone_not_mapped");
             return OperationResult.Fail("Zone not mapped.");
+        }
 
         var config = LoadEffectiveConfig(modeId);
         var zone = config.Zones.Zones.FirstOrDefault(z => z.Hash == zoneHash);
         if (zone == null)
+        {
+            BattleLuckPlugin.LogInfo($"[TrialExit] complete steamId={steamId} reason=zone_not_found");
             return OperationResult.Fail("Zone definition not found.");
+        }
 
         if (!_activeSessions.TryGetValue(zoneHash, out var session))
+        {
+            BattleLuckPlugin.LogInfo($"[TrialExit] complete steamId={steamId} reason=no_active_session");
             return OperationResult.Fail("No active session.");
+        }
+
+        // IDEMPOTENCY GUARD: If the player is already marked as leaving or left, skip.
+        if (_playerSessions.TryGetValue(steamId, out var existingParticipant))
+        {
+            if (existingParticipant.State is PlayerSessionState.Leaving or PlayerSessionState.Left)
+            {
+                BattleLuckPlugin.LogInfo($"[TrialExit] complete steamId={steamId} reason=already_leaving_or_left");
+                return OperationResult.Ok();
+            }
+        }
+
+        // Mark the player session as Leaving before any mutation.
+        if (_playerSessions.TryGetValue(steamId, out var leavingParticipant))
+        {
+            try { leavingParticipant.BeginLeaving(EventExitReason.Voluntary); }
+            catch (Exception ex) { BattleLuckPlugin.LogWarning($"[TrialExit] BeginLeaving failed for {steamId}: {ex.Message}"); }
+        }
+
+        // Cancel player-owned AI requests and pending event proposals.
+        try { ActionProposalStore.ClearPlayer(steamId); }
+        catch (Exception ex) { BattleLuckPlugin.LogWarning($"[TrialExit] Proposal cleanup failed for {steamId}: {ex.Message}"); }
+
+        // Stop event buffs, timers, and temporary controllers.
+        try { RemoveZoneProtectionBuffs(playerCharacter); }
+        catch (Exception ex) { BattleLuckPlugin.LogWarning($"[TrialExit] Buff removal failed for {steamId}: {ex.Message}"); }
 
         // Execute exit flow: clear kit → restore snapshot
+        BattleLuckPlugin.LogInfo($"[TrialExit] rollback-start steamId={steamId}");
         var exitResult = _flow.ExecuteExit(config, playerCharacter, zone, session.Context);
         if (!exitResult.Success)
         {
-            BattleLuckPlugin.LogError($"[Session] Exit flow failed for {EntityExtensions.FormatPlayer(steamId, playerCharacter)}: {exitResult.Error}");
+            BattleLuckPlugin.LogError($"[TrialExit] rollback-failed steamId={steamId} error={exitResult.Error}");
+            // Do not disconnect the player. Keep them connected and retry on next tick.
             return OperationResult.Fail($"Event exit failed; your session remains active so restoration can be retried: {exitResult.Error}");
         }
+        BattleLuckPlugin.LogInfo($"[TrialExit] rollback-complete steamId={steamId}");
 
-        // Clean up player tracking
+        // Teleport the connected player to the saved outside position.
+        BattleLuckPlugin.LogInfo($"[TrialExit] teleport-start steamId={steamId}");
+        try
+        {
+            if (playerCharacter.Exists())
+            {
+                var outsidePos = _zoneDetection.GetLastOutsidePosition(steamId);
+                if (outsidePos.HasValue && math.lengthsq(outsidePos.Value) > 0.0001f)
+                {
+                    playerCharacter.SetPosition(outsidePos.Value);
+                    BattleLuckPlugin.LogInfo($"[TrialExit] teleport-complete steamId={steamId} pos=({outsidePos.Value.x:F1},{outsidePos.Value.y:F1},{outsidePos.Value.z:F1})");
+                }
+                else
+                {
+                    // Fallback: teleport to penalty spawn rather than leaving player stranded
+                    playerCharacter.SetPosition(PenaltySpawn);
+                    BattleLuckPlugin.LogInfo($"[TrialExit] teleport-fallback steamId={steamId} pos=penalty_spawn");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            BattleLuckPlugin.LogWarning($"[TrialExit] teleport-failed steamId={steamId} error={ex.Message}");
+            // Keep player connected. Retry on next tick is handled by the caller.
+        }
+
+        // Clean up player tracking (idempotent — safe to call multiple times)
         CleanupPlayerState(steamId, session);
 
-        BattleLuckPlugin.LogInfo($"[Session] Player {EntityExtensions.FormatPlayer(steamId, playerCharacter)} exited zone {zoneHash} ({modeId}) via toggle-leave.");
+        // Mark the session Left.
+        if (_playerSessions.TryGetValue(steamId, out var completedParticipant))
+        {
+            try { completedParticipant.MarkLeft(); }
+            catch (Exception ex) { BattleLuckPlugin.LogWarning($"[TrialExit] MarkLeft failed for {steamId}: {ex.Message}"); }
+        }
+
+        BattleLuckPlugin.LogInfo($"[TrialExit] complete steamId={steamId} modeId={modeId}");
         return OperationResult.Ok();
     }
 

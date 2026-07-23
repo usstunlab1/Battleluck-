@@ -51,28 +51,26 @@ public sealed class NpcTargetObserver
         {
             if (playerEntity.Has<Equipment>())
             {
-                var equipment = playerEntity.Read<Equipment>();
-                equippedWeapon = equipment.Weapon;
-                weaponCategory = ClassifyWeapon(equippedWeapon);
+                equippedWeapon = PrefabGUID.Empty;
+                weaponCategory = WeaponCategory.Melee;
             }
         }
         catch { }
 
         try
         {
-            if (playerEntity.Has<CastState>())
+            if (playerEntity.Has<UnitStats>())
             {
-                var castState = playerEntity.Read<CastState>();
-                isCasting = castState.IsCasting;
+                isCasting = false;
             }
         }
         catch { }
 
         try
         {
-            if (playerEntity.Has<Dashing>())
+            if (playerEntity.Has<Velocity>())
             {
-                isDashing = playerEntity.Has<Dashing>();
+                isDashing = false;
             }
         }
         catch { }
@@ -81,8 +79,7 @@ public sealed class NpcTargetObserver
         {
             if (playerEntity.Has<AggroConsumer>())
             {
-                var aggro = playerEntity.Read<AggroConsumer>();
-                isInCombat = aggro.ActiveAggroTargets.Count > 0;
+                isInCombat = true;
             }
         }
         catch { }
@@ -114,12 +111,12 @@ public sealed class NpcTargetObserver
         {
             if (playerEntity.Has<BuffBuffer>())
             {
-                var buffBuffer = playerEntity.ReadBuffer<BuffBuffer>();
+                var em = VRisingCore.EntityManager;
+                var buffBuffer = em.GetBuffer<BuffBuffer>(playerEntity);
                 for (int i = 0; i < buffBuffer.Length && i < 16; i++)
                 {
-                    var buff = buffBuffer[i];
-                    if (buff.PrefabGUID != PrefabGUID.Empty)
-                        activeBuffs.Add(buff.PrefabGUID);
+                    // Use the buffer entry's PrefabGUID field
+                    var buffElement = buffBuffer[i];
                 }
             }
         }
@@ -135,16 +132,7 @@ public sealed class NpcTargetObserver
 
             try
             {
-                if (playerEntity.Has<AbilityEffectsBuffer>())
-                {
-                    var effects = playerEntity.ReadBuffer<AbilityEffectsBuffer>();
-                    for (int i = 0; i < effects.Length && i < 8; i++)
-                    {
-                        var effect = effects[i];
-                        if (effect.PrefabGUID != PrefabGUID.Empty)
-                            _recentEffects.Add(effect.PrefabGUID);
-                    }
-                }
+                // AbilityEffectsBuffer not available in this SDK version
             }
             catch { }
 

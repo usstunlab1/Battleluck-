@@ -1,0 +1,575 @@
+Reference	ID	Tags	OrigWords	Occurrence	TWLink
+1:1	mtak	name	Παῦλος	1	rc://*/tw/dict/bible/names/paul
+1:1	t7b3	keyterm	ἀπόστολος	1	rc://*/tw/dict/bible/kt/apostle
+1:1	v64p	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+1:1	qm99	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+1:1	ppab	keyterm	Θεοῦ Πατρὸς	1	rc://*/tw/dict/bible/kt/godthefather
+1:2	w9b6	keyterm	ἐκκλησίαις	1	rc://*/tw/dict/bible/kt/church
+1:2	x92e	name	Γαλατίας	1	rc://*/tw/dict/bible/names/galatia
+1:3	jkjk	keyterm	χάρις	1	rc://*/tw/dict/bible/kt/grace
+1:3	qny5		εἰρήνη	1	rc://*/tw/dict/bible/other/peace
+1:3	r69a	keyterm	Θεοῦ Πατρὸς	1	rc://*/tw/dict/bible/kt/godthefather
+1:3	wbxs	keyterm	Κυρίου	1	rc://*/tw/dict/bible/kt/lord
+1:3	hwas	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+1:3	keef	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+1:4	ruyn	keyterm	ἁμαρτιῶν	1	rc://*/tw/dict/bible/kt/sin
+1:4	xrb5		ἐξέληται	1	rc://*/tw/dict/bible/other/deliverer
+1:4	b6gf		αἰῶνος	1	rc://*/tw/dict/bible/other/age
+1:4	pg8t	keyterm	πονηροῦ	1	rc://*/tw/dict/bible/kt/evil
+1:4	wpae	keyterm	θέλημα	1	rc://*/tw/dict/bible/kt/willofgod
+1:4	kebb	keyterm	Θεοῦ καὶ Πατρὸς	1	rc://*/tw/dict/bible/kt/godthefather
+1:5	aejb	keyterm	δόξα	1	rc://*/tw/dict/bible/kt/glory
+1:5	mtf7	keyterm	ἀμήν	1	rc://*/tw/dict/bible/kt/amen
+1:6	c4c4	keyterm	καλέσαντος	1	rc://*/tw/dict/bible/kt/call
+1:6	pfdn	keyterm	χάριτι	1	rc://*/tw/dict/bible/kt/grace
+1:6	uxu8	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+1:6	cvdp	keyterm	εὐαγγέλιον	1	rc://*/tw/dict/bible/kt/goodnews
+1:7	sfks		ταράσσοντες	1	rc://*/tw/dict/bible/other/trouble
+1:7	vcxm		μεταστρέψαι	1	rc://*/tw/dict/bible/other/perverse
+1:7	hm8n	keyterm	εὐαγγέλιον	1	rc://*/tw/dict/bible/kt/goodnews
+1:7	wrjj	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+1:8	w97r	keyterm	ἄγγελος	1	rc://*/tw/dict/bible/kt/angel
+1:8	sn55	keyterm	οὐρανοῦ	1	rc://*/tw/dict/bible/kt/heaven
+1:8	g7zq	keyterm	εὐαγγελίζηται	1	rc://*/tw/dict/bible/kt/goodnews
+1:8	zyx5	keyterm	ἀνάθεμα	1	rc://*/tw/dict/bible/kt/curse
+1:9	bcbs		ὡς	1	rc://*/tw/dict/bible/other/like
+1:9	f2hg	keyterm	εὐαγγελίζεται	1	rc://*/tw/dict/bible/kt/goodnews
+1:9	xwqs		παρελάβετε	1	rc://*/tw/dict/bible/other/receive
+1:9	ens7	keyterm	ἀνάθεμα	1	rc://*/tw/dict/bible/kt/curse
+1:10	bef9	keyterm	Θεόν	1	rc://*/tw/dict/bible/kt/god
+1:10	rffv		ζητῶ	1	rc://*/tw/dict/bible/other/seek
+1:10	km5z	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+1:10	f677		δοῦλος	1	rc://*/tw/dict/bible/other/servant
+1:11	eprw		γνωρίζω	1	rc://*/tw/dict/bible/other/know
+1:11	srq4	keyterm	εὐαγγέλιον	1	rc://*/tw/dict/bible/kt/goodnews
+1:12	v68r		παρέλαβον	1	rc://*/tw/dict/bible/other/receive
+1:12	taag	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+1:12	rec6	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+1:13	hfwv		Ἰουδαϊσμῷ	1	rc://*/tw/dict/bible/other/judaism
+1:13	tssj		ἐδίωκον	1	rc://*/tw/dict/bible/other/persecute
+1:13	k3yp	keyterm	ἐκκλησίαν	1	rc://*/tw/dict/bible/kt/church
+1:13	wsk4	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+1:14	m76e		Ἰουδαϊσμῷ	1	rc://*/tw/dict/bible/other/judaism
+1:14	ta4w	keyterm	ζηλωτὴς	1	rc://*/tw/dict/bible/kt/zealous
+1:14	dgu5		παραδόσεων	1	rc://*/tw/dict/bible/other/tradition
+1:15	sp24		κοιλίας	1	rc://*/tw/dict/bible/other/womb
+1:15	r2y6	keyterm	καλέσας	1	rc://*/tw/dict/bible/kt/call
+1:15	kkha	keyterm	χάριτος	1	rc://*/tw/dict/bible/kt/grace
+1:16	p8et	keyterm	Υἱὸν	1	rc://*/tw/dict/bible/kt/sonofgod
+1:16	y8w9	keyterm	ἔθνεσιν	1	rc://*/tw/dict/bible/kt/gentile
+1:17	vwvv	name	Ἱεροσόλυμα	1	rc://*/tw/dict/bible/names/jerusalem
+1:17	rrdv	keyterm	ἀποστόλους	1	rc://*/tw/dict/bible/kt/apostle
+1:17	mjsk	name	Ἀραβίαν	1	rc://*/tw/dict/bible/names/arabia
+1:17	nkyp	name	Δαμασκόν	1	rc://*/tw/dict/bible/names/damascus
+1:18	pjwy		ἔτη	1	rc://*/tw/dict/bible/other/biblicaltimeyear
+1:18	ad2p	name	Ἱεροσόλυμα	1	rc://*/tw/dict/bible/names/jerusalem
+1:18	aagu	name	Κηφᾶν	1	rc://*/tw/dict/bible/names/peter
+1:18	g75d		ἡμέρας	1	rc://*/tw/dict/bible/other/biblicaltimeday
+1:19	rcvf	keyterm	ἀποστόλων	1	rc://*/tw/dict/bible/kt/apostle
+1:19	rvdj	name	Ἰάκωβον	1	rc://*/tw/dict/bible/names/jamesbrotherofjesus
+1:19	yqn7	keyterm	Κυρίου	1	rc://*/tw/dict/bible/kt/lord
+1:20	pr4q	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+1:21	rj73	name	Συρίας	1	rc://*/tw/dict/bible/names/syria
+1:21	dnsp	name	Κιλικίας	1	rc://*/tw/dict/bible/names/cilicia
+1:22	bzyd		ἀγνοούμενος	1	rc://*/tw/dict/bible/other/know
+1:22	x427	keyterm	ἐκκλησίαις	1	rc://*/tw/dict/bible/kt/church
+1:22	p222	name	Ἰουδαίας	1	rc://*/tw/dict/bible/names/judea
+1:22	gfck	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+1:22	nvwq	keyterm	ἐν Χριστῷ	1	rc://*/tw/dict/bible/kt/inchrist
+1:23	g9vz		διώκων	1	rc://*/tw/dict/bible/other/persecute
+1:23	qgmy	keyterm	πίστιν	1	rc://*/tw/dict/bible/kt/faith
+1:24	hkc5	keyterm	ἐδόξαζον	1	rc://*/tw/dict/bible/kt/glory
+1:24	j25f	keyterm	Θεόν	1	rc://*/tw/dict/bible/kt/god
+2:1	fp4u		ἐτῶν	1	rc://*/tw/dict/bible/other/biblicaltimeyear
+2:1	x48c	name	Ἱεροσόλυμα	1	rc://*/tw/dict/bible/names/jerusalem
+2:1	abgw	name	Βαρναβᾶ	1	rc://*/tw/dict/bible/names/barnabas
+2:1	gngv	name	Τίτον	1	rc://*/tw/dict/bible/names/titus
+2:2	gu87	keyterm	εὐαγγέλιον	1	rc://*/tw/dict/bible/kt/goodnews
+2:2	pbmn		κηρύσσω	1	rc://*/tw/dict/bible/other/preach
+2:2	qhka	keyterm	ἔθνεσιν	1	rc://*/tw/dict/bible/kt/gentile
+2:3	qrzc	name	Τίτος	1	rc://*/tw/dict/bible/names/titus
+2:3	gayn	name	Ἕλλην	1	rc://*/tw/dict/bible/names/greek
+2:3	wzuq	keyterm	περιτμηθῆναι	1	rc://*/tw/dict/bible/kt/circumcise
+2:4	fr65		ἐλευθερίαν	1	rc://*/tw/dict/bible/other/free
+2:4	n72p	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+2:4	hztn	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+2:4	bvp8	keyterm	ἐν Χριστῷ Ἰησοῦ	1	rc://*/tw/dict/bible/kt/inchrist
+2:4	afr6		καταδουλώσουσιν	1	rc://*/tw/dict/bible/other/enslave
+2:5	rdet		ὥραν	1	rc://*/tw/dict/bible/other/biblicaltimehour
+2:5	mam8		ὑποταγῇ	1	rc://*/tw/dict/bible/other/submit
+2:5	kuy9	keyterm	εὐαγγελίου	1	rc://*/tw/dict/bible/kt/goodnews
+2:6	m87y	keyterm	Θεὸς	1	rc://*/tw/dict/bible/kt/god
+2:6	hjaf		λαμβάνει	1	rc://*/tw/dict/bible/other/receive
+2:7	phef	keyterm	πεπίστευμαι	1	rc://*/tw/dict/bible/kt/trust
+2:7	busm	keyterm	εὐαγγέλιον	1	rc://*/tw/dict/bible/kt/goodnews
+2:7	mtn8	keyterm	ἀκροβυστίας	1	rc://*/tw/dict/bible/kt/circumcise
+2:7	tfer		καθὼς	1	rc://*/tw/dict/bible/other/like
+2:7	frxt	name	Πέτρος	1	rc://*/tw/dict/bible/names/peter
+2:7	ytfk	keyterm	περιτομῆς	1	rc://*/tw/dict/bible/kt/circumcise
+2:8	hg4k	name	Πέτρῳ	1	rc://*/tw/dict/bible/names/peter
+2:8	js2e	keyterm	ἀποστολὴν	1	rc://*/tw/dict/bible/kt/apostle
+2:8	g7eu	keyterm	περιτομῆς	1	rc://*/tw/dict/bible/kt/circumcise
+2:8	k4cu	keyterm	ἔθνη	1	rc://*/tw/dict/bible/kt/gentile
+2:9	vsc6		γνόντες	1	rc://*/tw/dict/bible/other/know
+2:9	qjhw	keyterm	χάριν	1	rc://*/tw/dict/bible/kt/grace
+2:9	wwud	name	Ἰάκωβος	1	rc://*/tw/dict/bible/names/jamesbrotherofjesus
+2:9	q9d2	name	Κηφᾶς	1	rc://*/tw/dict/bible/names/peter
+2:9	r6su	name	Ἰωάννης	1	rc://*/tw/dict/bible/names/johntheapostle
+2:9	jtef		στῦλοι	1	rc://*/tw/dict/bible/other/pillar
+2:9	qfd6	name	Βαρναβᾷ	1	rc://*/tw/dict/bible/names/barnabas
+2:9	n9at	keyterm	κοινωνίας	1	rc://*/tw/dict/bible/kt/fellowship
+2:9	apdv	keyterm	ἔθνη	1	rc://*/tw/dict/bible/kt/gentile
+2:9	mz9s	keyterm	περιτομήν	1	rc://*/tw/dict/bible/kt/circumcise
+2:11	tq4k	name	Κηφᾶς	1	rc://*/tw/dict/bible/names/peter
+2:11	udge	name	Ἀντιόχειαν	1	rc://*/tw/dict/bible/names/antioch
+2:11	assv	keyterm	κατεγνωσμένος	1	rc://*/tw/dict/bible/kt/condemn
+2:12	v2db	name	Ἰακώβου	1	rc://*/tw/dict/bible/names/jamesbrotherofjesus
+2:12	e9uw	keyterm	ἐθνῶν	1	rc://*/tw/dict/bible/kt/gentile
+2:12	kves	keyterm	φοβούμενος	1	rc://*/tw/dict/bible/kt/fear
+2:12	xmjy	keyterm	περιτομῆς	1	rc://*/tw/dict/bible/kt/circumcise
+2:13	zemj	keyterm	Ἰουδαῖοι	1	rc://*/tw/dict/bible/kt/jew
+2:13	q5p9	name	Βαρναβᾶς	1	rc://*/tw/dict/bible/names/barnabas
+2:13	f34p	keyterm	ὑποκρίσει	1	rc://*/tw/dict/bible/kt/hypocrite
+2:14	v5rv	keyterm	εὐαγγελίου	1	rc://*/tw/dict/bible/kt/goodnews
+2:14	ky2w	name	Κηφᾷ	1	rc://*/tw/dict/bible/names/peter
+2:14	qmkr	keyterm	Ἰουδαῖος	1	rc://*/tw/dict/bible/kt/jew
+2:14	j5e4	keyterm	ἐθνικῶς	1	rc://*/tw/dict/bible/kt/gentile
+2:14	kd8m	keyterm	Ἰουδαϊκῶς	1	rc://*/tw/dict/bible/kt/jew
+2:14	vwdc	keyterm	ἔθνη	1	rc://*/tw/dict/bible/kt/gentile
+2:14	kdbt	keyterm	Ἰουδαΐζειν	1	rc://*/tw/dict/bible/kt/jew
+2:15	vqdx	keyterm	Ἰουδαῖοι	1	rc://*/tw/dict/bible/kt/jew
+2:15	brnz	keyterm	ἐθνῶν	1	rc://*/tw/dict/bible/kt/gentile
+2:15	emk4	keyterm	ἁμαρτωλοί	1	rc://*/tw/dict/bible/kt/sin
+2:16	sbmh		εἰδότες	1	rc://*/tw/dict/bible/other/know
+2:16	k2fd	keyterm	δικαιοῦται	1	rc://*/tw/dict/bible/kt/justice
+2:16	vwc2	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+2:16	y5yd	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+2:16	s96d	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+2:16	xxjt	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+2:16	k59r	keyterm	Χριστὸν	1	rc://*/tw/dict/bible/kt/christ
+2:16	vmhz	keyterm; name	Ἰησοῦν	1	rc://*/tw/dict/bible/kt/jesus
+2:16	cq7h	keyterm	εἰς Χριστὸν Ἰησοῦν	1	rc://*/tw/dict/bible/kt/inchrist
+2:16	bbgf	keyterm	ἐπιστεύσαμεν	1	rc://*/tw/dict/bible/kt/believe
+2:16	ugvj	keyterm	δικαιωθῶμεν	1	rc://*/tw/dict/bible/kt/justice
+2:16	kwbh	keyterm	πίστεως	2	rc://*/tw/dict/bible/kt/faith
+2:16	mz5d	keyterm	Χριστοῦ	2	rc://*/tw/dict/bible/kt/christ
+2:16	xq6u	keyterm	νόμου	2	rc://*/tw/dict/bible/kt/lawofmoses
+2:16	seq7	keyterm	νόμου	3	rc://*/tw/dict/bible/kt/lawofmoses
+2:16	eyun	keyterm	δικαιωθήσεται	1	rc://*/tw/dict/bible/kt/justice
+2:17	cvqw		ζητοῦντες	1	rc://*/tw/dict/bible/other/seek
+2:17	fj3f	keyterm	δικαιωθῆναι	1	rc://*/tw/dict/bible/kt/justice
+2:17	v4rh	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+2:17	y8es	keyterm	ἐν Χριστῷ	1	rc://*/tw/dict/bible/kt/inchrist
+2:17	wsmd	keyterm	ἁμαρτωλοί	1	rc://*/tw/dict/bible/kt/sin
+2:17	wm4p	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+2:17	zd2k	keyterm	ἁμαρτίας	1	rc://*/tw/dict/bible/kt/sin
+2:17	jxcm	keyterm	διάκονος	1	rc://*/tw/dict/bible/kt/minister
+2:18	y7bk	keyterm	παραβάτην	1	rc://*/tw/dict/bible/kt/transgression
+2:19	xhg5	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+2:19	a4uf	keyterm	νόμῳ	1	rc://*/tw/dict/bible/kt/lawofmoses
+2:19	hy3r	keyterm	Θεῷ	1	rc://*/tw/dict/bible/kt/god
+2:19	ny86	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+2:19	zxsu	keyterm	συνεσταύρωμαι	1	rc://*/tw/dict/bible/kt/crucify
+2:20	jaza	keyterm	Χριστός	1	rc://*/tw/dict/bible/kt/christ
+2:20	sjwp	keyterm	πίστει	1	rc://*/tw/dict/bible/kt/faith
+2:20	rgtd	keyterm	Υἱοῦ τοῦ Θεοῦ	1	rc://*/tw/dict/bible/kt/sonofgod
+2:20	t4bu	keyterm	ἀγαπήσαντός	1	rc://*/tw/dict/bible/kt/love
+2:21	d8fx		ἀθετῶ	1	rc://*/tw/dict/bible/other/reject
+2:21	zg5m	keyterm	χάριν	1	rc://*/tw/dict/bible/kt/grace
+2:21	gdah	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+2:21	vgfn	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+2:21	dh5j	keyterm	δικαιοσύνη	1	rc://*/tw/dict/bible/kt/righteous
+2:21	burd	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+3:1	mt7s	keyterm	ἀνόητοι	1	rc://*/tw/dict/bible/kt/foolish
+3:1	rs2f	name	Γαλάται	1	rc://*/tw/dict/bible/names/galatia
+3:1	w8mh	keyterm; name	Ἰησοῦς	1	rc://*/tw/dict/bible/kt/jesus
+3:1	ev6x	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+3:1	x6cm	keyterm	ἐσταυρωμένος	1	rc://*/tw/dict/bible/kt/crucify
+3:2	he3z	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:2	damh	keyterm	Πνεῦμα	1	rc://*/tw/dict/bible/kt/holyspirit
+3:2	ufps		ἐλάβετε	1	rc://*/tw/dict/bible/other/receive
+3:2	d3sk	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:3	vbny	keyterm	ἀνόητοί	1	rc://*/tw/dict/bible/kt/foolish
+3:3	xvg7	keyterm	Πνεύματι	1	rc://*/tw/dict/bible/kt/holyspirit
+3:4	wjrh		ἐπάθετε	1	rc://*/tw/dict/bible/other/suffer
+3:4	ggkq		εἰκῇ	1	rc://*/tw/dict/bible/other/vain
+3:4	y4ar		εἰκῇ	2	rc://*/tw/dict/bible/other/vain
+3:5	fhhe	keyterm	Πνεῦμα	1	rc://*/tw/dict/bible/kt/holyspirit
+3:5	vc2t	keyterm	δυνάμεις	1	rc://*/tw/dict/bible/kt/miracle
+3:5	qc9a	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:5	m4pt	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:6	ktbe		καθὼς	1	rc://*/tw/dict/bible/other/like
+3:6	c5n5	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:6	m32z	keyterm	ἐπίστευσεν	1	rc://*/tw/dict/bible/kt/believe
+3:6	nk3s	keyterm	Θεῷ	1	rc://*/tw/dict/bible/kt/god
+3:6	h5w9	keyterm	δικαιοσύνην	1	rc://*/tw/dict/bible/kt/righteous
+3:7	m44q		γινώσκετε	1	rc://*/tw/dict/bible/other/understand
+3:7	uufp	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:7	sz6v	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:8	b376	keyterm	Γραφὴ	1	rc://*/tw/dict/bible/kt/wordofgod
+3:8	exef	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:8	uvzu	keyterm	δικαιοῖ	1	rc://*/tw/dict/bible/kt/justice
+3:8	nndj	keyterm	ἔθνη	1	rc://*/tw/dict/bible/kt/gentile
+3:8	w98s	keyterm	Θεὸς	1	rc://*/tw/dict/bible/kt/god
+3:8	sq44	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:8	ju9f	keyterm	ἐνευλογηθήσονται	1	rc://*/tw/dict/bible/kt/bless
+3:8	rnbz		ἔθνη	2	rc://*/tw/dict/bible/other/nation
+3:9	aw7s	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:9	qs4y	keyterm	εὐλογοῦνται	1	rc://*/tw/dict/bible/kt/bless
+3:9	dna3	keyterm	πιστῷ	1	rc://*/tw/dict/bible/kt/faithful
+3:9	aar5	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:10	mktd	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:10	jffc	keyterm	κατάραν	1	rc://*/tw/dict/bible/kt/curse
+3:10	pswu		γέγραπται	1	rc://*/tw/dict/bible/other/written
+3:10	x6s7	keyterm	ἐπικατάρατος	1	rc://*/tw/dict/bible/kt/curse
+3:10	zw9h		γεγραμμένοις	1	rc://*/tw/dict/bible/other/written
+3:10	rzzh	keyterm	νόμου	2	rc://*/tw/dict/bible/kt/lawofmoses
+3:11	ckda	keyterm	νόμῳ	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:11	c9y6	keyterm	δικαιοῦται	1	rc://*/tw/dict/bible/kt/justice
+3:11	r6fc	keyterm	Θεῷ	1	rc://*/tw/dict/bible/kt/god
+3:11	ts6j	keyterm	δίκαιος	1	rc://*/tw/dict/bible/kt/righteous
+3:11	jdfh	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:12	j577	keyterm	νόμος	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:12	dekx	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:13	qk6j	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+3:13	fe9z	keyterm	ἐξηγόρασεν	1	rc://*/tw/dict/bible/kt/redeem
+3:13	s25b	keyterm	κατάρας	1	rc://*/tw/dict/bible/kt/curse
+3:13	p9fk	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:13	e4r3	keyterm	κατάρα	1	rc://*/tw/dict/bible/kt/curse
+3:13	uuan		γέγραπται	1	rc://*/tw/dict/bible/other/written
+3:13	vwux	keyterm	ἐπικατάρατος	1	rc://*/tw/dict/bible/kt/curse
+3:14	x56s	keyterm	ἔθνη	1	rc://*/tw/dict/bible/kt/gentile
+3:14	pjwc	keyterm	εὐλογία	1	rc://*/tw/dict/bible/kt/bless
+3:14	hg9k	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:14	gs5b	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+3:14	jxfg	keyterm; name	Χριστῷ Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+3:14	rs7c	keyterm	ἐπαγγελίαν	1	rc://*/tw/dict/bible/kt/promise
+3:14	nfqd	keyterm	Πνεύματος	1	rc://*/tw/dict/bible/kt/holyspirit
+3:14	e5az		λάβωμεν	1	rc://*/tw/dict/bible/other/receive
+3:14	tkhk	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:15	ef9s	keyterm	διαθήκην	1	rc://*/tw/dict/bible/kt/covenant
+3:15	u434		ἀθετεῖ	1	rc://*/tw/dict/bible/other/reject
+3:16	cs6x	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:16	gqaq	keyterm	ἐπαγγελίαι	1	rc://*/tw/dict/bible/kt/promise
+3:16	hmjg		σπέρματι	1	rc://*/tw/dict/bible/other/seed
+3:16	by9e		σπέρμασιν	1	rc://*/tw/dict/bible/other/seed
+3:16	c4pc		ὡς	1	rc://*/tw/dict/bible/other/like
+3:16	xz9n		ὡς	2	rc://*/tw/dict/bible/other/like
+3:16	fqp7		σπέρματί	1	rc://*/tw/dict/bible/other/seed
+3:16	uzxk	keyterm	Χριστός	1	rc://*/tw/dict/bible/kt/christ
+3:17	ezr2	keyterm	διαθήκην	1	rc://*/tw/dict/bible/kt/covenant
+3:17	jyvt	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+3:17	sx5x		ἔτη	1	rc://*/tw/dict/bible/other/biblicaltimeyear
+3:17	k49h	keyterm	νόμος	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:17	kfmy	keyterm	ἐπαγγελίαν	1	rc://*/tw/dict/bible/kt/promise
+3:18	ymp4	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:18	g7wd	keyterm	κληρονομία	1	rc://*/tw/dict/bible/kt/inherit
+3:18	gvad	keyterm	ἐπαγγελίας	1	rc://*/tw/dict/bible/kt/promise
+3:18	z2nb	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:18	w92b	keyterm	ἐπαγγελίας	2	rc://*/tw/dict/bible/kt/promise
+3:18	ugk3	keyterm	Θεός	1	rc://*/tw/dict/bible/kt/god
+3:19	uwb4	keyterm	νόμος	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:19	ypbs	keyterm	παραβάσεων	1	rc://*/tw/dict/bible/kt/transgression
+3:19	ueng		σπέρμα	1	rc://*/tw/dict/bible/other/seed
+3:19	syfe	keyterm	ἐπήγγελται	1	rc://*/tw/dict/bible/kt/promise
+3:19	vd8p		διαταγεὶς	1	rc://*/tw/dict/bible/other/ordain
+3:19	hgd4	keyterm	ἀγγέλων	1	rc://*/tw/dict/bible/kt/angel
+3:19	bbvx		μεσίτου	1	rc://*/tw/dict/bible/other/mediator
+3:20	hrnm		μεσίτης	1	rc://*/tw/dict/bible/other/mediator
+3:20	kgfc	keyterm	Θεὸς	1	rc://*/tw/dict/bible/kt/god
+3:21	qbt3	keyterm	νόμος	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:21	g59y	keyterm	ἐπαγγελιῶν	1	rc://*/tw/dict/bible/kt/promise
+3:21	b65t	keyterm	νόμου	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:21	cjzu	keyterm	δικαιοσύνη	1	rc://*/tw/dict/bible/kt/righteous
+3:22	w6y2	keyterm	Γραφὴ	1	rc://*/tw/dict/bible/kt/wordofgod
+3:22	nebt	keyterm	ἁμαρτίαν	1	rc://*/tw/dict/bible/kt/sin
+3:22	naz4	keyterm	ἐπαγγελία	1	rc://*/tw/dict/bible/kt/promise
+3:22	k8mm	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:22	nmzw	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+3:22	n4p3	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+3:22	faks	keyterm	πιστεύουσιν	1	rc://*/tw/dict/bible/kt/believe
+3:23	azt6	keyterm	πίστιν	1	rc://*/tw/dict/bible/kt/faith
+3:23	hxu9	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:23	fmte	keyterm	πίστιν	2	rc://*/tw/dict/bible/kt/faith
+3:24	q3ap	keyterm	νόμος	1	rc://*/tw/dict/bible/kt/lawofmoses
+3:24	fbtv		παιδαγωγὸς	1	rc://*/tw/dict/bible/other/instruct
+3:24	me7t	keyterm	Χριστόν	1	rc://*/tw/dict/bible/kt/christ
+3:24	eqwq	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:24	jjxc	keyterm	δικαιωθῶμεν	1	rc://*/tw/dict/bible/kt/justice
+3:25	c56p	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:25	ua3e		παιδαγωγόν	1	rc://*/tw/dict/bible/other/instruct
+3:26	sqtx	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+3:26	kd8s	keyterm	υἱοὶ Θεοῦ	1	rc://*/tw/dict/bible/kt/sonsofgod
+3:26	u38g	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+3:26	wj7b	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+3:26	vsft	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+3:26	m6cq	keyterm	ἐν Χριστῷ Ἰησοῦ	1	rc://*/tw/dict/bible/kt/inchrist
+3:27	ppuj	keyterm	Χριστὸν	1	rc://*/tw/dict/bible/kt/christ
+3:27	tz5u	keyterm	εἰς Χριστὸν	1	rc://*/tw/dict/bible/kt/inchrist
+3:27	je5t	keyterm	ἐβαπτίσθητε	1	rc://*/tw/dict/bible/kt/baptize
+3:27	x7b3	keyterm	Χριστὸν	2	rc://*/tw/dict/bible/kt/christ
+3:28	e2uz	keyterm	Ἰουδαῖος	1	rc://*/tw/dict/bible/kt/jew
+3:28	ceu3	name	Ἕλλην	1	rc://*/tw/dict/bible/names/greek
+3:28	kx7d		δοῦλος	1	rc://*/tw/dict/bible/other/servant
+3:28	q45u		ἐλεύθερος	1	rc://*/tw/dict/bible/other/free
+3:28	zbnc	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+3:28	es3d	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+3:29	fx3m	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+3:29	ndup	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+3:29	g59p	keyterm	ἐπαγγελίαν	1	rc://*/tw/dict/bible/kt/promise
+3:29	h9g7		κληρονόμοι	1	rc://*/tw/dict/bible/other/heir
+4:1	qpuz		χρόνον	1	rc://*/tw/dict/bible/other/time
+4:1	ngpc		κληρονόμος	1	rc://*/tw/dict/bible/other/heir
+4:1	m3gy		δούλου	1	rc://*/tw/dict/bible/other/servant
+4:1	v5wd	keyterm	κύριος	1	rc://*/tw/dict/bible/kt/lord
+4:2	x33g		οἰκονόμους	1	rc://*/tw/dict/bible/other/manager
+4:2	hkk6	keyterm	προθεσμίας	1	rc://*/tw/dict/bible/kt/appoint
+4:3	jrtu	keyterm	κόσμου	1	rc://*/tw/dict/bible/kt/world
+4:3	d3nf		δεδουλωμένοι	1	rc://*/tw/dict/bible/other/enslave
+4:4	pkd9		χρόνου	1	rc://*/tw/dict/bible/other/time
+4:4	wvtq	keyterm	Θεὸς	1	rc://*/tw/dict/bible/kt/god
+4:4	yfnz	keyterm	Υἱὸν	1	rc://*/tw/dict/bible/kt/sonofgod
+4:4	zrfr	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+4:5	k9mt	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+4:5	bvcu	keyterm	ἐξαγοράσῃ	1	rc://*/tw/dict/bible/kt/redeem
+4:5	x8dv	keyterm	υἱοθεσίαν	1	rc://*/tw/dict/bible/kt/adoption
+4:5	n3v9		ἀπολάβωμεν	1	rc://*/tw/dict/bible/other/receive
+4:6	e4tx	keyterm	υἱοί	1	rc://*/tw/dict/bible/kt/sonsofgod
+4:6	jphu	keyterm	Θεὸς	1	rc://*/tw/dict/bible/kt/god
+4:6	nzp3	keyterm	Πνεῦμα	1	rc://*/tw/dict/bible/kt/holyspirit
+4:6	mkcx	keyterm	υἱοῦ	1	rc://*/tw/dict/bible/kt/sonofgod
+4:6	arfm		κρᾶζον	1	rc://*/tw/dict/bible/other/cry
+4:6	p8gc	keyterm	Πατήρ	1	rc://*/tw/dict/bible/kt/godthefather
+4:7	wxbz		δοῦλος	1	rc://*/tw/dict/bible/other/servant
+4:7	bazf	keyterm	υἱός	1	rc://*/tw/dict/bible/kt/sonsofgod
+4:7	yy99	keyterm	υἱός	2	rc://*/tw/dict/bible/kt/sonsofgod
+4:7	m82c		κληρονόμος	1	rc://*/tw/dict/bible/other/heir
+4:7	ydr2	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+4:8	hj8j		τότε	1	rc://*/tw/dict/bible/other/time
+4:8	wf7t		εἰδότες	1	rc://*/tw/dict/bible/other/know
+4:8	gnqa	keyterm	Θεὸν	1	rc://*/tw/dict/bible/kt/god
+4:8	d8p9		ἐδουλεύσατε	1	rc://*/tw/dict/bible/other/servant
+4:8	pfvw	keyterm	θεοῖς	1	rc://*/tw/dict/bible/kt/falsegod
+4:9	qeug		γνόντες	1	rc://*/tw/dict/bible/other/know
+4:9	zc8z	keyterm	Θεόν	1	rc://*/tw/dict/bible/kt/god
+4:9	j92y		γνωσθέντες	1	rc://*/tw/dict/bible/other/know
+4:9	wmzb	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+4:9	z2xn		δουλεύειν	1	rc://*/tw/dict/bible/other/enslave
+4:10	dnnz		ἡμέρας	1	rc://*/tw/dict/bible/other/biblicaltimeday
+4:10	w7ct		μῆνας	1	rc://*/tw/dict/bible/other/biblicaltimemonth
+4:10	pxvm		καιροὺς	1	rc://*/tw/dict/bible/other/time
+4:11	pxwu	keyterm	φοβοῦμαι	1	rc://*/tw/dict/bible/kt/fear
+4:11	ed77		εἰκῇ	1	rc://*/tw/dict/bible/other/vain
+4:11	kfeq		κεκοπίακα	1	rc://*/tw/dict/bible/other/labor
+4:12	c4yz		ὡς	1	rc://*/tw/dict/bible/other/like
+4:12	d2at		ὡς	2	rc://*/tw/dict/bible/other/like
+4:12	rh9m		ἠδικήσατε	1	rc://*/tw/dict/bible/other/wrong
+4:13	pfb9		οἴδατε	1	rc://*/tw/dict/bible/other/know
+4:13	ptq8	keyterm	εὐηγγελισάμην	1	rc://*/tw/dict/bible/kt/goodnews
+4:14	xwd7		πειρασμὸν	1	rc://*/tw/dict/bible/other/trial
+4:14	ht6e		ἐξεπτύσατε	1	rc://*/tw/dict/bible/other/reject
+4:14	s8rb		ὡς	1	rc://*/tw/dict/bible/other/like
+4:14	hgwk	keyterm	ἄγγελον	1	rc://*/tw/dict/bible/kt/angel
+4:14	tw74	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+4:14	cjy3		ἐδέξασθέ	1	rc://*/tw/dict/bible/other/receive
+4:14	mu7s		ὡς	2	rc://*/tw/dict/bible/other/like
+4:14	h8r4	keyterm	Χριστὸν	1	rc://*/tw/dict/bible/kt/christ
+4:14	axk8	keyterm; name	Χριστὸν Ἰησοῦν	1	rc://*/tw/dict/bible/kt/jesus
+4:15	b6n7	keyterm	μακαρισμὸς	1	rc://*/tw/dict/bible/kt/bless
+4:15	f5xv	keyterm	μαρτυρῶ	1	rc://*/tw/dict/bible/kt/testimony
+4:16	rke9		ἐχθρὸς	1	rc://*/tw/dict/bible/other/adversary
+4:17	gdpy	keyterm	ζηλοῦσιν	1	rc://*/tw/dict/bible/kt/zealous
+4:17	pj67	keyterm	καλῶς	1	rc://*/tw/dict/bible/kt/good
+4:17	swee	keyterm	ζηλοῦτε	1	rc://*/tw/dict/bible/kt/zealous
+4:18	baru	keyterm	καλὸν	1	rc://*/tw/dict/bible/kt/good
+4:18	v6qr	keyterm	ζηλοῦσθαι	1	rc://*/tw/dict/bible/kt/zealous
+4:18	smkw	keyterm	καλῷ	1	rc://*/tw/dict/bible/kt/good
+4:19	ej6s	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+4:21	z33t	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+4:21	dsc7	keyterm	νόμον	2	rc://*/tw/dict/bible/kt/lawofmoses
+4:22	rt35		γέγραπται	1	rc://*/tw/dict/bible/other/written
+4:22	jpbn	name	Ἀβραὰμ	1	rc://*/tw/dict/bible/names/abraham
+4:22	wn7u		παιδίσκης	1	rc://*/tw/dict/bible/other/servant
+4:22	nr9x		ἐλευθέρας	1	rc://*/tw/dict/bible/other/free
+4:23	rd46		παιδίσκης	1	rc://*/tw/dict/bible/other/servant
+4:23	u9um		ἐλευθέρας	1	rc://*/tw/dict/bible/other/free
+4:23	jknr	keyterm	ἐπαγγελίας	1	rc://*/tw/dict/bible/kt/promise
+4:24	ynhr	keyterm	διαθῆκαι	1	rc://*/tw/dict/bible/kt/covenant
+4:24	fany	name	Ὄρους Σινά	1	rc://*/tw/dict/bible/names/sinai
+4:24	hexz		δουλείαν	1	rc://*/tw/dict/bible/other/servant
+4:24	eshw	name	Ἁγάρ	1	rc://*/tw/dict/bible/names/hagar
+4:25	b92j	name	Ἁγὰρ	1	rc://*/tw/dict/bible/names/hagar
+4:25	a4hp	name	Σινά Ὄρος	1	rc://*/tw/dict/bible/names/sinai
+4:25	q2f7	name	Ἀραβίᾳ	1	rc://*/tw/dict/bible/names/arabia
+4:25	wve5	name	Ἰερουσαλήμ	1	rc://*/tw/dict/bible/names/jerusalem
+4:25	sjfq		δουλεύει	1	rc://*/tw/dict/bible/other/enslave
+4:26	v6d3	name	Ἰερουσαλὴμ	1	rc://*/tw/dict/bible/names/jerusalem
+4:26	t3gx		ἐλευθέρα	1	rc://*/tw/dict/bible/other/free
+4:27	mfwh		γέγραπται	1	rc://*/tw/dict/bible/other/written
+4:27	mx6w		στεῖρα	1	rc://*/tw/dict/bible/other/barren
+4:28	fm6g	name	Ἰσαὰκ	1	rc://*/tw/dict/bible/names/isaac
+4:28	a577	keyterm	ἐπαγγελίας	1	rc://*/tw/dict/bible/kt/promise
+4:29	quec		ὥσπερ	1	rc://*/tw/dict/bible/other/like
+4:29	h3yy		ἐδίωκε	1	rc://*/tw/dict/bible/other/persecute
+4:29	vbqw	keyterm	Πνεῦμα	1	rc://*/tw/dict/bible/kt/holyspirit
+4:30	naap	keyterm	Γραφή	1	rc://*/tw/dict/bible/kt/wordofgod
+4:30	mqc2		ἔκβαλε	1	rc://*/tw/dict/bible/other/castout
+4:30	uw2w		παιδίσκην	1	rc://*/tw/dict/bible/other/servant
+4:30	caax	keyterm	κληρονομήσει	1	rc://*/tw/dict/bible/kt/inherit
+4:30	jn6d		παιδίσκης	1	rc://*/tw/dict/bible/other/servant
+4:30	c3kr		ἐλευθέρας	1	rc://*/tw/dict/bible/other/free
+4:31	chum		παιδίσκης	1	rc://*/tw/dict/bible/other/servant
+4:31	umy2		ἐλευθέρας	1	rc://*/tw/dict/bible/other/free
+5:1	j835		ἐλευθερίᾳ	1	rc://*/tw/dict/bible/other/free
+5:1	p85s	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+5:1	ap4k		ἠλευθέρωσεν	1	rc://*/tw/dict/bible/other/free
+5:1	y7qb		ζυγῷ	1	rc://*/tw/dict/bible/other/yoke
+5:1	pks7		δουλείας	1	rc://*/tw/dict/bible/other/servant
+5:2	j5dw	name	Παῦλος	1	rc://*/tw/dict/bible/names/paul
+5:2	nws6	keyterm	περιτέμνησθε	1	rc://*/tw/dict/bible/kt/circumcise
+5:2	ad26	keyterm	Χριστὸς	1	rc://*/tw/dict/bible/kt/christ
+5:2	jcbh		ὠφελήσει	1	rc://*/tw/dict/bible/other/profit
+5:3	qpan	keyterm	μαρτύρομαι	1	rc://*/tw/dict/bible/kt/testimony
+5:3	r66s	keyterm	περιτεμνομένῳ	1	rc://*/tw/dict/bible/kt/circumcise
+5:3	f8d9	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+5:4	zsna	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+5:4	e7gs	keyterm	νόμῳ	1	rc://*/tw/dict/bible/kt/lawofmoses
+5:4	a6w9	keyterm	δικαιοῦσθε	1	rc://*/tw/dict/bible/kt/justice
+5:4	uy5s	keyterm	χάριτος	1	rc://*/tw/dict/bible/kt/grace
+5:5	zwz8	keyterm	Πνεύματι	1	rc://*/tw/dict/bible/kt/holyspirit
+5:5	z3b2	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+5:5	ens3	keyterm	ἐλπίδα	1	rc://*/tw/dict/bible/kt/hope
+5:5	zvhc	keyterm	δικαιοσύνης	1	rc://*/tw/dict/bible/kt/righteous
+5:6	p5z9	keyterm	Χριστῷ	1	rc://*/tw/dict/bible/kt/christ
+5:6	rdwm	keyterm; name	Χριστῷ Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+5:6	prc3	keyterm	περιτομή	1	rc://*/tw/dict/bible/kt/circumcise
+5:6	vg63	keyterm	ἀκροβυστία	1	rc://*/tw/dict/bible/kt/circumcise
+5:6	mw8w	keyterm	πίστις	1	rc://*/tw/dict/bible/kt/faith
+5:6	fdfy	keyterm	ἀγάπης	1	rc://*/tw/dict/bible/kt/love
+5:8	zg9s	keyterm	καλοῦντος	1	rc://*/tw/dict/bible/kt/call
+5:9	ym5t		ζύμη	1	rc://*/tw/dict/bible/other/yeast
+5:9	hgcb		ζυμοῖ	1	rc://*/tw/dict/bible/other/yeast
+5:10	s4e3	keyterm	Κυρίῳ	1	rc://*/tw/dict/bible/kt/lord
+5:10	fes5	keyterm	ἐν Κυρίῳ	1	rc://*/tw/dict/bible/kt/inchrist
+5:10	daba		ταράσσων	1	rc://*/tw/dict/bible/other/trouble
+5:10	cxsr		βαστάσει	1	rc://*/tw/dict/bible/other/bear
+5:10	dyxm	keyterm	κρίμα	1	rc://*/tw/dict/bible/kt/judge
+5:11	ybbh	keyterm	περιτομὴν	1	rc://*/tw/dict/bible/kt/circumcise
+5:11	pkcc		κηρύσσω	1	rc://*/tw/dict/bible/other/preach
+5:11	ae9e		διώκομαι	1	rc://*/tw/dict/bible/other/persecute
+5:11	d2j9	keyterm	σταυροῦ	1	rc://*/tw/dict/bible/kt/cross
+5:13	e2un		ἐλευθερίᾳ	1	rc://*/tw/dict/bible/other/free
+5:13	wx9f	keyterm	ἐκλήθητε	1	rc://*/tw/dict/bible/kt/call
+5:13	mrmx		ἐλευθερίαν	1	rc://*/tw/dict/bible/other/free
+5:13	c2uf	keyterm	ἀγάπης	1	rc://*/tw/dict/bible/kt/love
+5:13	ucdh		δουλεύετε	1	rc://*/tw/dict/bible/other/servant
+5:14	ck9h	keyterm	νόμος	1	rc://*/tw/dict/bible/kt/lawofmoses
+5:14	mp4t	keyterm	πεπλήρωται	1	rc://*/tw/dict/bible/kt/fulfill
+5:14	j9gp	keyterm	ἀγαπήσεις	1	rc://*/tw/dict/bible/kt/love
+5:14	c8h7		πλησίον	1	rc://*/tw/dict/bible/other/neighbor
+5:14	d8fg		ὡς	1	rc://*/tw/dict/bible/other/like
+5:15	ss6w		κατεσθίετε	1	rc://*/tw/dict/bible/other/devour
+5:16	pemr	keyterm	Πνεύματι	1	rc://*/tw/dict/bible/kt/holyspirit
+5:16	e7y3		ἐπιθυμίαν	1	rc://*/tw/dict/bible/other/lust
+5:17	bhea	keyterm	Πνεύματος	1	rc://*/tw/dict/bible/kt/holyspirit
+5:17	udgt	keyterm	Πνεῦμα	1	rc://*/tw/dict/bible/kt/holyspirit
+5:18	akjf	keyterm	Πνεύματι	1	rc://*/tw/dict/bible/kt/holyspirit
+5:18	jcgj	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+5:19	a33j		πορνεία	1	rc://*/tw/dict/bible/other/fornication
+5:20	jujb	keyterm	εἰδωλολατρία	1	rc://*/tw/dict/bible/kt/falsegod
+5:20	djde		φαρμακεία	1	rc://*/tw/dict/bible/other/sorcery
+5:20	yrcr		ἔρις	1	rc://*/tw/dict/bible/other/strife
+5:20	rn77	keyterm	ζῆλοι	1	rc://*/tw/dict/bible/kt/jealous
+5:20	kzbk		ἐριθεῖαι	1	rc://*/tw/dict/bible/other/strife
+5:21	ffpb		φθόνοι	1	rc://*/tw/dict/bible/other/envy
+5:21	fvjb		μέθαι	1	rc://*/tw/dict/bible/other/drunk
+5:21	kbrz		ὅμοια	1	rc://*/tw/dict/bible/other/like
+5:21	k8h9		καθὼς	1	rc://*/tw/dict/bible/other/like
+5:21	sp2u		τοιαῦτα	1	rc://*/tw/dict/bible/other/like
+5:21	crt2	keyterm	Βασιλείαν Θεοῦ	1	rc://*/tw/dict/bible/kt/kingdomofgod
+5:21	p22z	keyterm	κληρονομήσουσιν	1	rc://*/tw/dict/bible/kt/inherit
+5:22	fher		καρπὸς	1	rc://*/tw/dict/bible/other/fruit
+5:22	by29	keyterm	Πνεύματός	1	rc://*/tw/dict/bible/kt/holyspirit
+5:22	v7cj	keyterm	ἀγάπη	1	rc://*/tw/dict/bible/kt/love
+5:22	b2t5		χαρά	1	rc://*/tw/dict/bible/other/joy
+5:22	p6s2		εἰρήνη	1	rc://*/tw/dict/bible/other/peace
+5:22	j2qw		μακροθυμία	1	rc://*/tw/dict/bible/other/patient
+5:22	kyj2	keyterm	ἀγαθωσύνη	1	rc://*/tw/dict/bible/kt/good
+5:22	epe8	keyterm	πίστις	1	rc://*/tw/dict/bible/kt/faithful
+5:23	zjsc		ἐνκράτεια	1	rc://*/tw/dict/bible/other/selfcontrol
+5:23	c8pj		νόμος	1	rc://*/tw/dict/bible/other/law
+5:24	eyub	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+5:24	fwyw	keyterm; name	Χριστοῦ Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+5:24	ywz2	keyterm	ἐσταύρωσαν	1	rc://*/tw/dict/bible/kt/crucify
+5:24	by2t		ἐπιθυμίαις	1	rc://*/tw/dict/bible/other/lust
+5:25	n887	keyterm	Πνεύματι	1	rc://*/tw/dict/bible/kt/holyspirit
+5:25	e4th	keyterm	Πνεύματι	2	rc://*/tw/dict/bible/kt/holyspirit
+5:26	p8e2	keyterm	κενόδοξοι	1	rc://*/tw/dict/bible/kt/boast
+5:26	v93u		φθονοῦντες	1	rc://*/tw/dict/bible/other/envy
+6:1	ku8t	keyterm	παραπτώματι	1	rc://*/tw/dict/bible/kt/trespass
+6:1	bdc3	keyterm	πνευματικοὶ	1	rc://*/tw/dict/bible/kt/spirit
+6:1	e74g	keyterm	καταρτίζετε	1	rc://*/tw/dict/bible/kt/restore
+6:1	acn6	keyterm	πνεύματι	1	rc://*/tw/dict/bible/kt/spirit
+6:1	qan3	keyterm	πειρασθῇς	1	rc://*/tw/dict/bible/kt/tempt
+6:2	phfz		βαστάζετε	1	rc://*/tw/dict/bible/other/bear
+6:2	fbu6	keyterm	ἀναπληρώσετε	1	rc://*/tw/dict/bible/kt/fulfill
+6:2	c2js		νόμον	1	rc://*/tw/dict/bible/other/law
+6:2	avx6	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+6:3	cffp		φρεναπατᾷ	1	rc://*/tw/dict/bible/other/deceive
+6:4	h4tt	keyterm	καύχημα	1	rc://*/tw/dict/bible/kt/boast
+6:5	w75d		βαστάσει	1	rc://*/tw/dict/bible/other/bear
+6:6	bhuv	keyterm	λόγον	1	rc://*/tw/dict/bible/kt/wordofgod
+6:6	ggr9	keyterm	ἀγαθοῖς	1	rc://*/tw/dict/bible/kt/good
+6:7	k4ts		πλανᾶσθε	1	rc://*/tw/dict/bible/other/deceive
+6:7	dbeq	keyterm	Θεὸς	1	rc://*/tw/dict/bible/kt/god
+6:7	aurt		μυκτηρίζεται	1	rc://*/tw/dict/bible/other/mock
+6:7	aykw		σπείρῃ	1	rc://*/tw/dict/bible/other/sow
+6:7	cbew		θερίσει	1	rc://*/tw/dict/bible/other/harvest
+6:8	xbfj		σπείρων	1	rc://*/tw/dict/bible/other/sow
+6:8	bhyz		θερίσει	1	rc://*/tw/dict/bible/other/harvest
+6:8	xvkk		σπείρων	2	rc://*/tw/dict/bible/other/sow
+6:8	k4bv	keyterm	Πνεῦμα	1	rc://*/tw/dict/bible/kt/holyspirit
+6:8	tt7e	keyterm	Πνεύματος	1	rc://*/tw/dict/bible/kt/holyspirit
+6:8	cfvw		θερίσει	2	rc://*/tw/dict/bible/other/harvest
+6:8	dgxc	keyterm	αἰώνιον	1	rc://*/tw/dict/bible/kt/eternity
+6:9	cxjh	keyterm	καλὸν	1	rc://*/tw/dict/bible/kt/good
+6:9	hnvk		καιρῷ	1	rc://*/tw/dict/bible/other/time
+6:9	r3vk		θερίσομεν	1	rc://*/tw/dict/bible/other/harvest
+6:10	cjvq		ὡς	1	rc://*/tw/dict/bible/other/like
+6:10	fmwm		καιρὸν	1	rc://*/tw/dict/bible/other/time
+6:10	dsa5	keyterm	ἀγαθὸν	1	rc://*/tw/dict/bible/kt/good
+6:10	zzey		οἰκείους	1	rc://*/tw/dict/bible/other/household
+6:10	fagc	keyterm	πίστεως	1	rc://*/tw/dict/bible/kt/faith
+6:12	e9hv	keyterm	περιτέμνεσθαι	1	rc://*/tw/dict/bible/kt/circumcise
+6:12	svwq	keyterm	σταυρῷ	1	rc://*/tw/dict/bible/kt/cross
+6:12	qkc5	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+6:12	vm6u	keyterm; name	Χριστοῦ Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+6:12	eca8		διώκωνται	1	rc://*/tw/dict/bible/other/persecute
+6:13	tb2g	keyterm	περιτετμημένοι	1	rc://*/tw/dict/bible/kt/circumcise
+6:13	v9ww	keyterm	νόμον	1	rc://*/tw/dict/bible/kt/lawofmoses
+6:13	hkdj	keyterm	περιτέμνεσθαι	1	rc://*/tw/dict/bible/kt/circumcise
+6:13	xs6a	keyterm	καυχήσωνται	1	rc://*/tw/dict/bible/kt/boast
+6:14	pgyc	keyterm	καυχᾶσθαι	1	rc://*/tw/dict/bible/kt/boast
+6:14	qa33	keyterm	σταυρῷ	1	rc://*/tw/dict/bible/kt/cross
+6:14	hpa4	keyterm	Κυρίου	1	rc://*/tw/dict/bible/kt/lord
+6:14	uzjr	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+6:14	nenx	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+6:14	ec9x	keyterm	κόσμος	1	rc://*/tw/dict/bible/kt/world
+6:14	h2jf	keyterm	ἐσταύρωται	1	rc://*/tw/dict/bible/kt/crucify
+6:14	tdje	keyterm	κόσμῳ	1	rc://*/tw/dict/bible/kt/world
+6:15	ecau	keyterm	περιτομή	1	rc://*/tw/dict/bible/kt/circumcise
+6:15	gj98	keyterm	ἀκροβυστία	1	rc://*/tw/dict/bible/kt/circumcise
+6:15	bumh		κτίσις	1	rc://*/tw/dict/bible/other/creation
+6:16	eytj		εἰρήνη	1	rc://*/tw/dict/bible/other/peace
+6:16	q6wy	keyterm	ἔλεος	1	rc://*/tw/dict/bible/kt/mercy
+6:16	j7tz	keyterm	Ἰσραὴλ	1	rc://*/tw/dict/bible/kt/israel
+6:16	fa3s	keyterm	Θεοῦ	1	rc://*/tw/dict/bible/kt/god
+6:17	hsvu		κόπους	1	rc://*/tw/dict/bible/other/trouble
+6:17	maxu	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+6:17	e8he		βαστάζω	1	rc://*/tw/dict/bible/other/bear
+6:18	xux7	keyterm	χάρις	1	rc://*/tw/dict/bible/kt/grace
+6:18	p47j	keyterm	Κυρίου	1	rc://*/tw/dict/bible/kt/lord
+6:18	ysuw	keyterm; name	Ἰησοῦ	1	rc://*/tw/dict/bible/kt/jesus
+6:18	dekk	keyterm	Χριστοῦ	1	rc://*/tw/dict/bible/kt/christ
+6:18	rpjz	keyterm	πνεύματος	1	rc://*/tw/dict/bible/kt/spirit
+6:18	ks5b	keyterm	ἀμήν	1	rc://*/tw/dict/bible/kt/amen

@@ -4,12 +4,12 @@ namespace BattleLuck.Services.AI;
 /// Short-lived registry of "risky/admin" actions that have been PROPOSED to a player and are
 /// waiting for an explicit confirmation before they run.
 ///
-/// <see cref="IntentActionRouter"/> registers a pending action (capturing how to execute it),
-/// and the player either confirms (chat "yes" / "confirm &lt;id&gt;") or it quietly expires.
+/// DEPRECATED: Use <see cref="ActionProposalStore"/> for new code. This class now delegates
+/// to ActionProposalStore for proposal management while maintaining backward compatibility
+/// for existing callers (<see cref="IntentActionRouter"/>).
 ///
 /// Ownership is enforced: a token can only be confirmed by the same steamId that created it,
-/// so confirmation commands can never trigger someone else's admin action
-/// (and admin actions are only ever registered after an admin check at propose time).
+/// so confirmation commands can never trigger someone else's admin action.
 /// </summary>
 public static class IntentActionConfirmRegistry
 {
@@ -52,6 +52,10 @@ public static class IntentActionConfirmRegistry
     /// <summary>Whether the player has any pending action (used to gate bare "yes"/"no").</summary>
     public static bool HasPending(ulong steamId)
     {
+        // Check both stores
+        if (ActionProposalStore.HasPending(steamId))
+            return true;
+
         lock (_lock)
         {
             Purge();
@@ -69,6 +73,56 @@ public static class IntentActionConfirmRegistry
         ok = false;
         message = string.Empty;
 
+        // Try the new ActionProposalStore first
+        if (!string.IsNullOrWhiteSpace(token) && token != "latest" && token.Length <= 8)
+        {
+            if (ActionProposalStore.TryConfirm(steamId, token!, out var proposal) && proposal != null)
+            {
+                // Execute the confirmed proposal
+                var manifest = ActionManifestService.Instance;
+                var character = ResolveCharacter(steamId);
+                var session = BattleLuckPlugin.Session?.ActiveSessions.Values.FirstOrDefault(active =>
+                    active.Context != null && active.Context.Players.Contains(steamId));
+
+                if (character == Entity.Null || session == null)
+                {
+                    message = "The bound event session ended. Create a new preview.";
+                    return false;
+                }
+
+                // Build the action string from the proposal
+                var actionParts = new List<string> { proposal.ActionName };
+                foreach (var kvp in proposal.Arguments)
+                {
+                    if (!kvp.Key.Equals("actionName", StringComparison.OrdinalIgnoreCase))
+                        actionParts.Add($"{kvp.Key}={kvp.Value}");
+                }
+                var actionString = string.Join("|", actionParts);
+
+                if (!TryCreateExecutionContext(character, session, out var executor, out var context))
+                {
+                    message = "The bound event context is no longer ready.";
+                    return false;
+                }
+
+                var validation = new LlmRuntimeActionValidator(manifest)
+                    .ValidateAction(actionString, context, session.Context.SessionId);
+                if (!validation.Success)
+                {
+                    message = validation.Error ?? "Action validation failed after confirmation.";
+                    return false;
+                }
+
+                var result = executor.ExecuteViaRuntime(actionString, context);
+                ok = result.Success;
+                message = result.Success
+                    ? $"Executed {proposal.ActionName} ({proposal.ResolvedCanonicalName})."
+                    : result.Error ?? "Action execution failed.";
+                return true;
+            }
+        }
+
+        // Fall back to legacy pending store
         Pending? pending;
         lock (_lock)
         {
@@ -113,6 +167,14 @@ public static class IntentActionConfirmRegistry
     public static bool CancelLatest(ulong steamId, out string label)
     {
         label = string.Empty;
+
+        // Try the new store first
+        if (ActionProposalStore.CancelLatest(steamId, out var proposalLabel))
+        {
+            label = proposalLabel;
+            return true;
+        }
+
         lock (_lock)
         {
             Purge();
@@ -135,5 +197,44 @@ public static class IntentActionConfirmRegistry
         var expired = _pending.Where(kv => kv.Value.ExpiresUtc < now).Select(kv => kv.Key).ToList();
         foreach (var key in expired)
             _pending.Remove(key);
+    }
+
+    static Entity ResolveCharacter(ulong steamId)
+    {
+        if (!VRisingCore.IsReady)
+            return Entity.Null;
+        foreach (var player in VRisingCore.GetOnlinePlayers())
+        {
+            if (player.Exists() && player.IsPlayer() && player.GetSteamId() == steamId)
+                return player;
+        }
+        return Entity.Null;
+    }
+
+    static bool TryCreateExecutionContext(
+        Entity character,
+        ActiveSession session,
+        out FlowActionExecutor executor,
+        out FlowActionContext context)
+    {
+        executor = null!;
+        context = null!;
+        if (!character.Exists() || session.Context == null)
+            return false;
+
+        executor = new FlowActionExecutor(
+            BattleLuckPlugin.PlayerState ?? new PlayerStateController(),
+            BattleLuckPlugin.GameModes);
+        context = new FlowActionContext
+        {
+            PlayerCharacter = character,
+            ZoneHash = session.Context.ZoneHash,
+            PlayerState = BattleLuckPlugin.PlayerState ?? new PlayerStateController(),
+            Registry = BattleLuckPlugin.GameModes,
+            Config = session.Config,
+            Zone = session.Config.Zones.Zones.FirstOrDefault(item => item.Hash == session.Context.ZoneHash),
+            GameContext = session.Context
+        };
+        return true;
     }
 }

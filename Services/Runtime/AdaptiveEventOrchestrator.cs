@@ -2,6 +2,7 @@ using BattleLuck.Models;
 using BattleLuck.Services.Npc;
 using BattleLuck.Services.Drills;
 using BattleLuck.Services.Spawn;
+using SpawnController = BattleLuck.Services.Spawn.SpawnController;
 
 namespace BattleLuck.Services.Runtime;
 
@@ -244,7 +245,7 @@ public sealed class AdaptiveEventOrchestrator
                     if (!string.IsNullOrWhiteSpace(wave.DrillId) &&
                         state.Catalog.Drills.TryGetValue(wave.DrillId, out var drillDef))
                     {
-                        var drill = new CombatDrillDefinition
+                        var drill = new BattleLuck.Services.Drills.CombatDrillDefinition
                         {
                             Id = drillDef.Id,
                             DisplayName = drillDef.Id,
@@ -389,10 +390,10 @@ public sealed class ActiveEventState
 {
     public string SessionId { get; init; } = "";
     public string ModeId { get; init; } = "";
-    public AdaptiveSpawnPlan Plan { get; init; } = new();
+    public AdaptiveSpawnPlan Plan { get; init; } = new AdaptiveSpawnPlan("", 0, Array.Empty<SpawnNpcPlan>());
     public EventAdaptiveConfig Config { get; init; } = new();
     public EventCatalogContext Catalog { get; init; } = new();
-    public EventParticipantProfile Participants { get; init; } = new();
+    public EventParticipantProfile Participants { get; init; } = new EventParticipantProfile(Array.Empty<PlayerCombatProfile>(), 0);
     public ZoneDefinition Zone { get; init; } = new();
     public int CurrentWaveIndex { get; set; } = -1;
     public Dictionary<int, DateTime> WaveStartTimes { get; init; } = new();

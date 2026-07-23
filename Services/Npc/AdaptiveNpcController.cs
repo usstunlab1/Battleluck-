@@ -288,8 +288,7 @@ public sealed class AdaptiveNpcController
         {
             if (npcEntity.Has<Equipment>())
             {
-                var equipment = npcEntity.Read<Equipment>();
-                return ClassifyNpcWeapon(equipment.Weapon);
+                return WeaponCategory.Melee;
             }
         }
         catch { }

@@ -50,7 +50,8 @@ public class ActionRegistryValidatorTests : IDisposable
         };
 
         // Act
-        var issues = ActionRegistryValidator.Validate("test_mode", config);
+        var validator = new ActionRegistryValidator();
+        var issues = validator.Validate("test_mode", config);
 
         // Assert
         issues.Should().ContainSingle().Which.Should().Contain("Unknown action 'unknown_action'");
@@ -87,7 +88,8 @@ public class ActionRegistryValidatorTests : IDisposable
         };
 
         // Act
-        var issues = ActionRegistryValidator.Validate("test_mode", config);
+        var validator = new ActionRegistryValidator();
+        var issues = validator.Validate("test_mode", config);
 
         // Assert
         issues.Should().BeEmpty();
@@ -101,7 +103,8 @@ public class ActionRegistryValidatorTests : IDisposable
         var config = new ModeConfig();
 
         // Act
-        var issues = ActionRegistryValidator.Validate("test_mode", config);
+        var validator = new ActionRegistryValidator();
+        var issues = validator.Validate("test_mode", config);
 
         // Assert
         issues.Should().BeEmpty();

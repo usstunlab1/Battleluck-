@@ -26,13 +26,13 @@ public sealed class DeveloperBridgeStrategy : IPlanningStrategy
             .ToArray();
 
         var protoPlan = new DeveloperPlan(
-            schema: 1, id: "", requestId: "", manifestSha256: "",
-            goal: goal,
-            steps: steps,
-            assertions: new[] { "action_count_within_limit", "all_actions_catalogued", "cleanup_declared" },
-            risks: new[] { "NPC actions require validated prefab and target parameters before execution" },
-            cleanup: new[] { "dev.entities.destroy", "player.snapshot.restore" },
-            isFinalized: false, sha256: ""
+            1, "", "", "",
+            goal,
+            steps,
+            new[] { "action_count_within_limit", "all_actions_catalogued", "cleanup_declared" },
+            new[] { "NPC actions require validated prefab and target parameters before execution" },
+            new[] { "dev.entities.destroy", "player.snapshot.restore" },
+            false, ""
         );
 
         return Task.FromResult(OperationResult<DeveloperPlan>.Ok(protoPlan));

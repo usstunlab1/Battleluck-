@@ -2,32 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace BattleLuck.Models;
 
-// ── Participant Analysis ─────────────────────────────────────────────────────
-
-public sealed class EventParticipantProfile
-{
-    [JsonPropertyName("playerCount")] public int PlayerCount { get; init; }
-    [JsonPropertyName("averageLevel")] public float AverageLevel { get; init; }
-    [JsonPropertyName("minimumLevel")] public float MinimumLevel { get; init; }
-    [JsonPropertyName("maximumLevel")] public float MaximumLevel { get; init; }
-    [JsonPropertyName("averageCombatStrength")] public float AverageCombatStrength { get; init; }
-    [JsonPropertyName("peakCombatStrength")] public float PeakCombatStrength { get; init; }
-    [JsonPropertyName("players")] public IReadOnlyList<PlayerCombatProfile> Players { get; init; } = Array.Empty<PlayerCombatProfile>();
-}
-
-public sealed class PlayerCombatProfile
-{
-    [JsonPropertyName("steamId")] public ulong SteamId { get; init; }
-    [JsonPropertyName("equipmentLevel")] public int EquipmentLevel { get; init; }
-    [JsonPropertyName("maximumHealth")] public float MaximumHealth { get; init; }
-    [JsonPropertyName("currentHealthRatio")] public float CurrentHealthRatio { get; init; }
-    [JsonPropertyName("equippedWeapon")] public PrefabGUID EquippedWeapon { get; init; }
-    [JsonPropertyName("weaponCategory")] public WeaponCategory WeaponCategory { get; init; }
-    [JsonPropertyName("estimatedDamageRating")] public float EstimatedDamageRating { get; init; }
-    [JsonPropertyName("estimatedDefenseRating")] public float EstimatedDefenseRating { get; init; }
-    [JsonPropertyName("combatStrength")] public float CombatStrength { get; init; }
-}
-
 // ── Threat Budget ────────────────────────────────────────────────────────────
 
 public sealed class ThreatBudget
@@ -41,15 +15,6 @@ public sealed class ThreatBudget
 
 // ── Spawn Plan ───────────────────────────────────────────────────────────────
 
-public sealed class AdaptiveSpawnPlan
-{
-    [JsonPropertyName("eventId")] public string EventId { get; init; } = "";
-    [JsonPropertyName("calculatedDifficulty")] public float CalculatedDifficulty { get; init; }
-    [JsonPropertyName("waves")] public IReadOnlyList<SpawnWavePlan> Waves { get; init; } = Array.Empty<SpawnWavePlan>();
-    [JsonPropertyName("rewardBudget")] public RewardBudget RewardBudget { get; init; } = new();
-    [JsonPropertyName("safetyLimits")] public SpawnSafetyLimits SafetyLimits { get; init; } = new();
-}
-
 public sealed class SpawnWavePlan
 {
     [JsonPropertyName("waveIndex")] public int WaveIndex { get; init; }
@@ -58,17 +23,6 @@ public sealed class SpawnWavePlan
     [JsonPropertyName("startDelaySeconds")] public float StartDelaySeconds { get; init; }
     [JsonPropertyName("completionCondition")] public string CompletionCondition { get; init; } = "all_defeated";
     [JsonPropertyName("drillId")] public string DrillId { get; init; } = "";
-}
-
-public sealed class SpawnNpcPlan
-{
-    [JsonPropertyName("catalogId")] public string CatalogId { get; init; } = "";
-    [JsonPropertyName("prefabGuid")] public PrefabGUID PrefabGuid { get; init; }
-    [JsonPropertyName("count")] public int Count { get; init; } = 1;
-    [JsonPropertyName("behaviorProfileId")] public string BehaviorProfileId { get; init; } = "attack";
-    [JsonPropertyName("spawnZoneId")] public string SpawnZoneId { get; init; } = "";
-    [JsonPropertyName("healthScale")] public float HealthScale { get; init; } = 1f;
-    [JsonPropertyName("damageScale")] public float DamageScale { get; init; } = 1f;
 }
 
 public sealed class SpawnSafetyLimits

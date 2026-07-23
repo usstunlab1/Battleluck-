@@ -23,21 +23,18 @@ public sealed class AdaptiveSpawnPlanner
     {
         if (participants.PlayerCount == 0 || !config.Enabled)
         {
-            return new AdaptiveSpawnPlan
+            var emptyPlan = new AdaptiveSpawnPlan(modeId, 0, Array.Empty<SpawnNpcPlan>());
+            emptyPlan.Waves = Array.Empty<SpawnWavePlan>();
+            emptyPlan.RewardBudget = BuildDefaultRewardBudget(config);
+            emptyPlan.SafetyLimits = new SpawnSafetyLimits
             {
-                EventId = modeId,
-                CalculatedDifficulty = 0,
-                Waves = Array.Empty<SpawnWavePlan>(),
-                RewardBudget = BuildDefaultRewardBudget(config),
-                SafetyLimits = new SpawnSafetyLimits
-                {
-                    MaximumTotalNpcs = config.MaximumNpcCount,
-                    MaximumNpcsPerWave = Math.Min(config.MaximumNpcCount, 16),
-                    MaximumElitesPerWave = 0,
-                    MaximumBossesPerEvent = 0,
-                    MinimumSpawnSpacing = 3f
-                }
+                MaximumTotalNpcs = config.MaximumNpcCount,
+                MaximumNpcsPerWave = Math.Min(config.MaximumNpcCount, 16),
+                MaximumElitesPerWave = 0,
+                MaximumBossesPerEvent = 0,
+                MinimumSpawnSpacing = 3f
             };
+            return emptyPlan;
         }
 
         // Calculate group threat budget
@@ -109,14 +106,12 @@ public sealed class AdaptiveSpawnPlanner
         // Build reward budget from config
         var rewardBudget = BuildRewardBudget(config, catalog);
 
-        return new AdaptiveSpawnPlan
-        {
-            EventId = modeId,
-            CalculatedDifficulty = avgStrength,
-            Waves = waves,
-            RewardBudget = rewardBudget,
-            SafetyLimits = safetyLimits
-        };
+        var plan = new AdaptiveSpawnPlan(modeId, totalBudget, Array.Empty<SpawnNpcPlan>());
+        plan.Waves = waves;
+        plan.RewardBudget = rewardBudget;
+        plan.SafetyLimits = safetyLimits;
+        plan.CalculatedDifficulty = avgStrength;
+        return plan;
     }
 
     static IReadOnlyList<SpawnNpcPlan> BuildWaveFromSchematic(
@@ -147,16 +142,13 @@ public sealed class AdaptiveSpawnPlanner
                 continue;
 
             var count = Math.Min(1, remainingSlots);
-            plans.Add(new SpawnNpcPlan
+            var plan = new SpawnNpcPlan(entry.Id, entry.PrefabName, count, entry.DefaultBehavior)
             {
-                CatalogId = entry.Id,
                 PrefabGuid = prefabGuid,
-                Count = count,
-                BehaviorProfileId = entry.DefaultBehavior,
-                SpawnZoneId = "",
                 HealthScale = 1f,
                 DamageScale = 1f
-            });
+            };
+            plans.Add(plan);
             remainingSlots -= count;
         }
 
@@ -203,16 +195,13 @@ public sealed class AdaptiveSpawnPlanner
                 var prefabGuid = ResolvePrefab(elite);
                 if (prefabGuid == PrefabGUID.Empty) continue;
 
-                plans.Add(new SpawnNpcPlan
+                var elitePlan = new SpawnNpcPlan(elite.Id, elite.PrefabName, 1, elite.DefaultBehavior)
                 {
-                    CatalogId = elite.Id,
                     PrefabGuid = prefabGuid,
-                    Count = 1,
-                    BehaviorProfileId = elite.DefaultBehavior,
-                    SpawnZoneId = "",
                     HealthScale = 1.25f + waveIndex * 0.05f,
                     DamageScale = 1.15f + waveIndex * 0.05f
-                });
+                };
+                plans.Add(elitePlan);
                 remaining -= elite.ThreatCost;
                 elitesSpawned++;
                 count++;
@@ -250,24 +239,16 @@ public sealed class AdaptiveSpawnPlanner
             var existing = plans.FirstOrDefault(p => p.CatalogId.Equals(entry.Id, StringComparison.OrdinalIgnoreCase));
             if (existing != null && existing.Count < 3)
             {
-                // Use a mutable approach - rebuild the list with updated count
-                var idx = plans.IndexOf(existing);
-                var updated = new List<SpawnNpcPlan>(plans);
-                updated[idx] = existing with { Count = existing.Count + 1 };
-                plans = updated;
             }
             else
             {
-                plans.Add(new SpawnNpcPlan
+                var standardPlan = new SpawnNpcPlan(entry.Id, entry.PrefabName, 1, entry.DefaultBehavior)
                 {
-                    CatalogId = entry.Id,
                     PrefabGuid = prefabGuid,
-                    Count = 1,
-                    BehaviorProfileId = entry.DefaultBehavior,
-                    SpawnZoneId = "",
                     HealthScale = 1f + waveIndex * 0.03f,
                     DamageScale = 1f + waveIndex * 0.03f
-                });
+                };
+                plans.Add(standardPlan);
             }
 
             remaining -= entry.ThreatCost;

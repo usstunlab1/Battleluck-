@@ -1,0 +1,28 @@
+{
+  "resources": [
+    {
+      "name": "ar_twl",
+      "id": "50508",
+      "localPath": "/.project/resources/ar_twl",
+      "type": "codex.twl",
+      "remoteUrl": "https://git.door43.org/api/v1/catalog/entry/BSOJ/ar_twl/v5.1",
+      "version": "v5.1"
+    },
+    {
+      "name": "gu_twl",
+      "id": "49355",
+      "localPath": "/.project/resources/gu_twl",
+      "type": "codex.twl",
+      "remoteUrl": "https://git.door43.org/api/v1/catalog/entry/translationCore-Create-BCS/gu_twl/v1",
+      "version": "v1"
+    },
+    {
+      "name": "en_twl",
+      "id": "67843",
+      "localPath": "/.project/resources/en_twl",
+      "type": "codex.twl",
+      "remoteUrl": "https://git.door43.org/api/v1/catalog/entry/unfoldingWord/en_twl/v89",
+      "version": "v89"
+    }
+  ]
+}

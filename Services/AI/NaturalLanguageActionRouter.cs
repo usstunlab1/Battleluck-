@@ -9,10 +9,22 @@ using Unity.Mathematics;
 namespace BattleLuck.Services.AI;
 
 /// <summary>
-/// Resolves imperative <c>.ai &lt;text&gt;</c> requests against the canonical
+/// Resolves imperative <c>.ai <text></c> requests against the canonical
 /// action manifest. The router never asks an LLM to execute ECS code: it builds
 /// one fixed catalog action, validates it, binds it to an active session, and
 /// requires player-owned confirmation before any mutation runs.
+///
+/// Resolution order:
+/// 1. Parse operation verb.
+/// 2. Parse object category.
+/// 3. Parse requested object name.
+/// 4. Resolve the object through the correct catalog.
+/// 5. Select an action compatible with that object category.
+/// 6. Validate that the resolved target matches the requested name.
+/// 7. Create an immutable proposal.
+/// 8. Preview.
+/// 9. Confirm the exact proposal ID.
+/// 10. Execute and clear the proposal.
 /// </summary>
 public static class NaturalLanguageActionRouter
 {
@@ -24,13 +36,58 @@ public static class NaturalLanguageActionRouter
         @"\bCHAR_[A-Za-z0-9_]+\b",
         RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
+    // Category keywords that determine the object type
+    static readonly Dictionary<string, string> CategoryKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "floor", "floor_schematic" },
+        { "floors", "floor_schematic" },
+        { "tile", "floor_schematic" },
+        { "tiles", "floor_schematic" },
+        { "schematic", "schematic" },
+        { "schematics", "schematic" },
+        { "blueprint", "schematic" },
+        { "blueprints", "schematic" },
+        { "boss", "boss" },
+        { "bosses", "boss" },
+        { "vblood", "vblood" },
+        { "v blood", "vblood" },
+        { "v-blood", "vblood" },
+        { "npc", "npc" },
+        { "npcs", "npc" },
+        { "creature", "npc" },
+        { "creatures", "npc" },
+        { "mob", "npc" },
+        { "mobs", "npc" },
+    };
+
+    // Verb-to-action mappings for each category
+    static readonly Dictionary<string, string> CategoryActions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "boss", "spawn.boss" },
+        { "vblood", "spawn.boss" },
+        { "npc", "spawn.npc" },
+        { "schematic", "schematic.loadatpos" },
+        { "floor_schematic", "schematic.loadatpos" },
+    };
+
+    // Verbs that imply spawn/place actions
+    static readonly HashSet<string> SpawnVerbs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "spawn", "summon", "place", "put", "create", "build", "add"
+    };
+
+    static readonly HashSet<string> SearchVerbs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "search", "find", "list", "show"
+    };
+
     static readonly HashSet<string> ImperativeTerms = new(StringComparer.OrdinalIgnoreCase)
     {
         "add", "apply", "assign", "build", "change", "clear", "create", "delete",
         "despawn", "disable", "do", "enable", "end", "execute", "give", "grant",
         "kill", "move", "pause", "place", "remove", "rename", "reset", "resume",
         "revive", "run", "set", "spawn", "start", "stop", "summon", "swap",
-        "teleport", "update"
+        "teleport", "update", "search", "find", "list", "show"
     };
 
     public static bool TryHandle(ulong steamId, string query)
@@ -39,6 +96,17 @@ public static class NaturalLanguageActionRouter
             return false;
 
         var manifest = ActionManifestService.Instance;
+
+        // Step 1-2: Parse the request to extract verb, category, and target name
+        var parsed = ParseRequest(query);
+
+        // Handle search requests
+        if (parsed.verb != null && SearchVerbs.Contains(parsed.verb))
+        {
+            return HandleSearch(steamId, parsed, manifest);
+        }
+
+        // Step 3-4: Resolve through TryResolveEntry (existing logic for action name)
         if (!TryResolveEntry(query, manifest, out var entry, out var resolutionError))
         {
             if (!string.IsNullOrWhiteSpace(resolutionError))
@@ -60,6 +128,19 @@ public static class NaturalLanguageActionRouter
             Reply(steamId, entry.ServerContractViolationReason ??
                 $"Action '{entry.Name}' has no server-side handler.");
             return true;
+        }
+
+        // Step 5: Validate that the selected action is compatible with the detected category
+        if (parsed.category != null && parsed.verb != null && SpawnVerbs.Contains(parsed.verb))
+        {
+            var actionCategory = InferObjectCategory(entry.Name);
+            if (actionCategory != null && !actionCategory.Equals(parsed.category, StringComparison.OrdinalIgnoreCase))
+            {
+                Reply(steamId,
+                    $"Action '{entry.Name}' is for {actionCategory}, not {parsed.category}. " +
+                    $"Use a {parsed.category}-specific action.");
+                return true;
+            }
         }
 
         var character = ResolveCharacter(steamId);
@@ -91,6 +172,24 @@ public static class NaturalLanguageActionRouter
         }
 
         var summary = Summarize(action);
+
+        // Step 6: Request-result validation guard
+        if (parsed.targetName != null)
+        {
+            var resolvedPrefab = ExtractResolvedPrefab(action);
+            if (resolvedPrefab != null && !TargetMatches(parsed.targetName, resolvedPrefab, parsed.category))
+            {
+                BattleLuckPlugin.LogWarning(
+                    $"[AIResolver] Rejected target mismatch: " +
+                    $"request=\"{parsed.targetName}\" resolved=\"{resolvedPrefab}\" action=\"{entry.Name}\"");
+                Reply(steamId,
+                    $"I could not resolve '{parsed.targetName}' to one registered {parsed.category ?? "entity"}. " +
+                    $"Use .ai search {parsed.category ?? "boss"} {parsed.targetName}.");
+                return true;
+            }
+        }
+
+        // Step 7-8: Create immutable proposal and preview
         if (!entry.IsMutating && !entry.RequiresApproval &&
             entry.RiskLevel.Equals("safe", StringComparison.OrdinalIgnoreCase))
         {
@@ -100,15 +199,247 @@ public static class NaturalLanguageActionRouter
         }
 
         var boundSessionId = session.Context.SessionId;
-        var token = IntentActionConfirmRegistry.Register(
+
+        // Create the immutable proposal
+        var resolvedCategory = parsed.category ?? InferObjectCategory(entry.Name) ?? "unknown";
+        var resolvedName = ExtractResolvedPrefab(action) ?? entry.Name;
+        var resolvedGuid = ResolvePrefabGuidFromAction(action);
+        var arguments = BuildArgumentsDictionary(action);
+        var proposal = ActionProposalStore.CreateProposal(
             steamId,
+            query,
             entry.Name,
-            summary,
-            () => ExecuteConfirmed(steamId, boundSessionId, action, manifest));
+            resolvedCategory,
+            resolvedName,
+            resolvedGuid,
+            arguments,
+            requiresApproval: true);
 
         Reply(steamId,
-            $"Preview: {summary}. Confirm with `.ai yes` or `.ai confirm {token}` within 60 seconds; `.ai no` cancels.");
+            $"Ready: {summary}.\n" +
+            $"Proposal: {proposal.ProposalId}\n" +
+            $"Confirm: .ai yes {proposal.ProposalId} | Cancel: .ai cancel {proposal.ProposalId}");
         return true;
+    }
+
+    /// <summary>
+    /// Parse a natural language request to extract verb, category, and target name.
+    /// </summary>
+    sealed class ParsedRequest
+    {
+        public string? verb;
+        public string? category;
+        public string? targetName;
+        public string? rawQuery;
+    }
+
+    static ParsedRequest ParseRequest(string query)
+    {
+        var result = new ParsedRequest { rawQuery = query };
+        var trimmed = query.Trim();
+        var tokens = trimmed.Split(new[] { ' ', '\t', ',', ';' },
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (tokens.Length == 0)
+            return result;
+
+        // Identify the verb (first word if it's an imperative or spawn verb)
+        var firstToken = tokens[0].ToLowerInvariant();
+        if (ImperativeTerms.Contains(firstToken))
+            result.verb = firstToken;
+
+        // Search for category keywords in the remaining tokens
+        for (int i = 1; i < tokens.Length; i++)
+        {
+            var token = tokens[i].ToLowerInvariant();
+            // Handle multi-word categories like "v blood"
+            if (token == "v" && i + 1 < tokens.Length && tokens[i + 1].ToLowerInvariant() == "blood")
+            {
+                result.category = "vblood";
+                // The target name is whatever follows "v blood"
+                if (i + 2 < tokens.Length)
+                    result.targetName = string.Join(" ", tokens.Skip(i + 2));
+                return result;
+            }
+
+            if (CategoryKeywords.TryGetValue(token, out var category))
+            {
+                result.category = category;
+                // Everything after the category keyword is the target name
+                if (i + 1 < tokens.Length)
+                    result.targetName = string.Join(" ", tokens.Skip(i + 1));
+                return result;
+            }
+        }
+
+        // If no category keyword found, treat the last token(s) as potential target
+        if (tokens.Length > 1 && result.verb != null)
+        {
+            result.targetName = string.Join(" ", tokens.Skip(1));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Handle a search request by looking up targets in the appropriate catalog.
+    /// </summary>
+    static bool HandleSearch(ulong steamId, ParsedRequest parsed, ActionManifestService manifest)
+    {
+        if (string.IsNullOrWhiteSpace(parsed.category))
+        {
+            Reply(steamId, "Search what? Try: .ai search boss dracula, .ai search schematic floor, .ai search npc bandit");
+            return true;
+        }
+
+        var searchTerm = parsed.targetName ?? "";
+
+        switch (parsed.category)
+        {
+            case "boss":
+            case "vblood":
+                var bossResult = CategoryResolvers.ResolveBoss(searchTerm);
+                if (bossResult.Kind == CategoryResolvers.ResolutionKind.Resolved)
+                {
+                    Reply(steamId, $"Found: {bossResult.CanonicalName}. Use .ai spawn {parsed.category} {searchTerm}");
+                }
+                else if (bossResult.Kind == CategoryResolvers.ResolutionKind.Ambiguous)
+                {
+                    Reply(steamId, $"Multiple matches: {string.Join(", ", bossResult.Choices)}");
+                }
+                else
+                {
+                    Reply(steamId, $"No {parsed.category} found matching '{searchTerm}'.");
+                }
+                return true;
+
+            case "schematic":
+            case "floor_schematic":
+                var schematicResult = parsed.category == "floor_schematic"
+                    ? CategoryResolvers.ResolveFloorSchematic(searchTerm)
+                    : CategoryResolvers.ResolveSchematic(searchTerm);
+                if (schematicResult.Kind == CategoryResolvers.ResolutionKind.Resolved)
+                {
+                    Reply(steamId, $"Found schematic: {schematicResult.CanonicalName}.");
+                }
+                else if (schematicResult.Kind == CategoryResolvers.ResolutionKind.Ambiguous)
+                {
+                    var choices = string.Join(", ", schematicResult.Choices);
+                    Reply(steamId, $"Multiple schematics match '{searchTerm}': {choices}");
+                }
+                else
+                {
+                    Reply(steamId, $"No schematic found matching '{searchTerm}'.");
+                }
+                return true;
+
+            case "npc":
+                var npcResult = CategoryResolvers.ResolveNpc(searchTerm);
+                if (npcResult.Kind == CategoryResolvers.ResolutionKind.Resolved)
+                {
+                    Reply(steamId, $"Found NPC: {npcResult.CanonicalName}.");
+                }
+                else
+                {
+                    Reply(steamId, $"No NPC found matching '{searchTerm}'.");
+                }
+                return true;
+        }
+
+        Reply(steamId, $"Unknown category '{parsed.category}'. Try: boss, npc, schematic.");
+        return true;
+    }
+
+    /// <summary>
+    /// Infer the object category from an action name.
+    /// </summary>
+    static string? InferObjectCategory(string actionName)
+    {
+        if (actionName.Contains("boss", StringComparison.OrdinalIgnoreCase) ||
+            actionName.Contains("vblood", StringComparison.OrdinalIgnoreCase))
+            return "boss";
+        if (actionName.Contains("npc", StringComparison.OrdinalIgnoreCase))
+            return "npc";
+        if (actionName.Contains("schematic", StringComparison.OrdinalIgnoreCase))
+            return "schematic";
+        return null;
+    }
+
+    /// <summary>
+    /// Extract the resolved prefab name from a built action string.
+    /// </summary>
+    static string? ExtractResolvedPrefab(string action)
+    {
+        var (_, parameters) = FlowActionExecutor.ParseActionString(action);
+        foreach (var key in new[] { "prefab", "prefabName", "schematicId", "eventName" })
+        {
+            if (parameters.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
+                return value;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Extract the prefab GUID from a built action string.
+    /// </summary>
+    static int ResolvePrefabGuidFromAction(string action)
+    {
+        var prefab = ExtractResolvedPrefab(action);
+        if (prefab == null)
+            return 0;
+
+        if (int.TryParse(prefab, out var hash))
+            return hash;
+
+        try
+        {
+            if (PrefabHelper.TryGetPrefabGuid(prefab, out var guid))
+                return guid.GuidHash;
+        }
+        catch { }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Build an arguments dictionary from a serialized action string.
+    /// </summary>
+    static Dictionary<string, string> BuildArgumentsDictionary(string action)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var (name, parameters) = FlowActionExecutor.ParseActionString(action);
+        result["actionName"] = name;
+        foreach (var kvp in parameters)
+            result[kvp.Key] = kvp.Value;
+        return result;
+    }
+
+    /// <summary>
+    /// Check whether the requested target name reasonably matches the resolved prefab.
+    /// Uses the same resolution priority as CategoryResolvers.
+    /// </summary>
+    static bool TargetMatches(string requestedName, string resolvedPrefab, string? category)
+    {
+        if (string.IsNullOrWhiteSpace(requestedName) || string.IsNullOrWhiteSpace(resolvedPrefab))
+            return true; // Can't validate, don't block
+
+        // Try category-specific resolution
+        var resolution = category switch
+        {
+            "boss" or "vblood" => CategoryResolvers.ResolveBoss(requestedName),
+            "npc" => CategoryResolvers.ResolveNpc(requestedName),
+            "schematic" or "floor_schematic" => CategoryResolvers.ResolveSchematic(requestedName),
+            _ => null
+        };
+
+        if (resolution != null && resolution.Kind == CategoryResolvers.ResolutionKind.Resolved)
+        {
+            return resolution.CanonicalName.Equals(resolvedPrefab, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Fall back to simple string matching
+        return requestedName.Contains(resolvedPrefab, StringComparison.OrdinalIgnoreCase) ||
+               resolvedPrefab.Contains(requestedName, StringComparison.OrdinalIgnoreCase);
     }
 
     internal static bool TryResolveEntry(
@@ -193,13 +524,79 @@ public static class NaturalLanguageActionRouter
             if (!parameters.TryGetValue("prefab", out var prefab) || string.IsNullOrWhiteSpace(prefab))
             {
                 var prefabMatch = PrefabPattern.Match(candidateText);
-                prefab = prefabMatch.Success ? prefabMatch.Value : PickRandomBossPrefab(entry);
+                if (prefabMatch.Success)
+                {
+                    prefab = prefabMatch.Value;
+                }
+                else
+                {
+                    // Try to resolve the target name through CategoryResolvers
+                    var parsed = ParseRequest(candidateText);
+                    if (parsed.targetName != null)
+                    {
+                        var bossResult = CategoryResolvers.ResolveBoss(parsed.targetName);
+                        if (bossResult.Kind == CategoryResolvers.ResolutionKind.Resolved)
+                        {
+                            prefab = bossResult.CanonicalName;
+                        }
+                        else if (bossResult.Kind == CategoryResolvers.ResolutionKind.Ambiguous)
+                        {
+                            error = $"Multiple bosses match '{parsed.targetName}': {string.Join(", ", bossResult.Choices)}";
+                            return false;
+                        }
+                        else
+                        {
+                            error = $"'{parsed.targetName}' is not registered in the local prefab catalog. Use .ai search boss {parsed.targetName}.";
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // No target specified - return ambiguity
+                        error = "Which boss should I spawn? Use .ai search boss <name> or specify a boss name.";
+                        return false;
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(prefab))
                     parameters["prefab"] = prefab;
             }
 
             if (!parameters.ContainsKey("bossId"))
                 parameters["bossId"] = $"ai_boss_{Guid.NewGuid():N}"[..15];
+        }
+
+        if (entry.Name.Equals("spawn.npc", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!parameters.TryGetValue("prefab", out var prefab) || string.IsNullOrWhiteSpace(prefab))
+            {
+                var prefabMatch = PrefabPattern.Match(candidateText);
+                if (prefabMatch.Success)
+                {
+                    prefab = prefabMatch.Value;
+                }
+                else
+                {
+                    // Try to resolve through CategoryResolvers
+                    var parsed = ParseRequest(candidateText);
+                    if (parsed.targetName != null)
+                    {
+                        var npcResult = CategoryResolvers.ResolveNpc(parsed.targetName);
+                        if (npcResult.Kind == CategoryResolvers.ResolutionKind.Resolved)
+                        {
+                            prefab = npcResult.CanonicalName;
+                        }
+                        else
+                        {
+                            error = $"'{parsed.targetName}' is not registered as an NPC. Use .ai search npc {parsed.targetName}.";
+                            return false;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(prefab))
+                    parameters["prefab"] = prefab;
+            }
         }
 
         if (wantsRandom &&

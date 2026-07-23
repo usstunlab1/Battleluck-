@@ -254,7 +254,7 @@ public class BattleLuckPlugin : BasePlugin
             try
             {
                 var issues = new List<string>();
-                issues.AddRange(BattleLuck.Core.Validation.ActionRegistryValidator.Validate(info.ModeId, config));
+                issues.AddRange(new BattleLuck.Core.Validation.ActionRegistryValidator().Validate(info.ModeId, config));
                 issues.AddRange(ZoneValidator.Validate(info.ModeId, config));
                 issues.AddRange(KitValidator.Validate(info.ModeId, config));
                 issues.AddRange(PrefabValidator.Validate(info.ModeId, config));

@@ -3,6 +3,8 @@ using Stunlock.Core;
 using Unity.Entities;
 using Unity.Mathematics;
 
+namespace BattleLuck.Services.Spawn;
+
 /// <summary>
 /// Spawns enemies, bosses, and VBloods for PvE game modes.
 /// Uses UnitSpawnerUpdateSystem.SpawnUnit with callback pattern from VAMP SpawnService.

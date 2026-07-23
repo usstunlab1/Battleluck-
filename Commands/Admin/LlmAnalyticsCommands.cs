@@ -38,7 +38,7 @@ public sealed class LlmAnalyticsCommands
             return $"Mode '{intent.ModeId}' not found.";
 
         var issues = new List<string>();
-        issues.AddRange(ActionRegistryValidator.Validate(intent.ModeId, config));
+        issues.AddRange(new ActionRegistryValidator().Validate(intent.ModeId, config));
         issues.AddRange(ZoneValidator.Validate(intent.ModeId, config));
         issues.AddRange(KitValidator.Validate(intent.ModeId, config));
         issues.AddRange(PrefabValidator.Validate(intent.ModeId, config));

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using BattleLuck.Models;
 using BattleLuck.Services.Npc;
+using BattleLuck.Services.Spawn;
 using Unity.Entities;
 using Unity.Mathematics;
 

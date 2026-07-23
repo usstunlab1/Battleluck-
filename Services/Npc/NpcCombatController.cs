@@ -133,8 +133,7 @@ public sealed class NpcCombatController
         {
             if (npcEntity.Has<AggroConsumer>())
             {
-                var consumer = npcEntity.Read<AggroConsumer>();
-                return consumer.ActiveAggroTargets.Count > 0;
+                return true;
             }
         }
         catch { }

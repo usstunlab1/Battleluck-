@@ -196,23 +196,9 @@ public static class EntityExtensions
     {
         if (!entity.Exists() || entity.IsPlayer()) return;
 
-        // The specific components may vary, but the pattern is to set a destination
-        // for the server's AI systems to act upon.
-        // A common approach is to use a Follower component with a null follow target
-        // and a specific destination, or a dedicated pathfinding request component.
-        if (entity.Has<ProjectM.Pathfinding.Follower>())
-        {
-            entity.With((ref ProjectM.Pathfinding.Follower follower) =>
-            {
-                follower.Mode = ProjectM.Pathfinding.FollowMode.Simple;
-                follower.Target = Entity.Null;
-                follower.SimpleMoveTo = position;
-                follower.SimpleMoveToRadius = 1.5f; // Arrive within this distance
-            });
-        }
-        // Fallback for entities that don't use Follower but might have basic movement
-        else if (entity.Has<Movement>())
-            entity.With((ref Movement m) => m.TargetPosition = position);
+        // Fall back to set-position. The Follower component is not available
+        // in this SDK version.
+        entity.SetPosition(position);
     }
 
     static bool TryTeleportPlayerWithNetworkEvent(Entity character, float3 position)

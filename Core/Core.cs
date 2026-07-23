@@ -54,6 +54,7 @@ internal static class Core
     public static GameEventNormalizer? EventNormalizer { get; internal set; }
     public static PlayerDirectoryService? PlayerDirectory { get; internal set; }
     public static IErrorReporter ErrorReporter { get; internal set; } = NoOpErrorReporter.Instance;
+    public static UnifiedPlannerService? Planner { get; internal set; }
 
     // ── Wave 1: New expansion services ──────────────────────────────────────────
     public static CompanionService? Companion { get; internal set; }

@@ -51,7 +51,7 @@ public sealed class NpcMovementController
         }
 
         var forward = math.forward(playerRot);
-        var right = math.right(playerRot);
+        var right = math.mul(playerRot, new float3(1, 0, 0));
 
         return playerPos
                + forward * config.ForwardOffset

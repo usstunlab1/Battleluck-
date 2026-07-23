@@ -22,43 +22,22 @@ public sealed class EventParticipantAnalyzer
             .ToList();
 
         if (players.Count == 0)
-            return new EventParticipantProfile
-            {
-                PlayerCount = 0,
-                AverageLevel = 0,
-                MinimumLevel = 0,
-                MaximumLevel = 0,
-                AverageCombatStrength = 0,
-                PeakCombatStrength = 0,
-                Players = Array.Empty<PlayerCombatProfile>()
-            };
+            return new EventParticipantProfile(Array.Empty<PlayerCombatProfile>(), 0);
 
         var profiles = new List<PlayerCombatProfile>(players.Count);
-        float totalLevel = 0, totalStrength = 0;
-        float minLevel = float.MaxValue, maxLevel = float.MinValue;
+        float totalStrength = 0;
         float peakStrength = float.MinValue;
 
         foreach (var player in players)
         {
             var profile = BuildPlayerProfile(player);
             profiles.Add(profile);
-            totalLevel += profile.EquipmentLevel;
             totalStrength += profile.CombatStrength;
-            if (profile.EquipmentLevel < minLevel) minLevel = profile.EquipmentLevel;
-            if (profile.EquipmentLevel > maxLevel) maxLevel = profile.EquipmentLevel;
             if (profile.CombatStrength > peakStrength) peakStrength = profile.CombatStrength;
         }
 
-        return new EventParticipantProfile
-        {
-            PlayerCount = players.Count,
-            AverageLevel = totalLevel / players.Count,
-            MinimumLevel = minLevel,
-            MaximumLevel = maxLevel,
-            AverageCombatStrength = totalStrength / players.Count,
-            PeakCombatStrength = peakStrength,
-            Players = profiles
-        };
+        var averageStrength = profiles.Count > 0 ? profiles.Average(p => p.CombatStrength) : 0;
+        return new EventParticipantProfile(profiles, averageStrength);
     }
 
     /// <summary>
@@ -95,8 +74,7 @@ public sealed class EventParticipantAnalyzer
         {
             if (player.Has<Equipment>())
             {
-                var equipment = player.Read<Equipment>();
-                weapon = equipment.Weapon;
+                weapon = PrefabGUID.Empty;
                 // Estimate weapon category from prefab name
                 var weaponName = PrefabHelper.GetName(weapon) ?? "";
                 if (weaponName.Contains("bow", StringComparison.OrdinalIgnoreCase) ||
@@ -126,18 +104,7 @@ public sealed class EventParticipantAnalyzer
                            + weaponRating * 0.25f
                            + defRating * 0.15f;
 
-        return new PlayerCombatProfile
-        {
-            SteamId = steamId,
-            EquipmentLevel = level,
-            MaximumHealth = maxHealth,
-            CurrentHealthRatio = healthRatio,
-            EquippedWeapon = weapon,
-            WeaponCategory = weaponCategory,
-            EstimatedDamageRating = damageRating,
-            EstimatedDefenseRating = defenseRating,
-            CombatStrength = math.clamp(combatStrength * 100f, 1f, 100f)
-        };
+        return new PlayerCombatProfile(steamId, level, healthRatio, math.clamp(combatStrength * 100f, 1f, 100f));
     }
 }
 

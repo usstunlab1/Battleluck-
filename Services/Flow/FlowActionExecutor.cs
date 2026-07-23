@@ -12,6 +12,7 @@ using BattleLuck.Services.Creature;
 using BattleLuck.Services.Encounter;
 using BattleLuck.Services.Portal;
 using BattleLuck.Services.Boss;
+using BattleLuck.Services.Spawn;
 using ProjectM;
 using Stunlock.Core;
 using Unity.Entities;

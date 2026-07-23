@@ -11,9 +11,9 @@ namespace BattleLuck.Services.Runtime;
 
 /// <summary>
 /// Loads the AI prompt, action policy, and examples directly from the unified
-/// event JSON at config/BattleLuck/events/&lt;modeId&gt;.json.
+/// event JSON at config/BattleLuck/events/<modeId>.json.
 ///
-/// config/BattleLuck/events/&lt;modeId&gt;/prompt.txt is optional and provides
+/// config/BattleLuck/events/<modeId>/prompt.txt is optional and provides
 /// a narrative override. The JSON ai block owns the structured policy.
 /// </summary>
 public sealed class PromptContextLoader
@@ -53,35 +53,6 @@ public sealed class PromptContextLoader
         if (!File.Exists(jsonPath))
             return null;
 
-<<<<<<< C:/Users/ahmad/OneDrive/Desktop/BL/Services/Runtime/PromptContextLoader.cs
-        try
-        {
-            return ParseEventJson(File.ReadAllText(path), modeId);
-        }
-        catch (Exception ex)
-        {
-            BattleLuckPlugin.LogWarning($"[PromptContextLoader] Failed to load AI config from {path}: {ex.Message}");
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Parses the embedded AI policy from a candidate unified event document.
-    /// Deployment validation uses this overload so it never reads a stale live
-    /// event while validating a staged replacement.
-    /// </summary>
-    public PromptContext? ParseEventJson(string eventJson, string fallbackEventId = "")
-    {
-        if (string.IsNullOrWhiteSpace(eventJson))
-            return null;
-
-        try
-        {
-            using var document = JsonDocument.Parse(eventJson);
-            var root = document.RootElement;
-            if (!root.TryGetProperty("ai", out var ai) || ai.ValueKind != JsonValueKind.Object)
-                return null;
-=======
         try
         {
             var context = ParseEventJson(File.ReadAllText(jsonPath), modeId);
@@ -139,7 +110,6 @@ public sealed class PromptContextLoader
             var root = document.RootElement;
             if (!root.TryGetProperty("ai", out var ai) || ai.ValueKind != JsonValueKind.Object)
                 return null;
->>>>>>> C:/Users/ahmad/.windsurf/worktrees/BL/BL-pewter-galileo/Services/Runtime/PromptContextLoader.cs
 
             var context = new PromptContext
             {

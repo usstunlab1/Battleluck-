@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Stunlock.Core;
 
 namespace BattleLuck.Models;
 
@@ -33,7 +34,72 @@ public sealed class CombatDrillDefinition
     [JsonPropertyName("reaction")] public string Reaction { get; set; } = "counter";
 }
 
-public sealed record PlayerCombatProfile(ulong SteamId, int Level, float HealthRatio, float CombatStrength);
-public sealed record EventParticipantProfile(IReadOnlyList<PlayerCombatProfile> Players, float AverageStrength);
-public sealed record SpawnNpcPlan(string CatalogId, string Prefab, int Count, string Behavior);
-public sealed record AdaptiveSpawnPlan(string EventId, float ThreatBudget, IReadOnlyList<SpawnNpcPlan> Npcs);
+public sealed class PlayerCombatProfile
+{
+    [JsonPropertyName("steamId")] public ulong SteamId { get; init; }
+    [JsonPropertyName("level")] public int Level { get; init; }
+    [JsonPropertyName("healthRatio")] public float HealthRatio { get; init; }
+    [JsonPropertyName("combatStrength")] public float CombatStrength { get; init; }
+
+    public PlayerCombatProfile(ulong steamId, int level, float healthRatio, float combatStrength)
+    {
+        SteamId = steamId;
+        Level = level;
+        HealthRatio = healthRatio;
+        CombatStrength = combatStrength;
+    }
+}
+
+public sealed class EventParticipantProfile
+{
+    [JsonPropertyName("players")] public IReadOnlyList<PlayerCombatProfile> Players { get; init; } = Array.Empty<PlayerCombatProfile>();
+    [JsonPropertyName("averageStrength")] public float AverageStrength { get; init; }
+    public int PlayerCount => Players.Count;
+    public float AverageCombatStrength => AverageStrength;
+    public float PeakCombatStrength => Players.Count > 0 ? Players.Max(p => p.CombatStrength) : 0;
+
+    public EventParticipantProfile(IReadOnlyList<PlayerCombatProfile> players, float averageStrength)
+    {
+        Players = players;
+        AverageStrength = averageStrength;
+    }
+}
+
+public sealed class SpawnNpcPlan
+{
+    [JsonPropertyName("catalogId")] public string CatalogId { get; init; } = "";
+    [JsonPropertyName("prefab")] public string Prefab { get; init; } = "";
+    [JsonPropertyName("count")] public int Count { get; init; }
+    [JsonPropertyName("behavior")] public string Behavior { get; init; } = "";
+    public PrefabGUID PrefabGuid { get; set; }
+    public string BehaviorProfileId { get; set; } = "";
+    public string SpawnZoneId { get; set; } = "";
+    public float HealthScale { get; set; } = 1f;
+    public float DamageScale { get; set; } = 1f;
+
+    public SpawnNpcPlan(string catalogId, string prefab, int count, string behavior)
+    {
+        CatalogId = catalogId;
+        Prefab = prefab;
+        Count = count;
+        Behavior = behavior;
+    }
+}
+
+public sealed class AdaptiveSpawnPlan
+{
+    [JsonPropertyName("eventId")] public string EventId { get; init; } = "";
+    [JsonPropertyName("threatBudget")] public float ThreatBudget { get; init; }
+    [JsonPropertyName("npcs")] public IReadOnlyList<SpawnNpcPlan> Npcs { get; init; } = Array.Empty<SpawnNpcPlan>();
+    public IReadOnlyList<SpawnWavePlan> Waves { get; set; } = Array.Empty<SpawnWavePlan>();
+    public RewardBudget? RewardBudget { get; set; }
+    public SpawnSafetyLimits? SafetyLimits { get; set; }
+    public float CalculatedDifficulty { get; set; } = 1f;
+
+    public AdaptiveSpawnPlan(string eventId, float threatBudget, IReadOnlyList<SpawnNpcPlan> npcs)
+    {
+        EventId = eventId;
+        ThreatBudget = threatBudget;
+        Npcs = npcs;
+    }
+}
