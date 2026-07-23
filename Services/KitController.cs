@@ -26,6 +26,7 @@ public static class KitController
     /// <summary>Load kit.json for a mode. Caches result.</summary>
     public static KitConfig? LoadKit(string modeId)
     {
+        modeId = SafeFileSystem.RequireSafeIdentifier(modeId, nameof(modeId));
         if (_kitCache.TryGetValue(modeId, out var cached))
             return cached;
 

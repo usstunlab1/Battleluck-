@@ -2,6 +2,7 @@ using BattleLuck.Commands;
 using BattleLuck.Services.AI;
 using BattleLuck.Services.Assistant;
 using BattleLuck.Services.Practice;
+using BattleLuck.Services.Chat;
 using VampireCommandFramework;
 
 namespace BattleLuck.Commands.Chat;
@@ -13,6 +14,8 @@ namespace BattleLuck.Commands.Chat;
 public static class BattleLuckRootCommands
 {
     static readonly AiLiteKnowledgeService AiLite = new();
+    static readonly ZuiPacketPresenter Zui = new(
+        (steamId, packet) => BattleLuckPlugin.NotifyPlayerBySteamIdOnMainThread(steamId, packet));
 
     /// <summary>
     /// VCF registration surface used for command discovery and the short usage
@@ -47,9 +50,11 @@ public static class BattleLuckRootCommands
     public static async Task Request(BattleLuckCommandContext ctx, string request = "")
     {
         request = NormalizeRequest(request);
-        if (request.Length == 0)
+        if (!AiRequestPolicy.TryValidate(request, out request, out var validationError))
         {
-            ctx.Reply("Usage: .ai <question or action description>");
+            ctx.Reply(request.Length == 0
+                ? "Usage: .ai <question or action description>"
+                : validationError);
             return;
         }
 
@@ -59,6 +64,9 @@ public static class BattleLuckRootCommands
             ctx.Reply(ended ? "AI conversation ended." : "No AI conversation is active.");
             return;
         }
+
+        if (TryHandleZui(ctx, request))
+            return;
 
         if (TryHandleSoloPractice(ctx, request))
             return;
@@ -103,6 +111,30 @@ public static class BattleLuckRootCommands
             BattleLuckPlugin.NotifyPlayerBySteamIdOnMainThread(ctx.SenderSteamId, AiLite.Answer(request));
             GameChatAiBridge.RecordReply(ctx.SenderSteamId);
         }
+    }
+
+    static bool TryHandleZui(BattleLuckCommandContext ctx, string request)
+    {
+        var parts = request.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0 || !parts[0].Equals("ui", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (parts.Length > 1 && parts[1].Equals("disable", StringComparison.OrdinalIgnoreCase))
+        {
+            Zui.Disable(ctx.SenderSteamId);
+            ctx.Reply("BattleLuck ZUI disabled.");
+            return true;
+        }
+
+        Zui.Enable(ctx.SenderSteamId);
+        var section = parts.Length > 1 ? parts[1] : string.Empty;
+        var window = section.Length == 0 || section.Equals("enable", StringComparison.OrdinalIgnoreCase)
+            ? BattleLuckZuiDashboard.BuildHome()
+            : BattleLuckZuiDashboard.BuildSection(section);
+
+        if (!Zui.TrySend(ctx.SenderSteamId, window))
+            ctx.Reply("BattleLuck could not send the ZUI window.");
+        return true;
     }
 
     internal static string NormalizeRequest(string? value)

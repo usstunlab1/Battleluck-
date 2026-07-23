@@ -10,7 +10,9 @@ public sealed record ZuiWindow(string Id, string Title, IReadOnlyList<string> Li
 public sealed class ZuiPacketPresenter
 {
     const string Prefix = "[[ZUI]]";
-    const int MaxPacketChars = 6000;
+    // V Rising system messages are carried by FixedString512Bytes. Keep the
+    // complete ZUI envelope below NotificationHelper's UTF-8 safety boundary.
+    const int MaxPacketUtf8Bytes = NotificationHelper.MaxSystemMessageUtf8Bytes;
     const int MaxLines = 30;
     const int MaxButtons = 12;
     static readonly ConcurrentDictionary<ulong, byte> OptedIn = new();
@@ -35,7 +37,7 @@ public sealed class ZuiPacketPresenter
             lines = window.Lines.Take(MaxLines).Select(line => Plain(line, 300)).ToArray(),
             buttons = safeButtons
         });
-        if (packet.Length > MaxPacketChars) return false;
+        if (System.Text.Encoding.UTF8.GetByteCount(packet) > MaxPacketUtf8Bytes) return false;
         _sendPrivate(steamId, packet);
         return true;
     }

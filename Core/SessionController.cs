@@ -157,6 +157,19 @@ public sealed class SessionController
         return _activeSessions.Values.FirstOrDefault(s => s.SessionEntity == sessionEntity);
     }
 
+    public OperationResult FinalizeSession(Entity sessionEntity, string winnerNames)
+    {
+        var session = GetSessionByEntity(sessionEntity);
+        if (session?.Context == null)
+            return OperationResult.Fail("Active session was not found.");
+
+        if (!string.IsNullOrWhiteSpace(winnerNames))
+            session.Context.Broadcast?.Invoke($"Event complete. Winner(s): {winnerNames.Trim()}");
+
+        EndSession(session.Context.ZoneHash);
+        return OperationResult.Ok();
+    }
+
     public void Shutdown()
     {
         if (!_initialized)

@@ -316,7 +316,7 @@ namespace BattleLuck.Services
         try
         {
             var json = JsonSerializer.Serialize(transaction, JsonOpts);
-            File.WriteAllText(GetTransactionPath(steamId), json);
+            SafeFileSystem.WriteAllTextAtomic(GetTransactionPath(steamId), json);
         }
         catch (Exception ex)
         {

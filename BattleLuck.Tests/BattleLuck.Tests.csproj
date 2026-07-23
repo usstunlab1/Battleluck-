@@ -15,6 +15,9 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
+    <!-- Overrides the vulnerable 4.3.0 transitive pin from legacy server
+         reference packages; net8 still uses the framework implementation. -->
+    <PackageReference Include="System.Text.RegularExpressions" />
   </ItemGroup>
 
   <ItemGroup>

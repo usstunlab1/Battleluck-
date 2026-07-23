@@ -234,6 +234,40 @@ public sealed class CastleObjectResolver
         return results.ToList();
     }
 
+    public IReadOnlyList<CastleObjectKey> DiscoverOwnedObjects(ulong ownerSteamId)
+    {
+        if (ownerSteamId == 0 || !IsWorldReady || !VRisingCore.IsReady)
+            return Array.Empty<CastleObjectKey>();
+
+        var discovered = new Dictionary<string, CastleObjectKey>(StringComparer.Ordinal);
+        var em = VRisingCore.EntityManager;
+        var query = em.CreateEntityQuery(ComponentType.ReadOnly<CastleHeart>());
+        var hearts = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+        try
+        {
+            foreach (var heart in hearts)
+            {
+                if (!em.Exists(heart) || ResolveOwnerOfHeart(heart) != ownerSteamId)
+                    continue;
+
+                foreach (var castleObject in EnumerateObjectsLinkedToHeart(heart))
+                {
+                    var key = BuildKeyFromEntity(castleObject);
+                    if (key == null || key.OwnerSteamId != ownerSteamId || !key.IsValid())
+                        continue;
+                    discovered[MakeCacheKey(key)] = key;
+                }
+            }
+        }
+        finally
+        {
+            hearts.Dispose();
+            query.Dispose();
+        }
+
+        return discovered.Values.ToList();
+    }
+
     /// <summary>
     /// Build a stable CastleObjectKey from a live entity by combining its
     /// prefab, position, heart, and resolved owner. Returns null when the

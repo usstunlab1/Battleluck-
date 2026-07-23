@@ -92,4 +92,27 @@ public class KitValidatorTests
         // Assert
         issues.Should().Contain(i => i.Contains("Invalid weapon prefab ''"));
     }
+
+    [Fact]
+    public void Validate_DefersNamedPrefabs_UntilLiveWorldValidation()
+    {
+        var config = new ModeConfig
+        {
+            KitConfig = new KitConfig
+            {
+                Weapons = new List<WeaponConfig>
+                {
+                    new WeaponConfig { Prefab = "Item_Weapon_Sword_T08_Sanguine" }
+                },
+                Armors = new ArmorsConfig
+                {
+                    Chest = "Item_Chest_T08_DarkSilver_Rogue"
+                }
+            }
+        };
+
+        var issues = KitValidator.Validate("test_mode", config);
+
+        issues.Should().BeEmpty();
+    }
 }

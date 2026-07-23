@@ -246,8 +246,9 @@ public sealed class ConditionDefinition
 
     static int CompareNumeric(object left, string right)
     {
-        if (!double.TryParse(left.ToString(), out var lval) ||
-            !double.TryParse(right, out var rval))
+        var leftText = Convert.ToString(left, CultureInfo.InvariantCulture);
+        if (!double.TryParse(leftText, NumberStyles.Float, CultureInfo.InvariantCulture, out var lval) ||
+            !double.TryParse(right, NumberStyles.Float, CultureInfo.InvariantCulture, out var rval))
             return 0;
         return lval.CompareTo(rval);
     }

@@ -14,6 +14,19 @@ public sealed class BattleLuckCommandDispatcher
     static readonly List<string> _aliases = new();
     static bool _scanned;
 
+    // ── Per-player rate limiting ──────────────────────────────────────
+    const int MaxCommandsPerWindow = 10;
+    static readonly TimeSpan RateLimitWindow = TimeSpan.FromSeconds(5);
+    const int MaxRawInputLength = 4096;
+    static readonly Dictionary<ulong, RateLimitEntry> _rateLimits = new();
+    static readonly object _rateGate = new();
+
+    struct RateLimitEntry
+    {
+        public int Count;
+        public DateTimeOffset WindowStart;
+    }
+
     public static void EnsureScanned()
     {
         if (_scanned) return;
@@ -100,6 +113,21 @@ public sealed class BattleLuckCommandDispatcher
 
         var trimmed = (rawInput ?? "").Trim();
         if (trimmed.Length == 0) return false;
+
+        // Input length guard – reject oversized payloads before any parsing.
+        if (trimmed.Length > MaxRawInputLength)
+        {
+            Notify(senderEntity, steamId, $"🚫 Command too long (max {MaxRawInputLength} characters).", isConsole);
+            return true;
+        }
+
+        // Per-player rate limiting (admins are exempt for operational use).
+        if (!isAdmin && !isConsole && !TryAcquireRateLimit(steamId))
+        {
+            Notify(senderEntity, steamId, "⏳ You are sending commands too quickly. Please wait a moment.", isConsole);
+            return true;
+        }
+
         if (HasCommandPrefix(trimmed))
             trimmed = trimmed[1..];
 
@@ -282,6 +310,32 @@ public sealed class BattleLuckCommandDispatcher
         }
 
         return result;
+    }
+
+    static bool TryAcquireRateLimit(ulong steamId)
+    {
+        lock (_rateGate)
+        {
+            var now = DateTimeOffset.UtcNow;
+            if (!_rateLimits.TryGetValue(steamId, out var entry) ||
+                now - entry.WindowStart > RateLimitWindow)
+            {
+                entry = new RateLimitEntry { Count = 0, WindowStart = now };
+            }
+            entry.Count++;
+            _rateLimits[steamId] = entry;
+
+            // Evict stale entries to prevent unbounded growth.
+            if (_rateLimits.Count > 1024)
+            {
+                var stale = _rateLimits
+                    .Where(kv => now - kv.Value.WindowStart > RateLimitWindow)
+                    .Select(kv => kv.Key).ToArray();
+                foreach (var key in stale) _rateLimits.Remove(key);
+            }
+
+            return entry.Count <= MaxCommandsPerWindow;
+        }
     }
 
     static void Notify(Entity entity, ulong steamId, string message, bool isConsole)

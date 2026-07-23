@@ -1,0 +1,206 @@
+{
+  "formatVersion": 1,
+  "auditDate": "2026-07-24",
+  "release": "1.1.2",
+  "decision": "NO-GO",
+  "findings": [
+    {
+      "id": "BL-031",
+      "phase": 31,
+      "severity": "high",
+      "status": "fixed",
+      "title": "AI provider rate limiter admitted concurrent callers",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P0",
+      "evidence": "Services/AI/BaseAiService.cs; BattleLuck.Tests/Services/AI/BaseAiServiceTests.cs"
+    },
+    {
+      "id": "BL-032",
+      "phase": 33,
+      "severity": "high",
+      "status": "fixed",
+      "title": "Streaming provider exceptions could retain the rate-limit lease",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P0",
+      "evidence": "Services/AI/LlamaAIService.cs"
+    },
+    {
+      "id": "BL-033",
+      "phase": 31,
+      "severity": "medium",
+      "status": "fixed",
+      "title": "AI and action-router input had no common size or control-character boundary",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "Services/AI/AiRequestPolicy.cs; BattleLuck.Tests/Services/AI/AiRequestPolicyTests.cs"
+    },
+    {
+      "id": "BL-034",
+      "phase": 31,
+      "severity": "medium",
+      "status": "fixed",
+      "title": "Concurrent direct AI queries could amplify provider queues",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "Services/AI/AIAssistant.cs"
+    },
+    {
+      "id": "BL-035",
+      "phase": 45,
+      "severity": "medium",
+      "status": "fixed",
+      "title": "Numeric action conditions depended on the host culture",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "Models/ActionCatalogModels.cs; BattleLuck.Tests/Models/ConditionDefinitionCultureTests.cs"
+    },
+    {
+      "id": "BL-036",
+      "phase": 33,
+      "severity": "medium",
+      "status": "fixed",
+      "title": "AI conversation and deduplication state survived plugin reload",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "Services/AI/ConversationStore.cs; Services/AI/GameChatAiBridge.cs; BattleLuckPlugin.cs"
+    },
+    {
+      "id": "BL-037",
+      "phase": 36,
+      "severity": "high",
+      "status": "open",
+      "title": "Compile references target V Rising 1.1.11 while the observed server is 1.1.13",
+      "owner": "release-engineering",
+      "effort": "medium",
+      "priority": "P0",
+      "evidence": "Directory.Packages.props; docs/audit/live-server-log-remediation-2026-07-24.md"
+    },
+    {
+      "id": "BL-038",
+      "phase": 34,
+      "severity": "high",
+      "status": "open",
+      "title": "Clean dedicated-server startup and two castle ownership tests require a live world",
+      "owner": "server-qa",
+      "effort": "medium",
+      "priority": "P0",
+      "evidence": "BattleLuck.Tests/Services/CastlePolicyServiceTests.cs"
+    },
+    {
+      "id": "BL-039",
+      "phase": 48,
+      "severity": "high",
+      "status": "open",
+      "title": "Automated line and branch coverage are 7.04% and 3.81%",
+      "owner": "test-engineering",
+      "effort": "large",
+      "priority": "P0",
+      "evidence": "artifacts/audit/latest/test-results/**/coverage.cobertura.xml"
+    },
+    {
+      "id": "BL-040",
+      "phase": 38,
+      "severity": "medium",
+      "status": "open",
+      "title": "Gameplay wander randomness is not seedable or replayable",
+      "owner": "gameplay",
+      "effort": "medium",
+      "priority": "P2",
+      "evidence": "Services/Npc/NpcControlService.cs"
+    },
+    {
+      "id": "BL-041",
+      "phase": 37,
+      "severity": "medium",
+      "status": "open",
+      "title": "Linux dedicated-server behavior is not verified",
+      "owner": "server-qa",
+      "effort": "medium",
+      "priority": "P1",
+      "evidence": "docs/audit/phase-31-100-audit-matrix.md"
+    },
+    {
+      "id": "BL-042",
+      "phase": 43,
+      "severity": "medium",
+      "status": "open",
+      "title": "VCF and reference-assembly NuGet packages omit license expressions",
+      "owner": "release-engineering",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "THIRD_PARTY_NOTICES.md"
+    },
+    {
+      "id": "BL-043",
+      "phase": 82,
+      "severity": "low",
+      "status": "open",
+      "title": "Configured local Ollama endpoint is unavailable on this host",
+      "owner": "server-operator",
+      "effort": "small",
+      "priority": "P2",
+      "evidence": "docs/audit/known-issues.md"
+    },
+    {
+      "id": "BL-044",
+      "phase": 92,
+      "severity": "low",
+      "status": "open",
+      "title": "Release package was produced from a dirty working tree",
+      "owner": "release-engineering",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "dist/BattleLuck/artifact-manifest.json"
+    },
+    {
+      "id": "BL-045",
+      "phase": 57,
+      "severity": "medium",
+      "status": "fixed",
+      "title": "Original audit ZIP included generated test binaries and unrelated PJ content",
+      "owner": "release-engineering",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "tools/New-BattleLuckAuditedZip.ps1"
+    },
+    {
+      "id": "BL-046",
+      "phase": 36,
+      "severity": "medium",
+      "status": "open",
+      "title": "Runtime manifest requests VCF 0.11.0 while compilation uses VCF 0.10.4",
+      "owner": "plugin",
+      "effort": "small",
+      "priority": "P1",
+      "evidence": "manifest.json; Directory.Packages.props"
+    },
+    {
+      "id": "BL-047",
+      "phase": 83,
+      "severity": "medium",
+      "status": "open",
+      "title": "Disk-full and permission-denied persistence faults are not integration-tested",
+      "owner": "test-engineering",
+      "effort": "medium",
+      "priority": "P1",
+      "evidence": "docs/audit/test-coverage-map.md"
+    },
+    {
+      "id": "BL-048",
+      "phase": 44,
+      "severity": "medium",
+      "status": "open",
+      "title": "No versioned public API compatibility baseline exists",
+      "owner": "plugin",
+      "effort": "medium",
+      "priority": "P2",
+      "evidence": "docs/audit/known-issues.md"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ using Unity.Entities;
 /// </summary>
 public static class GameEvents
 {
+    internal static Action<string>? WarningSink { get; set; }
     // Zone lifecycle signals
     public static Action<ZoneEnterEvent>? OnZoneEnter;
     public static Action<ZoneExitEvent>? OnZoneExit;
@@ -91,7 +92,7 @@ public static class GameEvents
         foreach (Action<T> handler in handlers.GetInvocationList())
         {
             try { handler(value); }
-            catch (Exception ex) { BattleLuckPlugin.LogWarning($"[GameEvents] {eventName} subscriber failed: {ex}"); }
+            catch (Exception ex) { WarningSink?.Invoke($"[GameEvents] {eventName} subscriber failed: {ex}"); }
         }
     }
 
@@ -123,5 +124,6 @@ public static class GameEvents
         OnEloUpdate = null;
         OnWebhookAction = null;
         OnDiscordCommand = null;
+        WarningSink = null;
     }
 }

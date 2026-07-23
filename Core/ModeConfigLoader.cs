@@ -21,6 +21,7 @@ public static class ModeConfigLoader
     /// </summary>
     public static ModeConfig Load(string modeId)
     {
+        modeId = SafeFileSystem.RequireSafeIdentifier(modeId, nameof(modeId));
         // Try unified loader first
         try
         {
@@ -42,11 +43,11 @@ public static class ModeConfigLoader
             KitId = modeId
         };
 
-        var legacyPath = Path.Combine(ConfigLoader.ConfigRoot, modeId);
-        if (Directory.Exists(legacyPath))
+        // Flat config structure: events/{modeId}/zones.json
+        var eventDir = Path.Combine(EventsRoot, modeId);
+        if (Directory.Exists(eventDir))
         {
-            // Load zones.json if exists
-            var zonesPath = Path.Combine(legacyPath, "zones.json");
+            var zonesPath = Path.Combine(eventDir, "zones.json");
             if (File.Exists(zonesPath))
             {
                 try
@@ -55,12 +56,12 @@ public static class ModeConfigLoader
                 }
                 catch (Exception ex)
                 {
-                    BattleLuckPlugin.LogWarning($"[ModeConfigLoader] Failed to load legacy zones for '{modeId}': {ex.Message}");
+                    BattleLuckPlugin.LogWarning($"[ModeConfigLoader] Failed to load zones for '{modeId}': {ex.Message}");
                 }
             }
         }
 
-        // Load kit
+        // Load kit from flat event structure
         config.KitConfig = KitController.LoadKit(modeId) ?? new KitConfig();
 
         return config;

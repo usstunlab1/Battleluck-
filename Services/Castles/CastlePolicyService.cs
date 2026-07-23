@@ -74,6 +74,8 @@ public sealed class CastlePolicyService : IDisposable
         {
             _saveElapsed += Math.Max(0, deltaSeconds);
             shouldSave = _store.Count > 0 && _saveElapsed >= 2f;
+            if (shouldSave)
+                _saveElapsed = 0f;
         }
         if (shouldSave) _store.SaveNow();
 
@@ -283,14 +285,7 @@ public sealed class CastlePolicyService : IDisposable
     }
 
     public bool QuotaHasRoom(CastleObjectPolicy policy, ulong subjectSteamId, DateTime utc)
-    {
-        if (policy == null || !policy.Quota.Enabled) return true;
-        var counter = policy.QuotaCounters.FirstOrDefault(c => c.SubjectSteamId == subjectSteamId);
-        if (counter == null) return true;
-        var windowHours = policy.Quota.WindowHours > 0f ? policy.Quota.WindowHours : 24f;
-        if ((utc - counter.WindowStartUtc).TotalHours >= windowHours) return true;
-        return counter.Count < policy.Quota.MaxAmount;
-    }
+        => CastlePolicyRules.QuotaHasRoom(policy, subjectSteamId, utc);
 
     // ── Authorization boundary ────────────────────────────────────────────
 
@@ -404,23 +399,13 @@ public sealed class CastlePolicyService : IDisposable
 
     List<CastleObjectKey> DiscoverCastleObjects(ulong ownerSteamId)
     {
-        // The resolver already scans the world for storage-like prefabs.
-        // For now, the cast of "castle objects" is the union of storage
-        // containers linked to the owner's heart. A full implementation in
-        // a later release will use CastleObjectResolver to enumerate each
-        // supported prefab type and filter by heart link.
-        return new List<CastleObjectKey>();
+        return _resolver.DiscoverOwnedObjects(ownerSteamId).ToList();
     }
 
     static CastleObjectKind InferKindFromKey(CastleObjectKey key) => CastleObjectKind.Storage;
 
     static bool SameKey(CastleObjectKey a, CastleObjectKey b) =>
-        a.OwnerSteamId == b.OwnerSteamId
-        && a.ObjectPrefabHash == b.ObjectPrefabHash
-        && a.MapIndex == b.MapIndex
-        && Math.Abs(a.LocalPosition.X - b.LocalPosition.X) < 0.5f
-        && Math.Abs(a.LocalPosition.Y - b.LocalPosition.Y) < 0.5f
-        && Math.Abs(a.LocalPosition.Z - b.LocalPosition.Z) < 0.5f;
+        CastlePolicyRules.SameObject(a, b);
 
     static string MakeKey(CastleObjectKey k) =>
         $"{k.OwnerSteamId}:{k.ObjectPrefabHash}:{k.MapIndex}:{k.LocalPosition.X:F1},{k.LocalPosition.Y:F1},{k.LocalPosition.Z:F1}";

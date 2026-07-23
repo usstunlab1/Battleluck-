@@ -26,10 +26,13 @@ bin/
 obj/
 obj-readme/
 obj-tests/
+artifacts/
 
 # ThunderStore package
 thunderstore_package/
 *.zip
+dist/*.zip.sha256
+dist/*.comparison.json
 
 # Large/transient model & build artifacts
 blobs/

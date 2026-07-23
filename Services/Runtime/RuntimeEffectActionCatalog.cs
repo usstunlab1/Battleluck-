@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Reflection;
-using HarmonyLib;
 
 namespace BattleLuck.Services.Runtime;
 
@@ -133,28 +132,6 @@ public static class RuntimeEffectActionCatalog
 
     public static bool IsRuntimeEffectAction(string? actionName) =>
         !string.IsNullOrWhiteSpace(actionName) && Entries.ContainsKey(actionName.Trim());
-
-    public static void EnsureInjected(object manifestService)
-    {
-        try
-        {
-            var field = AccessTools.Field(manifestService.GetType(), "_entries");
-            if (field?.GetValue(manifestService) is not IDictionary dictionary)
-                return;
-
-            var valueType = field.FieldType.IsGenericType
-                ? field.FieldType.GetGenericArguments().LastOrDefault()
-                : null;
-            if (valueType == null)
-                return;
-
-            InjectEntries(dictionary, valueType);
-        }
-        catch (Exception ex)
-        {
-            BattleLuckPlugin.LogWarning($"[RuntimeEffects] Could not inject action catalog entries: {ex.Message}");
-        }
-    }
 
     public static void InjectEntries(IDictionary dictionary, Type valueType)
     {

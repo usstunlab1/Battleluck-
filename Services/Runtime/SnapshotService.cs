@@ -9,7 +9,7 @@ namespace BattleLuck.Services.Runtime
     /// </summary>
     public class SnapshotServiceImpl : ISnapshotService
     {
-        private readonly Dictionary<string, RuntimeSnapshotDto> _snapshots = new();
+        private readonly ConcurrentDictionary<string, RuntimeSnapshotDto> _snapshots = new();
         private readonly ISessionRuntimeService? _sessions;
 
         public SnapshotServiceImpl(ISessionRuntimeService? sessions = null)
@@ -130,7 +130,7 @@ namespace BattleLuck.Services.Runtime
 
         public Task<bool> DeleteSnapshotAsync(string snapshotId)
         {
-            return Task.FromResult(_snapshots.Remove(snapshotId));
+            return Task.FromResult(_snapshots.TryRemove(snapshotId, out _));
         }
 
         static void AddChange(SnapshotDiffDto diff, string path, object? oldValue, object? newValue)

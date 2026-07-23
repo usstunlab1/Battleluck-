@@ -39,13 +39,11 @@ public sealed class NaturalLanguageActionRouterTests
         try
         {
             ConfigLoader.ConfigRoot = Path.Combine(FindRepositoryRoot(), "config", "BattleLuck");
-            FlowActionExecutor.ReloadActionNames();
             assertion(new ActionManifestService());
         }
         finally
         {
             ConfigLoader.ConfigRoot = previousRoot;
-            FlowActionExecutor.ReloadActionNames();
         }
     }
 

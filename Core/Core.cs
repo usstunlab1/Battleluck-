@@ -8,6 +8,7 @@ using BattleLuck.Services.Boss;
 using BattleLuck.Services.Portal;
 using BattleLuck.Services.Creature;
 using BattleLuck.Services.Diagnostics;
+using BattleLuck.Services.Planning;
 
 /// <summary>
 /// Static service locator for BattleLuck.
@@ -53,6 +54,7 @@ internal static class Core
     public static ServerEventPlatform? EventPlatform { get; internal set; }
     public static GameEventNormalizer? EventNormalizer { get; internal set; }
     public static PlayerDirectoryService? PlayerDirectory { get; internal set; }
+    public static UnifiedPlannerService? Planner { get; internal set; }
     public static IErrorReporter ErrorReporter { get; internal set; } = NoOpErrorReporter.Instance;
 
     // ── Wave 1: New expansion services ──────────────────────────────────────────

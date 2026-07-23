@@ -20,6 +20,8 @@ public static class ConfigLoader
     static string? _configRoot;
     static volatile bool _defaultsEnsured;
     static readonly object _defaultsEnsuredLock = new();
+    internal static Action<string>? DiagnosticInfoSink { get; set; }
+    internal static Action<string>? DiagnosticWarningSink { get; set; }
 
     public static JsonSerializerOptions JsonOptions => JsonOpts;
 
@@ -74,6 +76,8 @@ public static class ConfigLoader
         config.LlamaAPI.Model = string.IsNullOrWhiteSpace(config.LlamaAPI.Model)
             ? "qwen2.5:0.5b"
             : config.LlamaAPI.Model;
+        config.OpenAIAPI.Enabled = false;
+        config.OpenAIAPI.ApiKey = "";
         config.GoogleAIStudio.ApiKey = "";
         config.GoogleAIStudio.FallbackModels.Clear();
         config.CloudflareAI.Enabled = false;
@@ -349,7 +353,7 @@ public static class ConfigLoader
         if (!File.Exists(path))
         {
             if (!optional)
-                BattleLuckPlugin.LogInfo($"[ConfigLoader] Missing config: {path}");
+                DiagnosticInfoSink?.Invoke($"[ConfigLoader] Missing config: {path}");
             return null;
         }
         try
@@ -359,12 +363,12 @@ public static class ConfigLoader
         }
         catch (JsonException ex)
         {
-            BattleLuckPlugin.LogWarning($"[ConfigLoader] JSON parse error in {Path.GetFileName(path)}: {ex.Message} (path: {path})");
+            DiagnosticWarningSink?.Invoke($"[ConfigLoader] JSON parse error in {Path.GetFileName(path)}: {ex.Message} (path: {path})");
             return null;
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[ConfigLoader] Error loading {path}: {ex.Message}");
+            DiagnosticWarningSink?.Invoke($"[ConfigLoader] Error loading {path}: {ex.Message}");
             return null;
         }
     }

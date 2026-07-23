@@ -242,13 +242,12 @@ public sealed class ConfigEditService
         if (string.Equals(scope, "global", StringComparison.OrdinalIgnoreCase))
             return fileName;
 
-        if (string.IsNullOrWhiteSpace(modeId))
-            throw new ArgumentException("modeId is required for mode scope");
+        modeId = SafeFileSystem.RequireSafeIdentifier(modeId, nameof(modeId));
 
         if (string.Equals(fileName, "event.json", StringComparison.OrdinalIgnoreCase))
             return Path.Combine("events", $"{modeId}.json");
 
-        return Path.Combine(modeId, fileName);
+        return Path.Combine("events", modeId, fileName);
     }
 
     static UnifiedEventDefinition CreateEventStub(string modeId)

@@ -33,8 +33,9 @@ namespace BattleLuck.Services.Flow
                     config.Session.Flow.Exit = effectiveFlow;
                 }
 
-                // Write to session.json
-                var modeDir = Path.Combine(ConfigLoader.ConfigRoot, modeId);
+                // Write to events/{modeId}/session.json (flat config structure)
+                var eventsRoot = ModeConfigLoader.EventsRoot;
+                var modeDir = Path.Combine(eventsRoot, modeId);
                 var sessionPath = Path.Combine(modeDir, "session.json");
 
                 if (!Directory.Exists(modeDir))
@@ -68,7 +69,7 @@ namespace BattleLuck.Services.Flow
                 // Reload config
                 ConfigLoader.Reload(modeId);
 
-                BattleLuckPlugin.LogInfo($"[FlowPersistence] Persisted {modeId}/{flowType} to session.json");
+                BattleLuckPlugin.LogInfo($"[FlowPersistence] Persisted {modeId}/{flowType} to events/{modeId}/session.json");
                 return OperationResult.Ok();
             }
             catch (Exception ex)

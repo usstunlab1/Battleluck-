@@ -189,59 +189,63 @@ public sealed class LlamaAIService : BaseAiService
 
         maxTokens = Math.Min(maxTokens, GetMaxAllowedTokens(messages));
         await ApplyRateLimitAsync();
-
-        var requestBody = new
+        try
         {
-            model = _model,
-            messages = messages.Select(m => new
+            var requestBody = new
             {
-                role = NormalizeRole(m.Role),
-                content = m.Content
-            }),
-            temperature,
-            max_tokens = maxTokens,
-            stream = true
-        };
+                model = _model,
+                messages = messages.Select(m => new
+                {
+                    role = NormalizeRole(m.Role),
+                    content = m.Content
+                }),
+                temperature,
+                max_tokens = maxTokens,
+                stream = true
+            };
 
-        var json = JsonSerializer.Serialize(requestBody);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var response = await _httpClient.PostAsync($"{_apiBaseUrl}/api/chat", content);
+            var json = JsonSerializer.Serialize(requestBody);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await _httpClient.PostAsync($"{_apiBaseUrl}/api/chat", content);
 
-        if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
+            {
+                var responseJson = await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    HandleAuthFailure("Llama API (stream)", $"HTTP {(int)response.StatusCode}: {responseJson}");
+                }
+                else
+                {
+                    HandleHttpError("Llama API (stream)", response.StatusCode, responseJson);
+                }
+                yield break;
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                if (line.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                    line = line[5..].Trim();
+
+                if (string.Equals(line, "[DONE]", StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                if (TryExtractStreamContent(line, out var extractedContent))
+                    yield return extractedContent;
+            }
+
+            RecordSuccess();
+        }
+        finally
         {
-            var responseJson = await response.Content.ReadAsStringAsync();
-            if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
-            {
-                HandleAuthFailure("Llama API (stream)", $"HTTP {(int)response.StatusCode}: {responseJson}");
-            }
-            else
-            {
-                HandleHttpError("Llama API (stream)", response.StatusCode, responseJson);
-            }
             ReleaseRateLimit();
-            yield break;
         }
-
-        using var stream = await response.Content.ReadAsStreamAsync();
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-        while (!reader.EndOfStream)
-        {
-            var line = await reader.ReadLineAsync();
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
-
-            if (line.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-                line = line[5..].Trim();
-
-            if (string.Equals(line, "[DONE]", StringComparison.OrdinalIgnoreCase))
-                break;
-
-            if (TryExtractStreamContent(line, out var extractedContent))
-                yield return extractedContent;
-        }
-
-        RecordSuccess();
-        ReleaseRateLimit();
     }
 
     private static bool TryExtractStreamContent(string line, out string content)

@@ -32,14 +32,25 @@ public sealed class ActionCatalogCompletenessTests
             .Where(registered.Contains)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
+        var catalogOnlyStart = executorSource.IndexOf(
+            "public static readonly IReadOnlySet<string> CatalogOnlyActions",
+            StringComparison.Ordinal);
+        Assert.True(catalogOnlyStart >= 0);
+        var catalogOnlyEnd = executorSource.IndexOf("};", catalogOnlyStart, StringComparison.Ordinal);
+        Assert.True(catalogOnlyEnd > catalogOnlyStart);
+        var catalogOnlySource = executorSource[catalogOnlyStart..catalogOnlyEnd];
+        var catalogOnlyActions = Regex.Matches(catalogOnlySource, "\"([^\"]+)\"")
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var expectedCatalogOnly = registered.Except(switchCases, StringComparer.OrdinalIgnoreCase)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         Assert.True(
-            expectedCatalogOnly.SetEquals(FlowActionExecutor.CatalogOnlyActions),
+            expectedCatalogOnly.SetEquals(catalogOnlyActions),
             "Catalog-only actions must exactly equal registered names without an executor switch case.");
 
         Assert.Equal(227, switchCases.Count);
-        Assert.Equal(82, FlowActionExecutor.CatalogOnlyActions.Count);
+        Assert.Equal(82, catalogOnlyActions.Count);
         Assert.Equal(13, RuntimeEffectActionCatalog.Entries.Count);
         Assert.Empty(registered.Intersect(RuntimeEffectActionCatalog.Entries.Keys, StringComparer.OrdinalIgnoreCase));
     }

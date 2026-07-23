@@ -209,6 +209,7 @@ public sealed class EventZoneDefinition
             Priority = Priority,
             KitId = KitId,
             Position = Center,
+            Center = Center,
             TeleportSpawn = TeleportSpawn,
             Radius = Radius,
             ExitRadius = ExitRadius > 0 ? ExitRadius : Radius + 5f,

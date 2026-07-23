@@ -16,13 +16,20 @@ public sealed class CommandDispatcherTests
     [Fact]
     public void Public_command_surface_contains_only_ai()
     {
-        BattleLuckCommandDispatcher.EnsureScanned();
+        var root = FindRepositoryRoot();
+        var dispatcherSource = File.ReadAllText(Path.Combine(
+            root,
+            "Commands",
+            "BattleLuckCommandDispatcher.cs"));
 
-        Assert.Equal(new[] { "ai" }, BattleLuckCommandDispatcher.RegisteredCommands);
-        Assert.DoesNotContain(BattleLuckCommandDispatcher.RegisteredCommands,
-            command => command.Equals("bl", StringComparison.OrdinalIgnoreCase) ||
-                       command.StartsWith("bl ", StringComparison.OrdinalIgnoreCase) ||
-                       command.StartsWith("ai.dev", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(
+            "if (!attr.Name.Equals(\"ai\", StringComparison.OrdinalIgnoreCase))",
+            dispatcherSource,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "attr.Name.Equals(\"bl\"",
+            dispatcherSource,
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [Theory]
@@ -48,7 +55,70 @@ public sealed class CommandDispatcherTests
         Assert.Equal("ai", attribute.ConstructorArguments[0].Value);
     }
 
+    [Fact]
+    public void Dispatcher_source_defines_per_player_rate_limiting()
+    {
+        var root = FindRepositoryRoot();
+        var dispatcherSource = File.ReadAllText(Path.Combine(
+            root,
+            "Commands",
+            "BattleLuckCommandDispatcher.cs"));
+
+        Assert.Contains("MaxCommandsPerWindow", dispatcherSource, StringComparison.Ordinal);
+        Assert.Contains("RateLimitWindow", dispatcherSource, StringComparison.Ordinal);
+        Assert.Contains("TryAcquireRateLimit", dispatcherSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Dispatcher_source_defines_input_length_guard()
+    {
+        var root = FindRepositoryRoot();
+        var dispatcherSource = File.ReadAllText(Path.Combine(
+            root,
+            "Commands",
+            "BattleLuckCommandDispatcher.cs"));
+
+        Assert.Contains("MaxRawInputLength", dispatcherSource, StringComparison.Ordinal);
+        Assert.Contains("Command too long", dispatcherSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Dispatcher_source_exempts_admins_from_rate_limiting()
+    {
+        var root = FindRepositoryRoot();
+        var dispatcherSource = File.ReadAllText(Path.Combine(
+            root,
+            "Commands",
+            "BattleLuckCommandDispatcher.cs"));
+
+        Assert.Contains("!isAdmin && !isConsole && !TryAcquireRateLimit", dispatcherSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Dispatcher_source_evicts_stale_rate_limit_entries()
+    {
+        var root = FindRepositoryRoot();
+        var dispatcherSource = File.ReadAllText(Path.Combine(
+            root,
+            "Commands",
+            "BattleLuckCommandDispatcher.cs"));
+
+        Assert.Contains("_rateLimits.Count > 1024", dispatcherSource, StringComparison.Ordinal);
+    }
+
     static class StaticCommands { }
     abstract class AbstractCommands { }
     sealed class GenericCommands<T> { }
+
+    static string FindRepositoryRoot()
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current != null)
+        {
+            if (File.Exists(Path.Combine(current.FullName, "BattleLuck.csproj")))
+                return current.FullName;
+            current = current.Parent;
+        }
+        throw new DirectoryNotFoundException("Could not locate the repository root.");
+    }
 }

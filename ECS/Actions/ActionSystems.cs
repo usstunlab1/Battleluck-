@@ -86,11 +86,25 @@ public sealed class EventActionWork : ISystemWork
                 var action = context.EntityManager.GetComponentData<TeamCornerTeleportAction>(entity);
                 if (action.TargetEntity.Exists())
                 {
-                    // Logic to find a corner of the zone. 
-                    // For now, we use a simple offset from zone center.
-                    var pos = action.TargetEntity.GetPosition();
-                    var offset = new float3(action.Radius, 0, action.Radius);
-                    action.TargetEntity.SetPosition(pos + offset);
+                    var session = BattleLuckPlugin.Session?.GetSession(action.ZoneHash);
+                    var zone = session?.Config.Zones.Zones.FirstOrDefault(item => item.Hash == action.ZoneHash);
+                    if (zone != null)
+                    {
+                        var center = zone.Position.ToFloat3();
+                        if (math.lengthsq(center) < 0.0001f)
+                            center = zone.TeleportSpawn.ToFloat3();
+
+                        var steamId = action.TargetEntity.GetSteamId();
+                        var team = session!.Context.Teams.TryGetValue(steamId, out var configuredTeam)
+                            ? configuredTeam
+                            : 0;
+                        var signX = team % 2 == 0 ? -1f : 1f;
+                        var signZ = team / 2 % 2 == 0 ? -1f : 1f;
+                        action.TargetEntity.SetPosition(center + new float3(
+                            signX * action.Radius,
+                            0f,
+                            signZ * action.Radius));
+                    }
                 }
                 ecb.RemoveComponent<TeamCornerTeleportAction>(entity);
                 ecb.AddComponent<ActionCompletedEvent>(entity);
@@ -101,8 +115,10 @@ public sealed class EventActionWork : ISystemWork
                 var steamId = action.TargetEntity.GetSteamId();
                 if (steamId != 0 && BattleLuckPlugin.Session != null)
                 {
-                    // Logic to toggle entry
-                    BattleLuckPlugin.Session.ToggleEnter(steamId, action.TargetEntity);
+                    if (action.Enabled)
+                        BattleLuckPlugin.Session.ToggleEnter(steamId, action.TargetEntity);
+                    else
+                        BattleLuckPlugin.Session.ToggleLeave(steamId, action.TargetEntity);
                 }
                 ecb.RemoveComponent<EventEntryToggleAction>(entity);
                 ecb.AddComponent<ActionCompletedEvent>(entity);
@@ -110,7 +126,9 @@ public sealed class EventActionWork : ISystemWork
             else if (context.EntityManager.HasComponent<EventFinalizeAction>(entity))
             {
                 var action = context.EntityManager.GetComponentData<EventFinalizeAction>(entity);
-                // Finalize logic
+                BattleLuckPlugin.Session?.FinalizeSession(
+                    action.SessionEntity,
+                    action.WinnerNames.ToString());
                 ecb.RemoveComponent<EventFinalizeAction>(entity);
                 ecb.AddComponent<ActionCompletedEvent>(entity);
             }

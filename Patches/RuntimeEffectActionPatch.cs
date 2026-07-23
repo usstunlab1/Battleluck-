@@ -36,32 +36,3 @@ public static class RuntimeEffectActionPatch
         return false;
     }
 }
-
-/// <summary>
-/// Keeps ActionManifestService aware of the runtime effect family so mode JSON
-/// validation, AI action discovery, aliases, and approval metadata stay aligned
-/// with the actual executor handler.
-/// </summary>
-[HarmonyPatch]
-public static class RuntimeEffectCatalogPatch
-{
-    [HarmonyPatch(typeof(ActionManifestService), nameof(ActionManifestService.Reload))]
-    [HarmonyPostfix]
-    static void ReloadPostfix(ActionManifestService __instance) =>
-        RuntimeEffectActionCatalog.EnsureInjected(__instance);
-
-    [HarmonyPatch(typeof(ActionManifestService), nameof(ActionManifestService.Validate))]
-    [HarmonyPrefix]
-    static void ValidatePrefix(ActionManifestService __instance) =>
-        RuntimeEffectActionCatalog.EnsureInjected(__instance);
-
-    [HarmonyPatch(typeof(ActionManifestService), nameof(ActionManifestService.TryGetAction))]
-    [HarmonyPrefix]
-    static void TryGetActionPrefix(ActionManifestService __instance) =>
-        RuntimeEffectActionCatalog.EnsureInjected(__instance);
-
-    [HarmonyPatch(typeof(ActionManifestService), "get_Entries")]
-    [HarmonyPrefix]
-    static void EntriesPrefix(ActionManifestService __instance) =>
-        RuntimeEffectActionCatalog.EnsureInjected(__instance);
-}

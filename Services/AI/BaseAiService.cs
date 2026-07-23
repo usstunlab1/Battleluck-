@@ -33,7 +33,10 @@ public abstract class BaseAiService : IDisposable
     {
         _maxRequestsPerSecond = maxRequestsPerSecond > 0 ? maxRequestsPerSecond : 10;
         _timeoutSeconds = timeoutSeconds > 0 ? timeoutSeconds : 90;
-        _rateLimiter = new SemaphoreSlim(_maxRequestsPerSecond, _maxRequestsPerSecond);
+        // This semaphore is a scheduling gate, not a concurrency allowance.
+        // Allowing N callers through at once makes them race on
+        // _lastRequestTime and defeats the configured requests-per-second cap.
+        _rateLimiter = new SemaphoreSlim(1, 1);
         _lastRequestTime = DateTime.MinValue;
         _httpClient = new HttpClient
         {
@@ -46,7 +49,7 @@ public abstract class BaseAiService : IDisposable
     /// </summary>
     protected async Task ApplyRateLimitAsync()
     {
-        await _rateLimiter.WaitAsync();
+        await _rateLimiter.WaitAsync().ConfigureAwait(false);
         try
         {
             var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
@@ -55,7 +58,7 @@ public abstract class BaseAiService : IDisposable
             {
                 var delayMs = (int)(minInterval - timeSinceLastRequest.TotalMilliseconds);
                 if (delayMs > 0)
-                    await Task.Delay(delayMs);
+                    await Task.Delay(delayMs).ConfigureAwait(false);
             }
             _lastRequestTime = DateTime.UtcNow;
         }

@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Globalization;
 using System.Text.Json;
 using BattleLuck.Utilities;
 
@@ -65,7 +66,12 @@ public sealed class NpcActionAuditor
             return result;
         }
 
-        if (entry.Parameters.TryGetValue("speed", out var speedObj) && double.TryParse(speedObj.ToString(), out var speed))
+        if (entry.Parameters.TryGetValue("speed", out var speedObj) &&
+            double.TryParse(
+                Convert.ToString(speedObj, CultureInfo.InvariantCulture),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var speed))
         {
             if (speed < 0.5f || speed > 120f)
             {

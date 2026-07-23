@@ -7,12 +7,16 @@ namespace BattleLuck.Services.Runtime;
 
 public sealed class ActionManifestService
 {
+    internal static Action<string>? WarningSink { get; set; }
+    internal static bool LiveSystemEntriesEnabled { get; set; }
     /// <summary>Shared singleton for static callers.</summary>
-    public static ActionManifestService Instance { get; } = new();
+    static readonly Lazy<ActionManifestService> Shared = new(() => new ActionManifestService());
+    public static ActionManifestService Instance => Shared.Value;
 
     readonly Dictionary<string, ActionManifestEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string, SequenceDefinition> _sequences = new(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string, string> _aliasMappings = new(StringComparer.OrdinalIgnoreCase);
+    readonly HashSet<string> _supportedActions = new(StringComparer.OrdinalIgnoreCase);
     static readonly HashSet<string> StrictlyBlockedNativeMutations = new(StringComparer.OrdinalIgnoreCase)
     {
         "build.free", "build.spawn", "structure.spawn", "tile.place", "wall.build", "floor.place", "wall.destroy",
@@ -42,9 +46,11 @@ public sealed class ActionManifestService
         _entries.Clear();
         _sequences.Clear();
         _aliasMappings.Clear();
-        foreach (var action in FlowActionExecutor.SupportedActions)
+        _supportedActions.Clear();
+        foreach (var action in LoadSupportedActionNames())
         {
             if (string.IsNullOrWhiteSpace(action)) continue;
+            _supportedActions.Add(action);
             _entries[action] = new ActionManifestEntry
             {
                 Name = action,
@@ -56,10 +62,11 @@ public sealed class ActionManifestService
         LoadCatalogMetadata();
         AddLiveSystemEntries();
         ApplyRequiredFallbacks();
-        // These handlers are supplied by the server runtime rather than the
-        // owner-editable JSON catalog. Inject them before event definitions are
-        // validated; Harmony is patched later in plugin startup.
-        RuntimeEffectActionCatalog.EnsureInjected(this);
+        // These handlers are supplied by BattleLuck rather than the
+        // owner-editable JSON catalog. They must exist before configured modes
+        // are loaded: mode registration runs before Harmony patching and before
+        // the V Rising server world is available.
+        RuntimeEffectActionCatalog.InjectEntries(_entries, typeof(ActionManifestEntry));
     }
 
     void LoadCatalogMetadata()
@@ -216,13 +223,49 @@ public sealed class ActionManifestService
                 if (string.IsNullOrWhiteSpace(entry.RiskLevel) || entry.RiskLevel.Equals("controlled", StringComparison.OrdinalIgnoreCase))
                     entry.RiskLevel = InferRisk(entry.Name, entry.Category);
                 entry.RequiresApproval = !entry.RiskLevel.Equals("safe", StringComparison.OrdinalIgnoreCase);
-                entry.HandlerAvailable = entry.HandlerAvailable && FlowActionExecutor.SupportedActions.Contains(entry.Name, StringComparer.OrdinalIgnoreCase);
+                entry.HandlerAvailable = entry.HandlerAvailable && _supportedActions.Contains(entry.Name);
             }
         }
         catch (Exception ex)
         {
-            BattleLuckPlugin.LogWarning($"[ActionManifestService] Failed to load catalog metadata: {ex.Message}");
+            WarningSink?.Invoke($"[ActionManifestService] Failed to load catalog metadata: {ex.Message}");
         }
+    }
+
+    static IReadOnlyList<string> LoadSupportedActionNames()
+    {
+        var path = Path.Combine(ConfigLoader.ConfigRoot, "actions_catalog.json");
+        if (!File.Exists(path))
+            return Array.Empty<string>();
+
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        if (!document.RootElement.TryGetProperty("registered", out var registered) ||
+            registered.ValueKind != JsonValueKind.Array)
+            return Array.Empty<string>();
+
+        var metadata = document.RootElement.TryGetProperty("metadata", out var metadataElement) &&
+                       metadataElement.ValueKind == JsonValueKind.Object
+            ? metadataElement
+            : default;
+
+        var supported = new List<string>();
+        foreach (var item in registered.EnumerateArray())
+        {
+            var name = item.GetString();
+            if (string.IsNullOrWhiteSpace(name))
+                continue;
+
+            if (metadata.ValueKind == JsonValueKind.Object &&
+                metadata.TryGetProperty(name, out var entry) &&
+                entry.ValueKind == JsonValueKind.Object &&
+                entry.TryGetProperty("handlerAvailable", out var available) &&
+                available.ValueKind is JsonValueKind.True or JsonValueKind.False &&
+                !available.GetBoolean())
+                continue;
+
+            supported.Add(name);
+        }
+        return supported;
     }
 
     public List<CatalogActionSearchResult> Search(string query, int maxResults = 10)
@@ -287,7 +330,8 @@ public sealed class ActionManifestService
         if (string.IsNullOrWhiteSpace(actionName))
             return false;
         var normalized = Normalize(actionName);
-        return _entries.ContainsKey(normalized) || LiveSystemRegistryService.TryGet(normalized, out _);
+        return _entries.ContainsKey(normalized) ||
+               (LiveSystemEntriesEnabled && LiveSystemRegistryService.TryGet(normalized, out _));
     }
 
     /// <summary>Try to get an action entry by id or alias.</summary>
@@ -379,7 +423,7 @@ public sealed class ActionManifestService
         if (string.IsNullOrWhiteSpace(actionString))
             return OperationResult.Fail("Action definition is empty.");
 
-        var (parsedType, parsedParams) = FlowActionExecutor.ParseActionString(actionString);
+        var (parsedType, parsedParams) = ActionStringParser.Parse(actionString);
         var normalized = ActionParameterConverter.Normalize(parsedType, parsedParams);
 
         var type = action.Type;
@@ -388,6 +432,7 @@ public sealed class ActionManifestService
 
         type = NormalizeActionName(type);
         if (!_entries.TryGetValue(type, out var entry) &&
+            LiveSystemEntriesEnabled &&
             LiveSystemRegistryService.TryGet(type, out var liveSystem))
         {
             entry = CreateLiveSystemEntry(liveSystem);
@@ -511,6 +556,9 @@ public sealed class ActionManifestService
 
     void AddLiveSystemEntries()
     {
+        if (!LiveSystemEntriesEnabled)
+            return;
+
         foreach (var registration in LiveSystemRegistryService.GetAll())
             _entries[registration.Action] = CreateLiveSystemEntry(registration);
     }

@@ -140,6 +140,16 @@ public sealed class ConversationStore
             return _interactiveSessions.Remove(steamId);
     }
 
+    /// <summary>Clear transient history and sessions during plugin shutdown/reload.</summary>
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _turns.Clear();
+            _interactiveSessions.Clear();
+        }
+    }
+
     /// <summary>Remove stale history and abandoned interactive sessions.</summary>
     public void Prune()
     {

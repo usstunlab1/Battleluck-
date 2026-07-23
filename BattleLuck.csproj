@@ -85,6 +85,7 @@
     <Compile Remove="my-first-site\**" />
     <Compile Remove="NGG\**" />
     <Compile Remove="temp_edgegap_repo\**" />
+    <Compile Remove="artifacts\**" />
     <Compile Remove="GenerateREADME.cs" />
     <Compile Remove="**\*-aa.cs" />
     <EmbeddedResource Remove="Assets\**" />
@@ -96,6 +97,7 @@
     <EmbeddedResource Remove="mcp-servers\**" />
     <EmbeddedResource Remove="my-first-site\**" />
     <EmbeddedResource Remove="NGG\**" />
+    <EmbeddedResource Remove="artifacts\**" />
     <None Remove=".external\**" />
     <None Remove="gg\**" />
     <None Remove="google-services\**" />
@@ -104,6 +106,7 @@
     <None Remove="mcp-servers\**" />
     <None Remove="my-first-site\**" />
     <None Remove="NGG\**" />
+    <None Remove="artifacts\**" />
   </ItemGroup>
 
   <ItemGroup>

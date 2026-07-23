@@ -12,6 +12,12 @@ namespace BattleLuck.Services;
 /// </summary>
 public static class SnapshotPersistence
 {
+    /// <summary>Current schema version. Increment when breaking changes are made to PlayerSnapshot.</summary>
+    public const int CurrentSchemaVersion = 2;
+
+    /// <summary>Oldest schema version that can be safely deserialized into the current model.</summary>
+    public const int MinimumReadableVersion = 1;
+
     static readonly JsonSerializerOptions JsonOpts = new()
     {
         WriteIndented = true,
@@ -43,8 +49,20 @@ public static class SnapshotPersistence
     public static void Write(ulong steamId, PlayerSnapshot snapshot, bool isEvent)
     {
         Directory.CreateDirectory(SnapshotDir);
+        var path = GetPath(steamId, isEvent);
+
+        // Create a .bak of the previous snapshot before overwriting, so a
+        // corrupt write can be recovered by the operator.
+        if (File.Exists(path))
+        {
+            var backupPath = path + ".bak";
+            try { File.Copy(path, backupPath, overwrite: true); }
+            catch { /* best-effort; do not block the write */ }
+        }
+
+        snapshot.Version = CurrentSchemaVersion;
         var json = JsonSerializer.Serialize(snapshot, JsonOpts);
-        File.WriteAllText(GetPath(steamId, isEvent), json);
+        SafeFileSystem.WriteAllTextAtomic(path, json);
     }
 
     public static PlayerSnapshot? Read(ulong steamId, bool isEvent)
@@ -52,8 +70,22 @@ public static class SnapshotPersistence
         var path = GetPath(steamId, isEvent);
         if (File.Exists(path))
         {
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<PlayerSnapshot>(json, JsonOpts);
+            var result = TryReadValidated(path);
+            if (result != null) return result;
+
+            // Primary file is corrupt — attempt .bak recovery.
+            var backupPath = path + ".bak";
+            if (File.Exists(backupPath))
+            {
+                var recovered = TryReadValidated(backupPath);
+                if (recovered != null)
+                {
+                    BattleLuckLogger.Warning(
+                        $"[SnapshotPersistence] Primary snapshot '{path}' is corrupt; recovered from .bak");
+                    return recovered;
+                }
+            }
+            return null;
         }
 
         // Fallback to legacy single file {steamId}.json, but only when it matches requested kind
@@ -65,6 +97,7 @@ public static class SnapshotPersistence
             var json = File.ReadAllText(oldPath);
             var snap = JsonSerializer.Deserialize<PlayerSnapshot>(json, JsonOpts);
             if (snap == null) return null;
+            if (!IsVersionCompatible(snap.Version)) return null;
             var oldIsEvent = snap.ZoneHash > 0;
             return oldIsEvent == isEvent ? snap : null;
         }
@@ -73,6 +106,36 @@ public static class SnapshotPersistence
             return null;
         }
     }
+
+    /// <summary>
+    /// Attempt to read and validate a snapshot from <paramref name="path"/>.
+    /// Returns null if the file is unreadable, corrupt, or has an incompatible schema version.
+    /// </summary>
+    static PlayerSnapshot? TryReadValidated(string path)
+    {
+        try
+        {
+            var json = File.ReadAllText(path);
+            var snap = JsonSerializer.Deserialize<PlayerSnapshot>(json, JsonOpts);
+            if (snap == null) return null;
+            if (!IsVersionCompatible(snap.Version))
+            {
+                BattleLuckLogger.Warning(
+                    $"[SnapshotPersistence] Snapshot '{path}' has incompatible version {snap.Version} " +
+                    $"(min={MinimumReadableVersion}, current={CurrentSchemaVersion}).");
+                return null;
+            }
+            return snap;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>True when a snapshot version can be safely deserialized into the current model.</summary>
+    public static bool IsVersionCompatible(int version)
+        => version >= MinimumReadableVersion && version <= CurrentSchemaVersion;
 
     public static void Delete(ulong steamId, bool isEvent)
     {

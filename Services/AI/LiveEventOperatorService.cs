@@ -27,8 +27,9 @@ public sealed class LiveEventOperatorService
         string request,
         ActiveSession? session)
     {
-        if (string.IsNullOrWhiteSpace(modeId))
-            return OperationResult<string>.Fail("Mode id is required.");
+        if (!SafeFileSystem.IsSafeIdentifier(modeId))
+            return OperationResult<string>.Fail("Mode id must contain only letters, numbers, '_' or '-'.");
+        modeId = modeId.Trim();
 
         var eventPath = GetEventPath(modeId);
         var eventJson = LoadEventJson(modeId, eventPath);
@@ -98,8 +99,9 @@ public sealed class LiveEventOperatorService
         if (!aiAssistant.EventAuthoringEnabled)
             return OperationResult<OperatorProposal>.Fail("AI event authoring is disabled in ai_config.json.");
 
-        if (string.IsNullOrWhiteSpace(modeId))
-            return OperationResult<OperatorProposal>.Fail("Mode id is required.");
+        if (!SafeFileSystem.IsSafeIdentifier(modeId))
+            return OperationResult<OperatorProposal>.Fail("Mode id must contain only letters, numbers, '_' or '-'.");
+        modeId = modeId.Trim();
 
         if (string.IsNullOrWhiteSpace(request))
             return OperationResult<OperatorProposal>.Fail("Request is empty.");

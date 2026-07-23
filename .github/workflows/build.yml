@@ -22,13 +22,28 @@ jobs:
           cache-dependency-path: packages.lock.json
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore BattleLuck.sln --locked-mode
 
       - name: Build Release
-        run: dotnet build -c Release --no-restore
+        run: dotnet build BattleLuck.sln -c Release --no-restore
 
-      - name: Run unit tests
-        run: dotnet test BattleLuck.Tests/BattleLuck.Tests.csproj -c Release --no-restore
+      - name: Run unit tests with coverage
+        run: dotnet test BattleLuck.Tests/BattleLuck.Tests.csproj -c Release --no-build --no-restore --collect:"XPlat Code Coverage" --results-directory artifacts/test-results
+
+      - name: Reject vulnerable NuGet dependencies
+        shell: pwsh
+        run: |
+          $report = dotnet list BattleLuck.sln package --vulnerable --include-transitive --format json | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'NuGet vulnerability scan failed.' }
+          $findings = @(
+            foreach ($project in $report.projects) {
+              foreach ($framework in @($project.frameworks)) {
+                @($framework.topLevelPackages) + @($framework.transitivePackages) |
+                  Where-Object { $_.vulnerabilities }
+              }
+            }
+          )
+          if ($findings.Count -ne 0) { throw "NuGet reported $($findings.Count) vulnerable package entries." }
 
       - name: Reject tracked webhook credentials
         shell: pwsh
@@ -39,13 +54,17 @@ jobs:
 
       - name: Package server-only artifact
         shell: pwsh
-        run: |
-          $stage = Join-Path $PWD 'dist/BattleLuck'
-          New-Item -ItemType Directory -Path $stage -Force | Out-Null
-          Copy-Item 'bin/Release/net6.0/BattleLuck.dll','bin/Release/net6.0/BouncyCastle.Cryptography.dll','bin/Release/net6.0/HookDOTS.API.dll','manifest.json','README.md','CHANGELOG.md','LICENSE','icon.png' -Destination $stage
-          if (Get-ChildItem $stage -Recurse -File | Where-Object Name -Match 'client|zui|universe|node') { throw 'Client or sidecar content entered the server package.' }
-          Compress-Archive -Path "$stage/*" -DestinationPath 'dist/BattleLuck-server.zip' -Force
+        run: ./tools/New-BattleLuckRelease.ps1
 
       - name: Check whitespace errors
         shell: pwsh
-        run: git diff --check HEAD~1 HEAD
+        run: git diff-tree --check --no-commit-id -r HEAD
+
+      - name: Upload server package and test evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: BattleLuck-${{ github.sha }}
+          path: |
+            dist/BattleLuck-server-*.zip
+            dist/BattleLuck-server-*.zip.sha256
+            artifacts/test-results/**

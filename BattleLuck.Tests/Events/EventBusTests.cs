@@ -5,25 +5,25 @@ namespace BattleLuck.Tests.Events;
 public sealed class EventBusTests
 {
     [Fact]
-    public void RaiseZoneExit_IsolatesThrowingSubscribers()
+    public void RaiseModeEnded_IsolatesThrowingSubscribers()
     {
         var observed = 0;
-        Action<ZoneExitEvent> throwing = _ => throw new InvalidOperationException("subscriber failure");
-        Action<ZoneExitEvent> observing = _ => observed++;
-        GameEvents.OnZoneExit += throwing;
-        GameEvents.OnZoneExit += observing;
+        Action<ModeEndedEvent> throwing = _ => throw new InvalidOperationException("subscriber failure");
+        Action<ModeEndedEvent> observing = _ => observed++;
+        GameEvents.OnModeEnded += throwing;
+        GameEvents.OnModeEnded += observing;
 
         try
         {
-            var publish = () => GameEvents.RaiseZoneExit(new ZoneExitEvent());
+            var publish = () => GameEvents.RaiseModeEnded(new ModeEndedEvent());
 
             publish.Should().NotThrow();
             observed.Should().Be(1);
         }
         finally
         {
-            GameEvents.OnZoneExit -= throwing;
-            GameEvents.OnZoneExit -= observing;
+            GameEvents.OnModeEnded -= throwing;
+            GameEvents.OnModeEnded -= observing;
         }
     }
 }

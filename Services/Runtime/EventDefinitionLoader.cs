@@ -17,6 +17,12 @@ public sealed class EventDefinitionLoader
     {
         definition = null;
         validation = new EventValidationResult();
+        if (!SafeFileSystem.IsSafeIdentifier(modeId))
+        {
+            validation.Errors.Add("Event id must contain only letters, numbers, '_' or '-'.");
+            return true;
+        }
+        modeId = modeId.Trim();
 
         var path = Path.Combine(EventsRoot, $"{modeId}.json");
         if (!File.Exists(path))
@@ -133,14 +139,11 @@ public sealed class EventDefinitionLoader
 
     static ZonesConfig? LoadLegacyZones(string modeId)
     {
-        var path = Path.Combine(Path.Combine(ConfigLoader.ConfigRoot, "events"), modeId, "zones.json");
+        // Flat config structure: events/{modeId}/zones.json
+        var eventsRoot = Core.Loaders.ModeConfigLoader.EventsRoot;
+        var path = Path.Combine(eventsRoot, modeId, "zones.json");
         if (!File.Exists(path))
-        {
-            // Fallback to legacy path
-            path = Path.Combine(ConfigLoader.ConfigRoot, modeId, "zones.json");
-            if (!File.Exists(path))
-                return null;
-        }
+            return null;
 
         try
         {

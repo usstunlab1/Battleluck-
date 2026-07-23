@@ -29,7 +29,9 @@ namespace BattleLuck.Core
         private AIConfig? _config;
         private readonly ConcurrentDictionary<ulong, PlayerContext> _playerContexts = new();
         private readonly ConcurrentDictionary<ulong, DateTime> _lastMessageTimes = new();
-        private readonly ConcurrentQueue<Action> _mainThreadQueue = new();
+        private readonly ConcurrentDictionary<ulong, byte> _activeDirectQueries = new();
+        private readonly SemaphoreSlim _directQueryConcurrency = new(4, 4);
+        private readonly ConcurrentQueue<Func<Task>> _mainThreadQueue = new();
         private AiHologramService? _hologramService;
         
         private TimeSpan _messageCooldown = TimeSpan.FromSeconds(30);
@@ -333,6 +335,10 @@ namespace BattleLuck.Core
         {
             IsEnabled = false;
             UnsubscribeFromEvents();
+            _activeDirectQueries.Clear();
+            _playerContexts.Clear();
+            _lastMessageTimes.Clear();
+            while (_mainThreadQueue.TryDequeue(out _)) { }
             _googleAiService?.Dispose();
             foreach (var service in _googleAiFallbackServices)
             {
@@ -375,6 +381,36 @@ namespace BattleLuck.Core
             (_googleAiService != null && _googleAiService.IsEnabled);
 
         public async Task<string?> HandleDirectQuery(ulong steamId, string query, string source = "game", bool broadcastToInGameChat = false, Unity.Mathematics.float3? position = null)
+        {
+            if (!AiRequestPolicy.TryValidate(query, out query, out var validationError))
+                return validationError;
+
+            if (!_activeDirectQueries.TryAdd(steamId, 0))
+                return "Your previous AI request is still processing.";
+
+            if (!await _directQueryConcurrency.WaitAsync(0).ConfigureAwait(false))
+            {
+                _activeDirectQueries.TryRemove(steamId, out _);
+                return "BattleLuck AI is busy. Please try again shortly.";
+            }
+
+            try
+            {
+                return await HandleDirectQueryCore(
+                    steamId,
+                    query,
+                    source,
+                    broadcastToInGameChat,
+                    position).ConfigureAwait(false);
+            }
+            finally
+            {
+                _directQueryConcurrency.Release();
+                _activeDirectQueries.TryRemove(steamId, out _);
+            }
+        }
+
+        private async Task<string?> HandleDirectQueryCore(ulong steamId, string query, string source, bool broadcastToInGameChat, Unity.Mathematics.float3? position)
         {
             if (!IsEnabled)
                 return BuildLocalFallbackResponse(query);
@@ -1136,7 +1172,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                     var message = await GenerateContextualMessage(context, "scoring_encouragement", e);
                     if (!string.IsNullOrEmpty(message))
                     {
-                        BroadcastToPlayer(e.SteamId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                        BroadcastToPlayer(e.SteamId, $"[AI Assistant] {message}");
                     }
                 }
             });
@@ -1157,7 +1193,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                     var message = await GenerateContextualMessage(context, "elimination_advice", e);
                     if (!string.IsNullOrEmpty(message))
                     {
-                        BroadcastToPlayer(e.SteamId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                        BroadcastToPlayer(e.SteamId, $"[AI Assistant] {message}");
                     }
                 }
             });
@@ -1185,7 +1221,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                             var message = await GenerateContextualMessage(context, "mode_start_tips", e);
                             if (!string.IsNullOrEmpty(message))
                             {
-                                BroadcastToPlayer(playerId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                                BroadcastToPlayer(playerId, $"[AI Assistant] {message}");
                             }
                         }
                     }
@@ -1213,7 +1249,7 @@ This response is a proposal payload. It does not itself authorize or confirm a l
                         var message = await GenerateContextualMessage(context, "match_summary", e);
                         if (!string.IsNullOrEmpty(message))
                         {
-                            BroadcastToPlayer(playerId, $"Ã°Å¸Â¤â€“ AI Assistant: {message}");
+                            BroadcastToPlayer(playerId, $"[AI Assistant] {message}");
                         }
                     }
                 }
@@ -1946,16 +1982,34 @@ Do not propose strict-profile native construction, progression, or arbitrary Pro
 
         public void ProcessMainThreadQueue()
         {
-            while (_mainThreadQueue.TryDequeue(out var action))
+            const int maxActionsPerTick = 16;
+            var processed = 0;
+            while (processed < maxActionsPerTick && _mainThreadQueue.TryDequeue(out var action))
             {
                 try
                 {
-                    action();
+                    var task = action();
+                    if (!task.IsCompletedSuccessfully)
+                        _ = ObserveQueuedActionAsync(task);
                 }
                 catch (Exception ex)
                 {
                     BattleLuckLogger.Warning($"AI Assistant main thread action error: {ex.Message}");
                 }
+
+                processed++;
+            }
+        }
+
+        static async Task ObserveQueuedActionAsync(Task task)
+        {
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                BattleLuckLogger.Warning($"AI Assistant queued action failed: {ex.Message}");
             }
         }
 

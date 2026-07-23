@@ -15,6 +15,13 @@ public static class GameChatAiBridge
         _genaiClient = genaiClient;
     }
 
+    public static void Shutdown()
+    {
+        _genaiClient = null;
+        _recent.Clear();
+        ConversationStore.Instance.Clear();
+    }
+
     /// <summary>Start the bounded four-reply .ai conversation for a player.</summary>
     public static void BeginSession(ulong steamId)
     {
@@ -69,6 +76,12 @@ public static class GameChatAiBridge
             var channel = ExtractChannel(chatEvent);
             if (!TryExtractAiQuery(message, channel, steamId, out var query))
                 return;
+
+            if (!AiRequestPolicy.TryValidate(query, out query, out var validationError))
+            {
+                BattleLuckPlugin.NotifyPlayerBySteamIdOnMainThread(steamId, $"[AI] {validationError}");
+                return;
+            }
 
             if (!TryMarkRecent(steamId, query))
                 return;

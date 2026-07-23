@@ -1,6 +1,5 @@
 using BattleLuck.Models;
 using BattleLuck.Utilities;
-using BattleLuck.ECS.Actions.Components;
 using BattleLuck.Commands.Converters;
 using BattleLuck.Services.Runtime;
 using BattleLuck.Services.AI;
@@ -359,23 +358,24 @@ public sealed class FlowActionExecutor : IActionRuntime
         return ToReport(intent, result);
     }
 
-    async Task<RuntimeActionReport> IActionRuntime.ExecuteAsync(
+    Task<RuntimeActionReport> IActionRuntime.ExecuteAsync(
         RuntimeActionIntent intent,
         RuntimeActionContext context,
         CancellationToken cancellationToken)
     {
-        // Execution is synchronous; satisfy the async contract via the thread pool.
-        return await Task.Run(() => ((IActionRuntime)this).Execute(intent, context), cancellationToken)
-            .ConfigureAwait(false);
+        // ECS access is server-thread affine. Never move execution to the
+        // thread pool merely to satisfy the asynchronous interface.
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(((IActionRuntime)this).Execute(intent, context));
     }
 
-    async Task<RuntimeActionReport> IActionRuntime.ValidateOnlyAsync(
+    Task<RuntimeActionReport> IActionRuntime.ValidateOnlyAsync(
         RuntimeActionIntent intent,
         RuntimeActionContext context,
         CancellationToken cancellationToken)
     {
-        return await Task.Run(() => ValidateOnly(intent, context), cancellationToken)
-            .ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(ValidateOnly(intent, context));
     }
 
     bool IActionRuntime.IsKnownAction(string actionName) => IsRegisteredAction(actionName);
@@ -567,6 +567,12 @@ public sealed class FlowActionExecutor : IActionRuntime
 
     OperationResult ExecuteParsed(string actionName, Dictionary<string, string> p, FlowActionContext c)
     {
+        // Runtime effects are built-in BattleLuck actions. Keep the direct
+        // dispatch path so they remain available even if Harmony falls back to
+        // the critical-patch subset during dedicated-server startup.
+        if (RuntimeEffectActionCatalog.IsRuntimeEffectAction(actionName))
+            return RuntimeEffectActionService.Execute(actionName, p, c);
+
         var player = c.PlayerCharacter;
         var ctx = c.GameContext;
         var zoneHash = Int(p, "zoneHash", c.ZoneHash);
@@ -3342,66 +3348,79 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
 
     OperationResult ToggleEventEntry(Entity player, Dictionary<string, string> p, FlowActionContext c)
     {
-        var enabled = Bool(p, "enabled", true);
-        var action = new EventEntryToggleAction
-        {
-            TargetEntity = player,
-            Enabled = enabled,
-            SessionEntity = Entity.Null // Resolved by system if needed
-        };
-        EcbHelper.GetEcb().AddComponent(EcbHelper.GetEcb().CreateEntity(), action);
-        return OperationResult.Ok();
+        if (!player.Exists())
+            return OperationResult.Fail("Event entry target no longer exists.");
+
+        var steamId = player.GetSteamId();
+        if (steamId == 0)
+            return OperationResult.Fail("Event entry target is not a player.");
+
+        var controller = BattleLuckPlugin.Session;
+        if (controller == null)
+            return OperationResult.Fail("Session controller is not initialized.");
+
+        return Bool(p, "enabled", true)
+            ? controller.ToggleEnter(steamId, player, c.Config?.ModeId)
+            : controller.ToggleLeave(steamId, player);
     }
 
     OperationResult TeamCornerTeleport(Entity player, Dictionary<string, string> p, FlowActionContext c)
     {
-        var action = new TeamCornerTeleportAction
-        {
-            TargetEntity = player,
-            ZoneHash = Int(p, "zoneHash", c.ZoneHash),
-            Radius = Float(p, "radius", 5f),
-            SessionEntity = Entity.Null
-        };
-        EcbHelper.GetEcb().AddComponent(EcbHelper.GetEcb().CreateEntity(), action);
+        if (!player.Exists())
+            return OperationResult.Fail("Team teleport target no longer exists.");
+
+        var zoneHash = Int(p, "zoneHash", c.ZoneHash);
+        var session = BattleLuckPlugin.Session?.GetSession(zoneHash);
+        var zone = session?.Config.Zones.Zones.FirstOrDefault(item => item.Hash == zoneHash)
+            ?? c.Config?.Zones.Zones.FirstOrDefault(item => item.Hash == zoneHash);
+        if (zone == null)
+            return OperationResult.Fail($"Zone {zoneHash} is not active.");
+
+        var center = zone.Position.ToFloat3();
+        if (math.lengthsq(center) < 0.0001f)
+            center = zone.TeleportSpawn.ToFloat3();
+
+        var steamId = player.GetSteamId();
+        var team = session?.Context.Teams.TryGetValue(steamId, out var configuredTeam) == true
+            ? configuredTeam
+            : 0;
+        var radius = Math.Max(0f, Float(p, "radius", 5f));
+        var signX = team % 2 == 0 ? -1f : 1f;
+        var signZ = team / 2 % 2 == 0 ? -1f : 1f;
+        player.SetPosition(center + new float3(signX * radius, 0f, signZ * radius));
         return OperationResult.Ok();
     }
 
     OperationResult SpawnChest(Entity player, Dictionary<string, string> p, FlowActionContext c)
     {
-        var action = new ChestSpawnAction
-        {
-            Position = ResolvePosition(player, p, c),
-            RequiredKills = Int(p, "requiredKills", 3),
-            DeathLimit = Int(p, "deathLimit", 3),
-            LootTable = new Unity.Collections.FixedString64Bytes(Text(p, "lootTable", "GoldIngots")),
-            SessionEntity = Entity.Null
-        };
-        EcbHelper.GetEcb().AddComponent(EcbHelper.GetEcb().CreateEntity(), action);
-        return OperationResult.Ok();
+        var result = SchematicLoader.SpawnPrefabAt(
+            "TM_Chest_Standard",
+            ResolvePosition(player, p, c),
+            0f,
+            "chest",
+            $"event_chest_{c.ZoneHash}");
+        return result.Success
+            ? OperationResult.Ok()
+            : OperationResult.Fail(result.Error ?? "Event chest could not be spawned.");
     }
 
     OperationResult SwapTeam(Entity player, Dictionary<string, string> p, FlowActionContext c)
     {
-        var action = new TeamSwapAction
-        {
-            TargetEntity = player,
-            NewTeamId = Int(p, "teamId", 0),
-            SessionEntity = Entity.Null
-        };
-        EcbHelper.GetEcb().AddComponent(EcbHelper.GetEcb().CreateEntity(), action);
+        if (!player.Exists())
+            return OperationResult.Fail("Team swap target no longer exists.");
+
+        player.SetTeam(Int(p, "teamId", 0));
         return OperationResult.Ok();
     }
 
     OperationResult FinalizeEvent(Entity player, Dictionary<string, string> p, FlowActionContext c)
     {
-        var action = new EventFinalizeAction
-        {
-            SessionEntity = Entity.Null,
-            WinnerNames = new Unity.Collections.FixedString512Bytes(Text(p, "winners", "")),
-            CleanupStructures = Bool(p, "cleanup", true)
-        };
-        EcbHelper.GetEcb().AddComponent(EcbHelper.GetEcb().CreateEntity(), action);
-        return OperationResult.Ok();
+        var controller = BattleLuckPlugin.Session;
+        var session = controller?.GetSession(c.ZoneHash);
+        if (controller == null || session == null)
+            return OperationResult.Fail($"No active event session exists for zone {c.ZoneHash}.");
+
+        return controller.FinalizeSession(session.SessionEntity, Text(p, "winners", ""));
     }
 
     OperationResult ChangeBlood(Entity player, Dictionary<string, string> p, FlowActionContext c)
@@ -3472,20 +3491,10 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
             c.GameContext.State[$"schematic:{eventName}:group"] = Text(p, "group", eventName);
         }
 
-        if (EcbHelper.TryGetEcb(out var ecb))
-        {
-            var actionEntity = ecb.CreateEntity();
-            ecb.AddComponent(actionEntity, new SchematicLoadAction
-            {
-                SchematicId = eventName,
-                Center = center,
-                Rotation = Float(p, "rotation", 0f),
-                SessionEntity = Entity.Null
-            });
-            return OperationResult.Ok();
-        }
-
-        return OperationResult.Fail("EntityCommandBuffer unavailable for stable schematic load.");
+        var result = EventSchematicService.Load(eventName, center, validateWithAi: true);
+        return result.Success
+            ? OperationResult.Ok()
+            : OperationResult.Fail(result.Error ?? $"Schematic '{eventName}' could not be loaded.");
     }
 
     OperationResult ClearSchematic(Dictionary<string, string> p)
@@ -3512,23 +3521,11 @@ void RemoveBorderEffects(WallBoundaryConfig cfg, FlowActionContext c)
     }
 
     public static (string actionName, Dictionary<string, string> parameters) ParseActionString(string actionString)
-    {
-        var parts = actionString.Split(':', 2);
-        var parameters = new Dictionary<string, string>(KeyComparer);
-        if (parts.Length > 1)
-        {
-            foreach (var param in parts[1].Split('|', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var kv = param.Split('=', 2);
-                if (kv.Length == 2)
-                    parameters[kv[0].Trim()] = kv[1].Trim();
-            }
-        }
-        return (parts[0].Trim(), parameters);
-    }
+        => ActionStringParser.Parse(actionString);
 
     static bool IsRegisteredAction(string actionName) =>
         SupportedActions.Contains(actionName, KeyComparer) ||
+        RuntimeEffectActionCatalog.IsRuntimeEffectAction(actionName) ||
         LiveSystemRegistryService.IsRegisteredAction(actionName) ||
         (Registry.TryGetAction(actionName, out var entry) && entry?.HandlerAvailable == true);
 

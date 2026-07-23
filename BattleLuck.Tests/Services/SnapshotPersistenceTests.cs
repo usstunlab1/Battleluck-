@@ -81,4 +81,55 @@ public class SnapshotPersistenceTests : IDisposable
         SnapshotPersistence.Delete(steamId, true);
         File.Exists(legacyPath).Should().BeFalse();
     }
+
+    [Fact]
+    public void Write_Creates_Bak_Of_Previous_Snapshot()
+    {
+        ulong steamId = 76561198000033333;
+        var snap1 = new PlayerSnapshot { Version = 2, PlayerId = steamId.ToString(), Timestamp = DateTime.UtcNow, ZoneHash = 10 };
+        SnapshotPersistence.Write(steamId, snap1, false);
+
+        var snap2 = new PlayerSnapshot { Version = 2, PlayerId = steamId.ToString(), Timestamp = DateTime.UtcNow, ZoneHash = 20 };
+        SnapshotPersistence.Write(steamId, snap2, false);
+
+        var bakPath = SnapshotPersistence.GetPath(steamId, false) + ".bak";
+        File.Exists(bakPath).Should().BeTrue();
+
+        var bakJson = File.ReadAllText(bakPath);
+        var bakSnap = JsonSerializer.Deserialize<PlayerSnapshot>(bakJson, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        bakSnap!.ZoneHash.Should().Be(10);
+    }
+
+    [Fact]
+    public void Read_Returns_Null_For_Corrupt_Json()
+    {
+        ulong steamId = 76561198000044444;
+        Directory.CreateDirectory(_snapshotDir);
+        var path = SnapshotPersistence.GetPath(steamId, false);
+        File.WriteAllText(path, "{ this is not valid json }}}");
+
+        SnapshotPersistence.Read(steamId, false).Should().BeNull();
+    }
+
+    [Fact]
+    public void Read_Rejects_Incompatible_Schema_Version()
+    {
+        ulong steamId = 76561198000055555;
+        Directory.CreateDirectory(_snapshotDir);
+        var path = SnapshotPersistence.GetPath(steamId, false);
+        var futureSnap = new PlayerSnapshot { Version = 999, PlayerId = steamId.ToString(), Timestamp = DateTime.UtcNow };
+        File.WriteAllText(path, JsonSerializer.Serialize(futureSnap, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+
+        SnapshotPersistence.Read(steamId, false).Should().BeNull();
+    }
+
+    [Fact]
+    public void IsVersionCompatible_Accepts_Valid_Range()
+    {
+        SnapshotPersistence.IsVersionCompatible(1).Should().BeTrue();
+        SnapshotPersistence.IsVersionCompatible(2).Should().BeTrue();
+        SnapshotPersistence.IsVersionCompatible(0).Should().BeFalse();
+        SnapshotPersistence.IsVersionCompatible(3).Should().BeFalse();
+        SnapshotPersistence.IsVersionCompatible(-1).Should().BeFalse();
+    }
 }

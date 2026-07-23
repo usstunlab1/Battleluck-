@@ -9,12 +9,6 @@ namespace BattleLuck.Core.Validation;
 
 public static class AnalyticsValidator
 {
-    static readonly string[] _analyticsSpawnActions =
-    {
-        "spawn.boss", "spawn.wave", "npc.spawn", "entity.spawn",
-        "prefab.spawn", "npc.spawn"
-    };
-
     static readonly string[] _analyticsLifecycleActions =
     {
         "snapshot.save", "snapshot.restore", "player.snapshot.restore",
@@ -25,11 +19,6 @@ public static class AnalyticsValidator
     static readonly string[] _analyticsTeleportActions =
     {
         "teleport", "player.teleport", "teleport.position", "point.set", "point.remove", "point.clear_session", "effect.spawn_at_point"
-    };
-
-    static readonly string[] _analyticsRegionActions =
-    {
-        "shrink.zone", "zone.buff.apply", "zone.buff.remove", "glow.enable", "glow.disable"
     };
 
     static readonly string[] _analyticsPvPActions =
@@ -95,9 +84,6 @@ public static class AnalyticsValidator
             if (zone.Position == null || IsEmptyVec3(zone.Position))
                 issues.Add($"Zone '{zone.Name}' (hash={zone.Hash}) in mode '{modeId}' has no Position. Analytics requires zone center coordinates.");
 
-            if (zone.Center == null || IsEmptyVec3(zone.Center))
-                issues.Add($"Zone '{zone.Name}' (hash={zone.Hash}) in mode '{modeId}' has no Center. Analytics requires local center offset.");
-
             if (zone.Radius <= 0)
                 issues.Add($"Zone '{zone.Name}' (hash={zone.Hash}) in mode '{modeId}' has invalid radius={zone.Radius}. Analytics requires positive radius.");
 
@@ -128,10 +114,7 @@ public static class AnalyticsValidator
     {
         var allEnterActions = ResolveAllActions(config, "enter");
         var allExitActions = ResolveAllActions(config, "exit");
-        var allStartActions = ResolveAllActions(config, "start");
         var allTrackingActions = ResolveAllActions(config, "tracking");
-        var allWinnerActions = ResolveAllActions(config, "winner");
-        var allEndingActions = ResolveAllActions(config, "ending");
         var managedEnterFallback = config.UsesManagedPlayerLifecycle && allEnterActions.Count == 0;
         var managedExitFallback = config.UsesManagedPlayerLifecycle && allExitActions.Count == 0;
 
@@ -141,24 +124,16 @@ public static class AnalyticsValidator
         if (allExitActions.Count == 0 && !managedExitFallback)
             issues.Add($"Mode '{modeId}' exit flow is empty. Analytics requires exit actions to compute session duration and cleanup.");
 
-        var hasSpawnAction = allEnterActions.Concat(allStartActions).Any(a => HasActionPrefix(a, _analyticsSpawnActions));
         var hasLifecycleAction = config.UsesManagedPlayerLifecycle || allEnterActions.Concat(allExitActions).Any(a => HasActionPrefix(a, _analyticsLifecycleActions));
         var hasTeleportAction = managedEnterFallback || allEnterActions.Any(a => HasActionPrefix(a, _analyticsTeleportActions));
-        var hasRegionAction = allEnterActions.Concat(allTrackingActions).Any(a => HasActionPrefix(a, _analyticsRegionActions));
         var hasPvPAction = config.UsesManagedPlayerLifecycle || allEnterActions.Concat(allTrackingActions).Any(a => HasActionPrefix(a, _analyticsPvPActions));
         var hasInventoryAction = managedEnterFallback || allEnterActions.Concat(allExitActions).Any(a => HasActionPrefix(a, _analyticsInventoryActions));
-
-        if (!hasSpawnAction && _analyticsSpawnActions.Any(a => !allEnterActions.Contains(a)))
-            issues.Add($"Mode '{modeId}' enter flow has no spawn action. Analytics cannot track entity spawn counts.");
 
         if (!hasLifecycleAction)
             issues.Add($"Mode '{modeId}' flows have no snapshot/schematic lifecycle action. Analytics cannot track object lifetime.");
 
         if (!hasTeleportAction)
             issues.Add($"Mode '{modeId}' enter flow has no teleport action. Analytics cannot record zone entry points.");
-
-        if (!hasRegionAction)
-            issues.Add($"Mode '{modeId}' flows have no region action. Analytics cannot track territory pressure (shrink/buffs/glow).");
 
         if (config.Rules.EnablePvP && !hasPvPAction)
             issues.Add($"Mode '{modeId}' has enablePvP=true but enter flow has no PvP action. Analytics expects PvP to be explicitly toggled.");
@@ -300,8 +275,10 @@ public static class AnalyticsValidator
             ValidateArmorReference(config.KitConfig.Armors.Legs, "legs", modeId, issues);
             ValidateArmorReference(config.KitConfig.Armors.Gloves, "gloves", modeId, issues);
             ValidateArmorReference(config.KitConfig.Armors.Boots, "boots", modeId, issues);
-            ValidateArmorReference(config.KitConfig.Armors.Cloak, "cloak", modeId, issues);
-            ValidateArmorReference(config.KitConfig.Armors.Headgear, "headgear", modeId, issues);
+            if (!string.IsNullOrWhiteSpace(config.KitConfig.Armors.Cloak))
+                ValidateArmorReference(config.KitConfig.Armors.Cloak, "cloak", modeId, issues);
+            if (!string.IsNullOrWhiteSpace(config.KitConfig.Armors.Headgear))
+                ValidateArmorReference(config.KitConfig.Armors.Headgear, "headgear", modeId, issues);
         }
     }
 

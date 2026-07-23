@@ -76,6 +76,7 @@ public class BattleLuckPlugin : BasePlugin
     static readonly object _initLock = new();
     static bool _coreInitializationInProgress;
     static EntityQuery? _playerQuery;
+    static float _maintenanceElapsedSeconds;
     public static bool IsInitialized => Core.IsInitialized;
     public static bool IsDiscordBridgeEnabled => BattleLuckLogger.IsDiscordForwardingEnabled;
 
@@ -129,6 +130,10 @@ public class BattleLuckPlugin : BasePlugin
     public override void Load()
     {
         Log = base.Log;
+        ConfigLoader.DiagnosticInfoSink = LogInfo;
+        ConfigLoader.DiagnosticWarningSink = LogWarning;
+        ActionManifestService.WarningSink = LogWarning;
+        GameEvents.WarningSink = LogWarning;
         Log.LogInfo("[BattleLuck] Loading...");
         PluginSettings.Initialize(Config);
         ConfigLoader.EnsureDefaultsDeployed();
@@ -357,23 +362,20 @@ public class BattleLuckPlugin : BasePlugin
                 Log?.LogWarning($"[BattleLuck] Tick error in AIAssistant.ProcessMainThreadQueue: {ex.Message}");
             }
 
-            try
+            _maintenanceElapsedSeconds += Math.Max(0f, deltaSeconds);
+            if (_maintenanceElapsedSeconds >= 30f)
             {
-                AIAssistant?.CleanupOldContexts();
-            }
-            catch (Exception ex)
-            {
-                Log?.LogWarning($"[BattleLuck] Tick error in AIAssistant.CleanupOldContexts: {ex.Message}");
-            }
-
-            try
-            {
-                AiTaskService.Instance.Tick();
-                ConversationStore.Instance.Prune();
-            }
-            catch (Exception ex)
-            {
-                Log?.LogWarning($"[BattleLuck] Tick error in AI task/history cleanup: {ex.Message}");
+                _maintenanceElapsedSeconds = 0f;
+                try
+                {
+                    AIAssistant?.CleanupOldContexts();
+                    AiTaskService.Instance.Tick();
+                    ConversationStore.Instance.Prune();
+                }
+                catch (Exception ex)
+                {
+                    Log?.LogWarning($"[BattleLuck] Tick error in periodic maintenance: {ex.Message}");
+                }
             }
 
             try
@@ -470,6 +472,7 @@ public class BattleLuckPlugin : BasePlugin
                 VRisingCore.Initialize();
                 if (!VRisingCore.IsReady)
                     return false;
+                ActionManifestService.LiveSystemEntriesEnabled = true;
 
                 BroadcastToSession ??= (_, message) => NotificationHelper.NotifyAll(message, NotificationHelper.NotificationLevel.Info);
 
@@ -515,6 +518,21 @@ public class BattleLuckPlugin : BasePlugin
                 Roadmap = new RoadmapService();
                 Roadmap.Initialize();
                 Log?.LogInfo("[BattleLuck] Roadmap and role prompt service initialized.");
+
+                var castlePolicyPath = Path.Combine(
+                    BepInEx.Paths.BepInExRootPath,
+                    "data",
+                    "BattleLuck",
+                    "castle_policies.json");
+                var castleStore = new CastlePolicyStore(castlePolicyPath, LogWarning);
+                var castleResolver = new CastleObjectResolver();
+                castleResolver.MarkWorldReady(true);
+                CastlePolicy = new CastlePolicyService(
+                    castleStore,
+                    castleResolver,
+                    new CastlePaymentService(castleStore));
+                CastlePolicy.Initialize();
+                Log?.LogInfo("[BattleLuck] Castle policy service initialized.");
 
                 // Initialize Dev Session Service
                 DevSession = new DevSessionService(playerState, flow);
@@ -583,6 +601,11 @@ public class BattleLuckPlugin : BasePlugin
                     Log?.LogWarning($"[BattleLuck] Failed to initialize ECS Query Registry: {ecsEx.Message}");
                 }
 
+                // Flow actions execute synchronously from the server-tick path.
+                // Custom managed SystemBase types cannot be materialized through
+                // Unity's IL2CPP GetOrCreateSystemManaged<T> bridge.
+                Log?.LogInfo("[BattleLuck] Server-thread action handlers initialized.");
+
                 // Resolve live buff GUIDs (must run after VRisingCore.Initialize)
                 PrefabHelper.ScanLivePrefabs();
                 Prefabs.ResolveLiveBuffGuids();
@@ -593,6 +616,8 @@ public class BattleLuckPlugin : BasePlugin
                         var liveConfig = ConfigLoader.Load(modeId);
                         foreach (var issue in PrefabValidator.ValidateLive(modeId, liveConfig))
                             Log?.LogWarning($"[BattleLuck] Live validation warning for mode '{modeId}': {issue}");
+                        foreach (var issue in KitValidator.ValidateLive(modeId, liveConfig))
+                            Log?.LogWarning($"[BattleLuck] Live kit validation warning for mode '{modeId}': {issue}");
                     }
                     catch (Exception prefabAuditEx)
                     {
@@ -668,6 +693,12 @@ public class BattleLuckPlugin : BasePlugin
         try { Session?.Shutdown(); } catch { }
         Session = null;
 
+        try { Core.EventNormalizer?.Dispose(); } catch { }
+        Core.EventNormalizer = null;
+        try { EventPlatform?.Dispose(); } catch { }
+        EventPlatform = null;
+        PlayerDirectory = null;
+
         try { ZoneMap?.Shutdown(); } catch { }
         ZoneMap = null;
 
@@ -680,6 +711,8 @@ public class BattleLuckPlugin : BasePlugin
         ClanTasks = null;
         try { Roadmap?.Dispose(); } catch { }
         Roadmap = null;
+        try { CastlePolicy?.Dispose(); } catch { }
+        CastlePolicy = null;
 
 
         try { NpcService?.DespawnAll(); } catch { }
@@ -695,87 +728,132 @@ public class BattleLuckPlugin : BasePlugin
         BattleLuckLogger.SetDiscordWebhook(null);
 
         PlayerLoadouts = null;
+        PlayerState = null;
         Progression = null;
         Teleports = null;
         MerchantCommands = null;
         DevSession = null;
         Cleanup = null;
+        Companion = null;
+        Encounters = null;
+        BossScaling = null;
+        Portals = null;
+        CreatureCapture = null;
 
         try { QueryRegistry.Shutdown(); } catch { }
+        ActionManifestService.LiveSystemEntriesEnabled = false;
+        MainThreadDispatcher.Clear();
         _playerQuery = null;
+        _maintenanceElapsedSeconds = 0f;
         try { VRisingCore.Reset(); } catch { }
         Core.IsInitialized = false;
     }
 
     public override bool Unload()
     {
-        try { ErrorReporter.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { }
-        ErrorReporter = NoOpErrorReporter.Instance;
-        Core.EventNormalizer?.Dispose();
-        Core.EventNormalizer = null;
-        EventPlatform?.Dispose();
-        EventPlatform = null;
-        PlayerDirectory = null;
-        BuildingRestrictionController.Reset();
-        FloorLockService.Reset();
-        NpcService?.DespawnAll();
-        NpcService = null;
-        DeathPrevention?.Dispose();
-        DeathPrevention = null;
-        PlayerLoadouts = null;
-        Progression = null;
-        Teleports = null;
-        EquipmentTracker?.RestoreAll();
-        EquipmentTracker = null;
-        MerchantCommands = null;
-        _clanTaskGameAdapter?.Dispose();
-        _clanTaskGameAdapter = null;
-        ClanTasks?.Dispose();
-        ClanTasks = null;
-        Roadmap?.Dispose();
-        Roadmap = null;
-        CastlePolicy?.Dispose();
-        CastlePolicy = null;
-        ZoneMap?.Shutdown();
-        ZoneMap = null;
-        AiGroupProjectMBridge?.Dispose();
-        AiGroupProjectMBridge = null;
-        AIAssistant?.Shutdown();
-        AIAssistant = null;
-        Planner = null;
-
-        BattleLuckLogger.SetDiscordWebhook(null);
-        Session?.Shutdown();
-        DeathHook.Shutdown();
-
-        // Do not mutate unrelated world state during plugin unload. Individual
-        // services above are responsible for removing entities they own.
-        Cleanup = null;
-
-        // Shutdown ECS Query Registry
-        try
-        {
-            QueryRegistry.Shutdown();
-        }
-        catch (Exception ecsEx)
-        {
-            Log?.LogWarning($"[BattleLuck] Failed to shutdown ECS Query Registry: {ecsEx.Message}");
-        }
-
-        // Shutdown the ProjectM event router
-        ProjectMEventRouter.Shutdown();
-
-        CommandRegistry.UnregisterAssembly(typeof(BattleLuckPlugin).Assembly);
-        _harmony?.UnpatchSelf();
-        GameEvents.Shutdown();
-        VRisingCore.Reset();
-        _playerQuery = null;
         lock (_initLock)
         {
-            Core.IsInitialized = false;
+            // Prevent re-entrant initialization during unload.
+            _coreInitializationInProgress = true;
         }
-        Log?.LogInfo("[BattleLuck] Unloaded.");
-        return true;
+
+        try
+        {
+            // Unsubscribe event handlers first to prevent callbacks into disposing services.
+            UnsubscribeCoreEvents();
+
+            try { ErrorReporter.DisposeAsync().AsTask().GetAwaiter().GetResult(); } catch { }
+            ErrorReporter = NoOpErrorReporter.Instance;
+            Core.EventNormalizer?.Dispose();
+            Core.EventNormalizer = null;
+            EventPlatform?.Dispose();
+            EventPlatform = null;
+            PlayerDirectory = null;
+            BuildingRestrictionController.Reset();
+            FloorLockService.Reset();
+            NpcService?.DespawnAll();
+            NpcService = null;
+            DeathPrevention?.Dispose();
+            DeathPrevention = null;
+            PlayerLoadouts = null;
+            Progression = null;
+            Teleports = null;
+            EquipmentTracker?.RestoreAll();
+            EquipmentTracker = null;
+            MerchantCommands = null;
+            _clanTaskGameAdapter?.Dispose();
+            _clanTaskGameAdapter = null;
+            ClanTasks?.Dispose();
+            ClanTasks = null;
+            Roadmap?.Dispose();
+            Roadmap = null;
+            CastlePolicy?.Dispose();
+            CastlePolicy = null;
+            ZoneMap?.Shutdown();
+            ZoneMap = null;
+            AiGroupProjectMBridge?.Dispose();
+            AiGroupProjectMBridge = null;
+            GameChatAiBridge.Shutdown();
+            AIAssistant?.Shutdown();
+            AIAssistant = null;
+            Planner = null;
+
+            // Wave 1 expansion services — dispose and null to prevent stale references.
+            Companion = null;
+            Encounters = null;
+            BossScaling = null;
+            Portals = null;
+            CreatureCapture = null;
+
+            BattleLuckLogger.SetDiscordWebhook(null);
+            Session?.Shutdown();
+            Session = null;
+            PlayerState = null;
+            DevSession = null;
+            DeathHook.Shutdown();
+            MainThreadDispatcher.Clear();
+
+            // Do not mutate unrelated world state during plugin unload. Individual
+            // services above are responsible for removing entities they own.
+            Cleanup = null;
+
+            // Shutdown ECS Query Registry
+            try
+            {
+                QueryRegistry.Shutdown();
+            }
+            catch (Exception ecsEx)
+            {
+                Log?.LogWarning($"[BattleLuck] Failed to shutdown ECS Query Registry: {ecsEx.Message}");
+            }
+
+            // Shutdown the ProjectM event router
+            ProjectMEventRouter.Shutdown();
+
+            CommandRegistry.UnregisterAssembly(typeof(BattleLuckPlugin).Assembly);
+            _harmony?.UnpatchSelf();
+            GameEvents.Shutdown();
+            VRisingCore.Reset();
+            ConfigLoader.DiagnosticInfoSink = null;
+            ConfigLoader.DiagnosticWarningSink = null;
+            ActionManifestService.WarningSink = null;
+            ActionManifestService.LiveSystemEntriesEnabled = false;
+            _playerQuery = null;
+            _maintenanceElapsedSeconds = 0f;
+            lock (_initLock)
+            {
+                Core.IsInitialized = false;
+            }
+            Log?.LogInfo("[BattleLuck] Unloaded.");
+            return true;
+        }
+        finally
+        {
+            lock (_initLock)
+            {
+                _coreInitializationInProgress = false;
+            }
+        }
     }
 
     public static void LogInfo(string msg)    { Log?.LogInfo(msg);    BattleLuckLogger.Post_Internal("INFO",    msg); }

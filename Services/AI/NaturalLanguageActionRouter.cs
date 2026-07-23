@@ -120,7 +120,7 @@ public static class NaturalLanguageActionRouter
         entry = null!;
         error = string.Empty;
         var candidateText = StripExecutionPrefix(query.Trim());
-        var (explicitName, _) = FlowActionExecutor.ParseActionString(candidateText);
+        var (explicitName, _) = ActionStringParser.Parse(candidateText);
         var canonical = manifest.NormalizeActionName(explicitName);
         if (!string.IsNullOrWhiteSpace(canonical) && manifest.Entries.TryGetValue(canonical, out entry!))
             return true;
@@ -167,7 +167,7 @@ public static class NaturalLanguageActionRouter
         action = string.Empty;
         error = string.Empty;
         var candidateText = StripExecutionPrefix(query.Trim());
-        var (explicitName, explicitParameters) = FlowActionExecutor.ParseActionString(candidateText);
+        var (explicitName, explicitParameters) = ActionStringParser.Parse(candidateText);
         var explicitCanonical = ActionManifestService.Instance.NormalizeActionName(explicitName);
         var parameters = explicitCanonical.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)
             ? new Dictionary<string, string>(explicitParameters, StringComparer.OrdinalIgnoreCase)
@@ -313,7 +313,7 @@ public static class NaturalLanguageActionRouter
     static string PickRandomBossPrefab(ActionManifestEntry entry)
     {
         var candidates = entry.Examples
-            .Select(example => FlowActionExecutor.ParseActionString(example).parameters)
+            .Select(example => ActionStringParser.Parse(example).parameters)
             .Where(parameters => parameters.TryGetValue("prefab", out var prefab) &&
                                  !string.IsNullOrWhiteSpace(prefab))
             .Select(parameters => parameters["prefab"])
@@ -359,7 +359,7 @@ public static class NaturalLanguageActionRouter
 
     static string Summarize(string action)
     {
-        var (name, parameters) = FlowActionExecutor.ParseActionString(action);
+        var (name, parameters) = ActionStringParser.Parse(action);
         var visible = parameters
             .Where(kv => !kv.Key.Contains("token", StringComparison.OrdinalIgnoreCase) &&
                          !kv.Key.Contains("password", StringComparison.OrdinalIgnoreCase))

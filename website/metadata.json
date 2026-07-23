@@ -1,0 +1,8 @@
+{
+  "name": "Remix: V Rising Map Planner",
+  "description": "Interactive map tool for V Rising to plan castle builds, track resources, and visualize base placement using custom radius tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
