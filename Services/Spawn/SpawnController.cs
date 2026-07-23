@@ -124,7 +124,7 @@ public sealed class SpawnController
     }
 
     /// <summary>Spawn a wave of enemies with proper AI using UnitSpawnerUpdateSystem.</summary>
-    public void SpawnWave(List<PrefabGUID> prefabs, int count, float3 center, float spread = 5f, Action<List<Entity>>? onWaveComplete = null)
+    public void SpawnWave(List<PrefabGUID> prefabs, int count, float3 center, float spread = 5f, Action<List<Entity>>? onWaveComplete = null, int? seed = null)
     {
         var validPrefabs = prefabs.Where(IsValidSpawnPrefab).ToList();
         if (validPrefabs.Count != prefabs.Count)
@@ -145,7 +145,9 @@ public sealed class SpawnController
             }
         }
 
-        var rng = new System.Random();
+        // Use seeded RNG for deterministic replay when seed is provided.
+        // Without a seed, uses time-based seed for variety.
+        var rng = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
         int spawned = 0;
         var entities = new List<Entity>();
 
