@@ -105,6 +105,15 @@ public sealed class NpcControlService
         }
     }
 
+    public ControlledNpcEntry? GetEntry(string npcId)
+    {
+        lock (_lock)
+        {
+            CleanupDeadLocked();
+            return _entries.TryGetValue(npcId, out var entry) ? entry : null;
+        }
+    }
+
     public bool TryGet(string npcId, out ControlledNpcEntry entry)
     {
         lock (_lock)
